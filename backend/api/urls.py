@@ -6,6 +6,10 @@ urlpatterns = [
     path('companies/', views.company_list),
     path('companies/<int:pk>/', views.company_detail),
 
+    # Company Car Rates
+    path('companies/<int:company_id>/rates/', views.company_car_rates),
+    path('companies/<int:company_id>/rates/<int:car_id>/', views.delete_company_car_rate),
+
     # Cars
     path('cars/', views.car_list),
     path('cars/<int:pk>/', views.car_detail),

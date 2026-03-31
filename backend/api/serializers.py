@@ -44,3 +44,13 @@ class BusinessSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = BusinessSettings
         fields = '__all__'
+
+
+from .models import Company, Car, DutySlip, DutySlipEntry, BusinessSettings, CompanyCarRate
+
+class CompanyCarRateSerializer(serializers.ModelSerializer):
+    car_name = serializers.CharField(source='car.name', read_only=True)
+
+    class Meta:
+        model = CompanyCarRate
+        fields = '__all__'
