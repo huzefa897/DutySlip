@@ -34,17 +34,31 @@
           class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
       </div>
 
-      <!-- Car -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Car</label>
-        <select v-model="form.car" required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400">
-          <option value="" disabled>Select car</option>
-          <option v-for="c in cars" :key="c.id" :value="c.id">
-            {{ c.name }} — ${{ c.base_rate }} base
-          </option>
-        </select>
-      </div>
+     <!-- Car -->
+<div>
+  <label class="block text-xs text-gray-400 font-mono mb-1">Car</label>
+  <select v-model="form.car" required
+    class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400">
+    <option value="" disabled>Select car</option>
+    <option v-for="c in cars" :key="c.id" :value="c.id">
+      {{ c.name }} — {{ currencySymbol }}{{ c.base_rate }} base
+    </option>
+  </select>
+
+  <!-- Override indicator -->
+  <div
+    v-if="rateOverride"
+    class="mt-2 flex items-start gap-2 bg-amber-400/10 border border-amber-400/30 rounded px-3 py-2"
+  >
+    <span class="text-amber-400 text-xs mt-0.5">⚡</span>
+    <div class="text-xs font-mono text-amber-300 space-y-0.5">
+      <p class="font-bold text-amber-400">Custom rates applied for this company</p>
+      <p v-if="rateOverride.base_rate">Base: {{ currencySymbol }}{{ rateOverride.base_rate }}</p>
+      <p v-if="rateOverride.extra_km_rate">Extra KM: {{ currencySymbol }}{{ rateOverride.extra_km_rate }}/km</p>
+      <p v-if="rateOverride.extra_hr_rate">Extra HR: {{ currencySymbol }}{{ rateOverride.extra_hr_rate }}/hr</p>
+    </div>
+  </div>
+</div>
 
       <!-- KMs -->
       <div class="grid grid-cols-2 gap-4">
@@ -130,10 +144,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
 import { notify } from '../store/notification'
+import { ref, onMounted, watch } from 'vue'
+import { currencySymbol } from '../store/currency'
 
 const router = useRouter()
 const cars = ref([])
@@ -141,6 +156,7 @@ const dutySlips = ref([])
 const companies = ref([])
 const submitting = ref(false)
 const error = ref('')
+const rateOverride = ref(null)
 
 const form = ref({
   party_name: '',
@@ -156,6 +172,20 @@ const form = ref({
   duty_slip: '',
   notes: '',
 })
+watch(
+  () => [form.value.company, form.value.car],
+  async ([companyId, carId]) => {
+    rateOverride.value = null
+    if (!companyId || !carId) return
+    try {
+      const res = await api.get(`/companies/${companyId}/rates/`)
+      const match = res.data.find(r => r.car === carId)
+      rateOverride.value = match || null
+    } catch {
+      rateOverride.value = null
+    }
+  }
+)
 
 async function fetchOptions() {
   const [carsRes, companiesRes, slipsRes] = await Promise.all([

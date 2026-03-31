@@ -18,112 +18,170 @@
     </div>
 
     <p v-if="loading" class="text-gray-500 text-sm">Loading...</p>
+    <p v-else-if="companies.length === 0" class="text-gray-500 text-sm">No companies yet.</p>
 
-    <p v-else-if="companies.length === 0" class="text-gray-500 text-sm">
-      No companies yet. Add your first one.
-    </p>
+    <div v-else class="space-y-3">
+      <div
+        v-for="company in companies"
+        :key="company.id"
+        class="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden"
+      >
+        <!-- Company Row -->
+        <div class="flex items-center justify-between px-4 py-3">
+          <div>
+            <p class="text-white font-medium text-sm">{{ company.name }}</p>
+            <p class="text-gray-500 text-xs font-mono mt-0.5">ABN: {{ company.abn }}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              @click="toggleRates(company)"
+              class="text-xs text-amber-400 hover:text-amber-300 font-mono transition-colors"
+            >
+              {{ expandedCompany === company.id ? 'Hide Rates ↑' : 'Car Rates ↓' }}
+            </button>
+            <button
+              @click="openEdit(company)"
+              class="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              Edit
+            </button>
+            <button
+              @click="deleteCompany(company)"
+              class="text-xs text-red-500 hover:text-red-400 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
 
-    <div v-else class="overflow-x-auto">
-      <table class="w-full text-sm border-collapse">
-        <thead>
-          <tr class="border-b border-gray-800 text-gray-400 text-left">
-            <th class="py-3 pr-6 font-mono font-normal">Company Name</th>
-            <th class="py-3 pr-6 font-mono font-normal">ABN</th>
-            <th class="py-3 font-mono font-normal"></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="company in companies"
-            :key="company.id"
-            class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors"
-          >
-            <td class="py-3 pr-6 text-white font-medium">{{ company.name }}</td>
-            <td class="py-3 pr-6 font-mono text-gray-400">{{ company.abn }}</td>
-            <td class="py-3 flex items-center gap-4">
+        <!-- Car Rates Panel -->
+        <div
+          v-if="expandedCompany === company.id"
+          class="border-t border-gray-800 px-4 py-4"
+        >
+          <p class="text-xs font-mono text-gray-500 uppercase tracking-wider mb-3">
+            Car Rate Overrides
+            <span class="text-gray-600 normal-case ml-1">(leave blank to use global rates)</span>
+          </p>
+
+          <!-- Existing Overrides -->
+          <div v-if="companyRates.length > 0" class="mb-4 space-y-2">
+            <div
+              v-for="rate in companyRates"
+              :key="rate.id"
+              class="flex items-center justify-between bg-gray-800 rounded px-3 py-2 text-xs font-mono"
+            >
+              <span class="text-white">{{ rate.car_name }}</span>
+              <span class="text-gray-400">
+                Base: {{ currencySymbol }}{{ rate.base_rate ?? '—' }} ·
+                /km: {{ currencySymbol }}{{ rate.extra_km_rate ?? '—' }} ·
+                /hr: {{ currencySymbol }}{{ rate.extra_hr_rate ?? '—' }}
+              </span>
               <button
-                @click="openEdit(company)"
-                class="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                @click="deleteRate(company.id, rate.car)"
+                class="text-red-500 hover:text-red-400 transition-colors ml-4"
               >
-                Edit
+                Remove
               </button>
-              <button
-                @click="deleteCompany(company)"
-                class="text-xs text-red-500 hover:text-red-400 transition-colors"
-              >
-                Delete
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            </div>
+          </div>
+
+          <p v-else class="text-gray-600 text-xs font-mono mb-4">
+            No overrides — using global car rates.
+          </p>
+
+          <!-- Add Override Form -->
+          <div class="bg-gray-800/50 rounded p-3 space-y-3">
+            <p class="text-xs font-mono text-gray-400">Add / Update Override</p>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div>
+                <label class="block text-xs text-gray-500 font-mono mb-1">Car</label>
+                <select
+                  v-model="rateForm.car"
+                  class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
+                >
+                  <option value="" disabled>Select</option>
+                  <option v-for="car in cars" :key="car.id" :value="car.id">
+                    {{ car.name }}
+                  </option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 font-mono mb-1">Base Rate</label>
+                <input
+                  v-model="rateForm.base_rate"
+                  type="number" step="0.01"
+                  placeholder="e.g. 120"
+                  class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
+                />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 font-mono mb-1">Extra Kms Rate</label>
+                <input
+                  v-model="rateForm.extra_km_rate"
+                  type="number" step="0.01"
+                  placeholder="e.g. 1.50"
+                  class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
+                />
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 font-mono mb-1">Extra Hr Rate</label>
+                <input
+                  v-model="rateForm.extra_hr_rate"
+                  type="number" step="0.01"
+                  placeholder="e.g. 15"
+                  class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
+                />
+              </div>
+            </div>
+            <button
+              @click="saveRate(company.id)"
+              :disabled="!rateForm.car"
+              class="bg-amber-400 text-gray-950 text-xs font-bold px-4 py-1.5 rounded hover:bg-amber-300 transition-colors disabled:opacity-40"
+            >
+              Save Override
+            </button>
+          </div>
+        </div>
+
+      </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Company Modal -->
     <div
       v-if="showModal"
       class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       @click.self="closeModal"
     >
       <div class="bg-gray-900 border border-gray-800 rounded-lg w-full max-w-md">
-
-        <!-- Modal Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
           <h2 class="text-sm font-mono font-bold text-white uppercase tracking-wider">
             {{ editingCompany ? 'Edit Company' : 'New Company' }}
           </h2>
-          <button
-            @click="closeModal"
-            class="text-gray-500 hover:text-white transition-colors text-xl leading-none"
-          >
-            ×
-          </button>
+          <button @click="closeModal" class="text-gray-500 hover:text-white text-xl leading-none">×</button>
         </div>
-
-        <!-- Form -->
         <form @submit.prevent="submit" class="px-6 py-5 space-y-4">
-
           <div>
             <label class="block text-xs text-gray-400 font-mono mb-1">Company Name</label>
-            <input
-              v-model="form.name"
-              type="text"
-              required
-              placeholder="e.g. Acme Transport"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
-            />
+            <input v-model="form.name" type="text" required
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
           </div>
-
           <div>
             <label class="block text-xs text-gray-400 font-mono mb-1">ABN</label>
-            <input
-              v-model="form.abn"
-              type="text"
-              required
-              placeholder="e.g. 12 345 678 901"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
-            />
+            <input v-model="form.abn" type="text" required
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
           </div>
-
           <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
-
           <div class="flex gap-3 pt-2">
-            <button
-              type="submit"
-              :disabled="submitting"
-              class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50"
-            >
+            <button type="submit" :disabled="submitting"
+              class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50">
               {{ submitting ? 'Saving...' : editingCompany ? 'Save Changes' : 'Create Company' }}
             </button>
-            <button
-              type="button"
-              @click="closeModal"
-              class="text-sm text-gray-400 hover:text-white px-4 py-2 transition-colors"
-            >
+            <button type="button" @click="closeModal"
+              class="text-sm text-gray-400 hover:text-white px-4 py-2 transition-colors">
               Cancel
             </button>
           </div>
-
         </form>
       </div>
     </div>
@@ -135,15 +193,20 @@
 import { ref, onMounted } from 'vue'
 import api from '../api'
 import { notify } from '../store/notification'
+import { currencySymbol } from '../store/currency'
 
 const companies = ref([])
+const cars = ref([])
 const loading = ref(true)
 const showModal = ref(false)
 const submitting = ref(false)
 const error = ref('')
 const editingCompany = ref(null)
+const expandedCompany = ref(null)
+const companyRates = ref([])
 
 const form = ref({ name: '', abn: '' })
+const rateForm = ref({ car: '', base_rate: '', extra_km_rate: '', extra_hr_rate: '' })
 
 async function fetchCompanies() {
   try {
@@ -152,6 +215,42 @@ async function fetchCompanies() {
   } finally {
     loading.value = false
   }
+}
+
+async function toggleRates(company) {
+  if (expandedCompany.value === company.id) {
+    expandedCompany.value = null
+    companyRates.value = []
+    return
+  }
+  expandedCompany.value = company.id
+  rateForm.value = { car: '', base_rate: '', extra_km_rate: '', extra_hr_rate: '' }
+  await fetchRates(company.id)
+}
+
+async function fetchRates(companyId) {
+  const res = await api.get(`/companies/${companyId}/rates/`)
+  companyRates.value = res.data
+}
+
+async function saveRate(companyId) {
+  if (!rateForm.value.car) return
+  await api.post(`/companies/${companyId}/rates/`, {
+    car: rateForm.value.car,
+    company: companyId,
+    base_rate: rateForm.value.base_rate || null,
+    extra_km_rate: rateForm.value.extra_km_rate || null,
+    extra_hr_rate: rateForm.value.extra_hr_rate || null,
+  })
+  rateForm.value = { car: '', base_rate: '', extra_km_rate: '', extra_hr_rate: '' }
+  await fetchRates(companyId)
+  notify('Rate override saved.')
+}
+
+async function deleteRate(companyId, carId) {
+  await api.delete(`/companies/${companyId}/rates/${carId}/`)
+  await fetchRates(companyId)
+  notify('Rate override removed.')
 }
 
 function openCreate() {
@@ -209,5 +308,9 @@ async function deleteCompany(company) {
   }
 }
 
-onMounted(fetchCompanies)
+onMounted(async () => {
+  await fetchCompanies()
+  const carsRes = await api.get('/cars/')
+  cars.value = carsRes.data
+})
 </script>

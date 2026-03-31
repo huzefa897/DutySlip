@@ -27,7 +27,6 @@ class Company(models.Model):
     def __str__(self):
         return f"{self.name} (ABN: {self.abn})"
 
-
 class Car(models.Model):
     name = models.CharField(max_length=100)
     base_rate = models.DecimalField(max_digits=10, decimal_places=2)
@@ -99,3 +98,25 @@ class DutySlipEntry(models.Model):
 
     def __str__(self):
         return f"{self.date} - {self.car.name} - {self.party_name}"
+
+
+class CompanyCarRate(models.Model):
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='car_rates'
+    )
+    car = models.ForeignKey(
+        Car,
+        on_delete=models.CASCADE,
+        related_name='company_rates'
+    )
+    base_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    extra_km_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    extra_hr_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('company', 'car')  # one override per company+car combo
+
+    def __str__(self):
+        return f"{self.company.name} — {self.car.name}"

@@ -1,11 +1,11 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Company, Car, DutySlip, DutySlipEntry, BusinessSettings
+from .models import Company, Car, DutySlip, DutySlipEntry, BusinessSettings, CompanyCarRate
 from .serializers import (
     CompanySerializer, CarSerializer,
     DutySlipSerializer, DutySlipEntrySerializer,
-    BusinessSettingsSerializer
+    BusinessSettingsSerializer, CompanyCarRateSerializer
 )
 from .services import compute_entry, compute_duty_slip_total
 
@@ -77,7 +77,64 @@ def company_detail(request, pk):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+
+
+# ── Company Car Rates ────────────────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+def company_car_rates(request, company_id):
+    try:
+        company = Company.objects.get(pk=company_id)
+    except Company.DoesNotExist:
+        return Response({'error': 'Company not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        rates = CompanyCarRate.objects.filter(company=company)
+        return Response(CompanyCarRateSerializer(rates, many=True).data)
+
+    # POST — upsert (create or update)
+    car_id = request.data.get('car')
+
+    # clean up the rates — convert empty string to None
+    def clean(val):
+        return val if val not in [None, '', 'null'] else None
+
+    defaults = {
+        'base_rate':     clean(request.data.get('base_rate')),
+        'extra_km_rate': clean(request.data.get('extra_km_rate')),
+        'extra_hr_rate': clean(request.data.get('extra_hr_rate')),
+    }
+
+    rate, created = CompanyCarRate.objects.get_or_create(
+        company=company,    # ← pass the instance directly
+        car_id=car_id,
+        defaults=defaults
+    )
+
+    if not created:
+        # update existing
+        for field, value in defaults.items():
+            setattr(rate, field, value)
+        rate.save()
+
+    return Response(
+        CompanyCarRateSerializer(rate).data,
+        status=status.HTTP_201_CREATED if created else status.HTTP_200_OK
+    )
+
+
+@api_view(['DELETE'])
+def delete_company_car_rate(request, company_id, car_id):
+    try:
+        rate = CompanyCarRate.objects.get(company_id=company_id, car_id=car_id)
+        rate.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except CompanyCarRate.DoesNotExist:
+        return Response({'error': 'Rate not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
 # ── Cars ─────────────────────────────────────────────────────────────────────
+
 
 @api_view(['GET', 'POST'])
 def car_list(request):
