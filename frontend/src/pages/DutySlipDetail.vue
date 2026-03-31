@@ -13,6 +13,19 @@
       <div class="flex items-start justify-between mb-8">
         <div>
           <h1 class="text-xl font-mono font-bold text-white">{{ slip.party_name }}</h1>
+
+          <div class="flex items-center gap-3 mt-2">
+  <StatusBadge :status="slip.status" />
+  <select
+    :value="slip.status"
+    @change="updateStatus($event.target.value)"
+    class="bg-gray-800 border border-gray-700 text-gray-300 text-xs font-mono px-2 py-1 rounded focus:outline-none focus:border-amber-400"
+  >
+    <option value="draft">Draft</option>
+    <option value="finalised">Finalised</option>
+    <option value="paid">Paid</option>
+  </select>
+</div>
           <p class="text-gray-500 text-sm font-mono mt-1">
             {{ slip.company_name }} · Created {{ slip.created_at?.slice(0, 10) }}
           </p>
@@ -66,7 +79,7 @@
             </thead>
             <tbody>
               <tr
-                v-for="entry in slip.entries"
+                  v-for="entry in sortedEntries"
                 :key="entry.id"
                 class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors"
               >
@@ -80,8 +93,15 @@
                 <td class="py-3 pr-4 font-mono text-gray-300">{{ currencySymbol }}{{ entry.driver_bhatta }}</td>
                 <td class="py-3 pr-4 font-mono text-gray-300">{{ currencySymbol }}{{ entry.parking }}</td>
                 <td class="py-3 pr-4 font-mono text-amber-400">{{ currencySymbol }}{{ entry.row_total }}</td>
-                <td class="py-3">
-                  <button
+               <td class="py-3 flex items-center gap-3">
+                    <button
+                      @click="editingEntry = entry; showModal = true"
+                      class="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      Edit
+                    </button>
+                  
+                    <button
                     @click="removeEntry(entry.id)"
                     class="text-xs text-red-500 hover:text-red-400 transition-colors"
                   >
@@ -158,6 +178,7 @@
     <h2 class="invoice-title">INVOICE</h2>
     <p class="invoice-meta">Date: {{ today }}</p>
     <p class="invoice-meta">Ref: #{{ formatSlipId(slip.id) }}</p>
+      <p class="invoice-status" :class="statusPrintClass">{{ slip.status?.toUpperCase() }}</p>
   </div>
 </div>
 
@@ -235,25 +256,28 @@
   <p v-else class="text-gray-500 text-sm">Loading...</p>
 
   <!-- Modal -->
-  <EntryFormModal
-    v-if="showModal"
-    :party-name="slip?.party_name"
-    :company-id="slip?.company"
-    :duty-slip-id="slip?.id"
-    @close="showModal = false"
-    @saved="onEntrySaved"
-  />
+ <EntryFormModal
+  v-if="showModal"
+  :party-name="slip?.party_name"
+  :company-id="slip?.company"
+  :duty-slip-id="slip?.id"
+  :entry="editingEntry"
+  @close="showModal = false; editingEntry = null"
+  @saved="onEntrySaved"
+/>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api'
 import EntryFormModal from '../components/EntryFormModal.vue'
 import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
+import StatusBadge from '../components/StatusBadge.vue'
 
+const editingEntry = ref(null)
 const route = useRoute()
 const slip = ref(null)
 const unassigned = ref([])
@@ -262,6 +286,10 @@ const showModal = ref(false)
 const companyAbn = ref('')
 const cars = ref([])
 const bizSettings = ref(null)
+const sortedEntries = computed(() => {
+  if (!slip.value?.entries) return []
+  return [...slip.value.entries].sort((a, b) => new Date(a.date) - new Date(b.date))
+})
 
 
 const today = new Date().toLocaleDateString('en-AU', {
@@ -276,7 +304,11 @@ function getBaseRate(carId) {
 function printInvoice() {
   window.print()
 }
-
+async function updateStatus(newStatus) {
+  await api.patch(`/dutyslips/${route.params.id}/status/`, { status: newStatus })
+  await fetchSlip()
+  notify(`Status updated to ${newStatus}.`)
+}
 async function fetchSlip() {
   const res = await api.get(`/dutyslips/${route.params.id}/`)
   slip.value = res.data
@@ -345,6 +377,13 @@ onMounted(async () => {
   color: #111;
   padding: 40px;
   max-width: 100%;
+}
+.invoice-status {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  margin-top: 6px;
+  text-transform: uppercase;
 }
 
 .invoice-header {

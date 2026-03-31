@@ -232,3 +232,18 @@ def remove_entry_from_dutyslip(request, pk, entry_id):
     compute_duty_slip_total(slip)
 
     return Response(DutySlipSerializer(slip).data)
+
+@api_view(['PATCH'])
+def update_dutyslip_status(request, pk):
+    try:
+        slip = DutySlip.objects.get(pk=pk)
+    except DutySlip.DoesNotExist:
+        return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get('status')
+    if new_status not in ['draft', 'finalised', 'paid']:
+        return Response({'error': 'Invalid status'}, status=status.HTTP_400_BAD_REQUEST)
+
+    slip.status = new_status
+    slip.save()
+    return Response(DutySlipSerializer(slip).data)

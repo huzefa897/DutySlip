@@ -19,6 +19,7 @@ urlpatterns = [
     path('dutyslips/<int:pk>/', views.dutyslip_detail),
     path('dutyslips/<int:pk>/assign/', views.assign_entries_to_dutyslip),
     path('dutyslips/<int:pk>/remove/<int:entry_id>/', views.remove_entry_from_dutyslip),
+    path('dutyslips/<int:pk>/status/', views.update_dutyslip_status),
 
     # Business Settings
     path('settings/', views.business_settings),

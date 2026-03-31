@@ -39,16 +39,17 @@ class Car(models.Model):
 
 
 class DutySlip(models.Model):
-    company = models.ForeignKey(
-        Company,
-        on_delete=models.PROTECT,
-        related_name='duty_slips'
-    )
+    STATUS_CHOICES = [
+        ('draft', 'Draft'),
+        ('finalised', 'Unpaid / Finalised'),
+        ('paid', 'Paid'),
+    ]
+
+    company = models.ForeignKey(Company, on_delete=models.PROTECT, related_name='duty_slips')
     party_name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
-    grand_total = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0
-    )
+    grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
 
     def __str__(self):
         return f"{self.party_name} - {self.company.name}"
