@@ -157,7 +157,7 @@
   <div class="invoice-title-block">
     <h2 class="invoice-title">INVOICE</h2>
     <p class="invoice-meta">Date: {{ today }}</p>
-    <p class="invoice-meta">Ref: #{{ slip.id }}</p>
+    <p class="invoice-meta">Ref: #{{ formatSlipId(slip.id) }}</p>
   </div>
 </div>
 
@@ -252,6 +252,7 @@ import api from '../api'
 import EntryFormModal from '../components/EntryFormModal.vue'
 import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
+import { formatSlipId } from '../utils/formatId'
 
 const route = useRoute()
 const slip = ref(null)

@@ -7,6 +7,8 @@ import DutySlipDetail from '../pages/DutySlipDetail.vue'
 import CreateDutySlip from '../pages/CreateDutySlip.vue'
 import Cars from '../pages/Cars.vue'
 import Settings from '../pages/Settings.vue'
+import Companies from '../pages/Companies.vue'
+
 
 const routes = [
   { path: '/',                    component: Home },
@@ -17,6 +19,7 @@ const routes = [
   { path: '/dutyslips/:id',       component: DutySlipDetail },
   { path: '/cars',                component: Cars },
   { path: '/settings',            component: Settings },
+  { path: '/companies',           component: Companies },
 ]
 
 export default createRouter({

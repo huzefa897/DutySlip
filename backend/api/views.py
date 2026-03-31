@@ -50,7 +50,32 @@ def company_list(request):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET', 'PUT', 'DELETE'])
+def company_detail(request, pk):
+    try:
+        company = Company.objects.get(pk=pk)
+    except Company.DoesNotExist:
+        return Response({'error': 'Company not found'}, status=status.HTTP_404_NOT_FOUND)
 
+    if request.method == 'GET':
+        return Response(CompanySerializer(company).data)
+
+    if request.method == 'PUT':
+        serializer = CompanySerializer(company, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'DELETE':
+        try:
+            company.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception:
+            return Response(
+                {'error': 'Cannot delete — company is used in existing records.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 # ── Cars ─────────────────────────────────────────────────────────────────────
 

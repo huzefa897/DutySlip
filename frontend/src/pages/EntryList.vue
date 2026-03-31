@@ -58,7 +58,7 @@
                 v-if="entry.duty_slip"
                 class="text-xs bg-green-900 text-green-400 px-2 py-1 rounded font-mono"
               >
-                #{{ entry.duty_slip }}
+                #{{ formatSlipId(entry.duty_slip) }}
               </span>
               <span v-else class="text-xs text-gray-600 font-mono">unassigned</span>
             </td>
@@ -81,7 +81,7 @@
 import { ref, onMounted } from 'vue'
 import api from '../api'
 import { currencySymbol } from '../store/currency'
-
+import { formatSlipId } from '../utils/formatId'
 const entries = ref([])
 const loading = ref(true)
 
