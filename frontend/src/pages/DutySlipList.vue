@@ -36,6 +36,7 @@
       <p class="text-gray-500 text-xs font-mono mt-1">
         {{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}
       </p>
+      <StatusBadge :status="slip.status" />
     </div>
     <div class="text-right">
       <p class="text-amber-400 font-mono font-bold">{{ currencySymbol }}{{ slip.grand_total }}</p>
@@ -54,6 +55,8 @@ import { ref, onMounted } from 'vue'
 import api from '../api'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
+import StatusBadge from '../components/StatusBadge.vue'
+
 const slips = ref([])
 const loading = ref(true)
 

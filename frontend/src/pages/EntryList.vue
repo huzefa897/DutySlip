@@ -62,7 +62,13 @@
               </span>
               <span v-else class="text-xs text-gray-600 font-mono">unassigned</span>
             </td>
-            <td class="py-3">
+            <td class="py-3 flex items-center gap-3">
+                <button
+                  @click="editingEntry = entry; showModal = true"
+                  class="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  Edit
+                </button>
               <button
                 @click="deleteEntry(entry.id)"
                 class="text-xs text-red-500 hover:text-red-400 transition-colors"
@@ -76,14 +82,25 @@
     </div>
   </div>
 </template>
+<EntryFormModal
+  v-if="showModal"
+  :entry="editingEntry"
+  @close="showModal = false; editingEntry = null"
+  @saved="onEntrySaved"
+/>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../api'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
+import EntryFormModal from '../components/EntryFormModal.vue'
+import { notify } from '../store/notification'
+
 const entries = ref([])
 const loading = ref(true)
+const editingEntry = ref(null)
+const showModal = ref(false)
 
 async function fetchEntries() {
   try {
@@ -98,6 +115,11 @@ async function deleteEntry(id) {
   if (!confirm('Delete this entry?')) return
   await api.delete(`/entries/${id}/`)
   entries.value = entries.value.filter(e => e.id !== id)
+}
+
+async function onEntrySaved() {
+  await fetchEntries()
+  notify('Entry updated successfully.')
 }
 
 onMounted(fetchEntries)

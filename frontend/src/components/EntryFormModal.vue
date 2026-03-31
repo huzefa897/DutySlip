@@ -8,8 +8,9 @@
       <!-- Modal Header -->
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
         <h2 class="text-sm font-mono font-bold text-white uppercase tracking-wider">
-          New Entry
-        </h2>
+  {{ props.entry ? 'Edit Entry' : 'New Entry' }}
+</h2>
+
         <button @click="$emit('close')" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">
           ×
         </button>
@@ -150,7 +151,7 @@
             :disabled="submitting"
             class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50"
           >
-            {{ submitting ? 'Saving...' : 'Save Entry' }}
+            {{ submitting ? 'Saving...' : props.entry ? 'Save Changes' : 'Save Entry' }}
           </button>
           <button
             type="button"
@@ -170,11 +171,6 @@
 import { ref, onMounted } from 'vue'
 import api from '../api'
 
-const props = defineProps({
-  partyName: String,   // pre-filled if opened from duty slip
-  companyId: Number,   // pre-filled if opened from duty slip
-  dutySlipId: Number,  // if set, entry is assigned on creation
-})
 
 const emit = defineEmits(['close', 'saved'])
 
@@ -183,31 +179,41 @@ const companies = ref([])
 const submitting = ref(false)
 const error = ref('')
 
+
 const form = ref({
-  party_name: props.partyName || '',
-  company: props.companyId || '',
-  date: '',
-  car: '',
-  start_kms: '',
-  end_kms: '',
-  start_time: '',
-  end_time: '',
-  driver_bhatta: '0',
-  parking: '0',
-  notes: '',
+  party_name: props.entry?.party_name || props.partyName || '',
+  company: props.entry?.company || props.companyId || '',
+  date: props.entry?.date || '',
+  car: props.entry?.car || '',
+  start_kms: props.entry?.start_kms || '',
+  end_kms: props.entry?.end_kms || '',
+  start_time: props.entry?.start_time || '',
+  end_time: props.entry?.end_time || '',
+  driver_bhatta: props.entry?.driver_bhatta || '0',
+  parking: props.entry?.parking || '0',
+  notes: props.entry?.notes || '',
 })
 
 async function submit() {
   submitting.value = true
   error.value = ''
   try {
-    const payload = { ...form.value }
-    if (props.dutySlipId) payload.duty_slip = props.dutySlipId
-    const res = await api.post('/entries/', payload)
+    let res
+    if (props.entry) {
+      // Edit existing
+      res = await api.put(`/entries/${props.entry.id}/`, form.value)
+    } else {
+      // Create new
+      const payload = { ...form.value }
+      if (props.dutySlipId) payload.duty_slip = props.dutySlipId
+      res = await api.post('/entries/', payload)
+    }
     emit('saved', res.data)
     emit('close')
   } catch (e) {
-    error.value = JSON.stringify(e.response?.data || 'Something went wrong')
+    error.value = e.response?.data
+      ? Object.values(e.response.data).flat().join(' ')
+      : 'Something went wrong'
   } finally {
     submitting.value = false
   }
