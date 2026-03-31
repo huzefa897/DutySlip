@@ -1,3 +1,146 @@
-from django.shortcuts import render
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Company, Car, DutySlip, DutySlipEntry
+from .serializers import (
+    CompanySerializer, CarSerializer,
+    DutySlipSerializer, DutySlipEntrySerializer
+)
+from .services import compute_entry, compute_duty_slip_total
 
-# Create your views here.
+
+# ── Companies ────────────────────────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+def company_list(request):
+    if request.method == 'GET':
+        companies = Company.objects.all()
+        return Response(CompanySerializer(companies, many=True).data)
+
+    serializer = CompanySerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ── Cars ─────────────────────────────────────────────────────────────────────
+
+@api_view(['GET'])
+def car_list(request):
+    cars = Car.objects.all()
+    return Response(CarSerializer(cars, many=True).data)
+
+
+# ── DutySlipEntry ─────────────────────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+def entry_list(request):
+    if request.method == 'GET':
+        entries = DutySlipEntry.objects.all().order_by('-date')
+        return Response(DutySlipEntrySerializer(entries, many=True).data)
+
+    serializer = DutySlipEntrySerializer(data=request.data)
+    if serializer.is_valid():
+        entry = serializer.save()
+        entry = compute_entry(entry)
+        entry.save()
+        return Response(DutySlipEntrySerializer(entry).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def entry_detail(request, pk):
+    try:
+        entry = DutySlipEntry.objects.get(pk=pk)
+    except DutySlipEntry.DoesNotExist:
+        return Response({'error': 'Entry not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        return Response(DutySlipEntrySerializer(entry).data)
+
+    if request.method == 'PUT':
+        serializer = DutySlipEntrySerializer(entry, data=request.data)
+        if serializer.is_valid():
+            entry = serializer.save()
+            entry = compute_entry(entry)
+            entry.save()
+            # recompute duty slip total if entry is assigned
+            if entry.duty_slip:
+                compute_duty_slip_total(entry.duty_slip)
+            return Response(DutySlipEntrySerializer(entry).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'DELETE':
+        duty_slip = entry.duty_slip
+        entry.delete()
+        if duty_slip:
+            compute_duty_slip_total(duty_slip)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# ── DutySlip ──────────────────────────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+def dutyslip_list(request):
+    if request.method == 'GET':
+        slips = DutySlip.objects.all().order_by('-created_at')
+        return Response(DutySlipSerializer(slips, many=True).data)
+
+    serializer = DutySlipSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'DELETE'])
+def dutyslip_detail(request, pk):
+    try:
+        slip = DutySlip.objects.get(pk=pk)
+    except DutySlip.DoesNotExist:
+        return Response({'error': 'DutySlip not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        return Response(DutySlipSerializer(slip).data)
+
+    if request.method == 'DELETE':
+        slip.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+def assign_entries_to_dutyslip(request, pk):
+    """
+    Assign a list of entry IDs to a DutySlip.
+    Body: { "entry_ids": [1, 2, 3] }
+    """
+    try:
+        slip = DutySlip.objects.get(pk=pk)
+    except DutySlip.DoesNotExist:
+        return Response({'error': 'DutySlip not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    entry_ids = request.data.get('entry_ids', [])
+    entries = DutySlipEntry.objects.filter(id__in=entry_ids)
+    entries.update(duty_slip=slip)
+    compute_duty_slip_total(slip)
+
+    return Response(DutySlipSerializer(slip).data)
+
+
+@api_view(['POST'])
+def remove_entry_from_dutyslip(request, pk, entry_id):
+    """
+    Remove a single entry from a DutySlip (sets duty_slip to NULL).
+    """
+    try:
+        slip = DutySlip.objects.get(pk=pk)
+        entry = DutySlipEntry.objects.get(pk=entry_id, duty_slip=slip)
+    except (DutySlip.DoesNotExist, DutySlipEntry.DoesNotExist):
+        return Response({'error': 'Not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    entry.duty_slip = None
+    entry.save()
+    compute_duty_slip_total(slip)
+
+    return Response(DutySlipSerializer(slip).data)
