@@ -1,12 +1,40 @@
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Company, Car, DutySlip, DutySlipEntry
+from .models import Company, Car, DutySlip, DutySlipEntry, BusinessSettings
 from .serializers import (
     CompanySerializer, CarSerializer,
-    DutySlipSerializer, DutySlipEntrySerializer
+    DutySlipSerializer, DutySlipEntrySerializer,
+    BusinessSettingsSerializer
 )
 from .services import compute_entry, compute_duty_slip_total
+
+# ── Business Settings ─────────────────────────────────────────────────────────
+@api_view(['GET'])
+def business_settings(request):
+    settings = BusinessSettings.objects.first()
+    if not settings:
+        return Response({'error': 'Business settings not configured'}, status=404)
+    return Response(BusinessSettingsSerializer(settings).data)
+
+@api_view(['GET', 'PATCH'])
+def business_settings(request):
+    settings_obj = BusinessSettings.objects.first()
+    if not settings_obj:
+        return Response({'error': 'Business settings not configured'}, status=404)
+
+    if request.method == 'GET':
+        return Response(BusinessSettingsSerializer(settings_obj).data)
+
+    # PATCH — partial update
+    serializer = BusinessSettingsSerializer(
+        settings_obj, data=request.data, partial=True
+    )
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 # ── Companies ────────────────────────────────────────────────────────────────
@@ -26,10 +54,45 @@ def company_list(request):
 
 # ── Cars ─────────────────────────────────────────────────────────────────────
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
 def car_list(request):
-    cars = Car.objects.all()
-    return Response(CarSerializer(cars, many=True).data)
+    if request.method == 'GET':
+        cars = Car.objects.all()
+        return Response(CarSerializer(cars, many=True).data)
+
+    serializer = CarSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+def car_detail(request, pk):
+    try:
+        car = Car.objects.get(pk=pk)
+    except Car.DoesNotExist:
+        return Response({'error': 'Car not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        return Response(CarSerializer(car).data)
+
+    if request.method == 'PUT':
+        serializer = CarSerializer(car, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    if request.method == 'DELETE':
+        try:
+            car.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception:
+            return Response(
+                {'error': 'Cannot delete — car is used in existing entries.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 # ── DutySlipEntry ─────────────────────────────────────────────────────────────

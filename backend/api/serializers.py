@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Company, Car, DutySlip, DutySlipEntry
+from .models import Company, Car, DutySlip, DutySlipEntry, BusinessSettings
 
 
 class CompanySerializer(serializers.ModelSerializer):
@@ -39,3 +39,8 @@ class DutySlipSerializer(serializers.ModelSerializer):
         model = DutySlip
         fields = '__all__'
         read_only_fields = ['grand_total']
+
+class BusinessSettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BusinessSettings
+        fields = '__all__'

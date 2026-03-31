@@ -1,5 +1,11 @@
 <template>
   <div class="max-w-2xl">
+    <button
+      @click="$router.back()"
+      class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+    >
+      ← Back
+    </button>
     <h1 class="text-xl font-mono font-bold text-white mb-6">New Duty Slip</h1>
 
     <form @submit.prevent="submit" class="space-y-5">

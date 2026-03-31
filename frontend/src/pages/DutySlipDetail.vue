@@ -3,7 +3,12 @@
 
     <!-- ── SCREEN VIEW ─────────────────────────────────────────────── -->
     <div class="no-print">
-
+      <button
+        @click="$router.back()"
+        class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+      >
+        ← Back
+      </button>
       <!-- Header -->
       <div class="flex items-start justify-between mb-8">
         <div>
@@ -72,9 +77,9 @@
                 <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.total_kms }}</td>
                 <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.extra_kms }}</td>
                 <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.extra_hrs }}h</td>
-                <td class="py-3 pr-4 font-mono text-gray-300">${{ entry.driver_bhatta }}</td>
-                <td class="py-3 pr-4 font-mono text-gray-300">${{ entry.parking }}</td>
-                <td class="py-3 pr-4 font-mono text-amber-400">${{ entry.row_total }}</td>
+                <td class="py-3 pr-4 font-mono text-gray-300">{{ currencySymbol }}{{ entry.driver_bhatta }}</td>
+                <td class="py-3 pr-4 font-mono text-gray-300">{{ currencySymbol }}{{ entry.parking }}</td>
+                <td class="py-3 pr-4 font-mono text-amber-400">{{ currencySymbol }}{{ entry.row_total }}</td>
                 <td class="py-3">
                   <button
                     @click="removeEntry(entry.id)"
@@ -116,7 +121,7 @@
               class="accent-amber-400"
             />
             <span class="font-mono text-sm text-gray-300">
-              {{ entry.date }} · {{ entry.car_name }} · ${{ entry.row_total }}
+              {{ entry.date }} · {{ entry.car_name }} · {{ currencySymbol }}{{ entry.row_total }}
             </span>
           </label>
         </div>
@@ -130,17 +135,38 @@
     <div class="print-only invoice">
 
       <!-- Invoice Header -->
-      <div class="invoice-header">
-        <div>
-          <h1 class="invoice-company">{{ slip.company_name }}</h1>
-          <p class="invoice-abn">ABN: {{ companyAbn }}</p>
-        </div>
-        <div class="invoice-title-block">
-          <h2 class="invoice-title">INVOICE</h2>
-          <p class="invoice-meta">Date: {{ today }}</p>
-          <p class="invoice-meta">Ref: #{{ slip.id }}</p>
-        </div>
-      </div>
+      <!-- Invoice Header -->
+<!-- Letterhead -->
+<div class="letterhead">
+  <div class="letterhead-left">
+    <div class="letterhead-brand">
+      <img
+        v-if="bizSettings?.logo"
+        :src="`http://127.0.0.1:8000${bizSettings.logo}`"
+        class="letterhead-logo"
+        alt="Logo"
+      />
+      <h1 class="letterhead-name">{{ bizSettings?.name }}</h1>
+    </div>
+    <div class="letterhead-details">
+      <p class="letterhead-detail">{{ bizSettings?.address }}</p>
+      <p class="letterhead-detail">{{ bizSettings?.phone }} · {{ bizSettings?.email }}</p>
+      <p class="letterhead-detail">ABN: {{ bizSettings?.abn }}</p>
+    </div>
+  </div>
+  <div class="invoice-title-block">
+    <h2 class="invoice-title">INVOICE</h2>
+    <p class="invoice-meta">Date: {{ today }}</p>
+    <p class="invoice-meta">Ref: #{{ slip.id }}</p>
+  </div>
+</div>
+
+<!-- Billed To -->
+<div class="invoice-party">
+  <p class="invoice-label">Billed To</p>
+  <p class="invoice-party-name">{{ slip.company_name }}</p>
+  <p class="invoice-party-sub">{{ slip.party_name }}</p>
+</div>
 
       <!-- Party Info -->
       <div class="invoice-party">
@@ -177,21 +203,21 @@
             <td>{{ entry.end_kms }}</td>
             <td>{{ entry.total_kms }}</td>
             <td>{{ entry.extra_kms }}</td>
-            <td>${{ entry.extra_kms_amount }}</td>
+            <td>{{ currencySymbol }}{{ entry.extra_kms_amount }}</td>
             <td>{{ entry.start_time }}</td>
             <td>{{ entry.end_time }}</td>
             <td>{{ entry.extra_hrs }}</td>
-            <td>${{ entry.extra_hrs_amount }}</td>
-            <td>${{ getBaseRate(entry.car) }}</td>
-            <td>${{ entry.driver_bhatta }}</td>
-            <td>${{ entry.parking }}</td>
-            <td>${{ entry.row_total }}</td>
+            <td>{{ currencySymbol }}{{ entry.extra_hrs_amount }}</td>
+            <td>{{ currencySymbol }}{{ getBaseRate(entry.car) }}</td>
+            <td>{{ currencySymbol }}{{ entry.driver_bhatta }}</td>
+            <td>{{ currencySymbol }}{{ entry.parking }}</td>
+            <td>{{ currencySymbol }}{{ entry.row_total }}</td>
           </tr>
         </tbody>
         <tfoot>
           <tr>
             <td colspan="14" class="grand-total-label">GRAND TOTAL</td>
-            <td class="grand-total-value">${{ slip.grand_total }}</td>
+            <td class="grand-total-value">{{ currencySymbol }}{{ slip.grand_total }}</td>
           </tr>
         </tfoot>
       </table>
@@ -224,6 +250,8 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api'
 import EntryFormModal from '../components/EntryFormModal.vue'
+import { notify } from '../store/notification'
+import { currencySymbol } from '../store/currency'
 
 const route = useRoute()
 const slip = ref(null)
@@ -232,6 +260,8 @@ const selected = ref([])
 const showModal = ref(false)
 const companyAbn = ref('')
 const cars = ref([])
+const bizSettings = ref(null)
+
 
 const today = new Date().toLocaleDateString('en-AU', {
   day: '2-digit', month: 'long', year: 'numeric'
@@ -266,6 +296,8 @@ async function removeEntry(entryId) {
   await api.post(`/dutyslips/${route.params.id}/remove/${entryId}/`)
   await fetchSlip()
   await fetchUnassigned()
+notify('Entry removed from duty slip.')
+
 }
 
 async function bulkAssign() {
@@ -276,11 +308,13 @@ async function bulkAssign() {
   selected.value = []
   await fetchSlip()
   await fetchUnassigned()
+notify(`${selected.value.length + 1} entries assigned.`)
 }
 
 async function onEntrySaved() {
   await fetchSlip()
   await fetchUnassigned()
+  notify('Entry saved.')
 }
 
 onMounted(async () => {
@@ -288,6 +322,8 @@ onMounted(async () => {
   cars.value = carsRes.data
   await fetchSlip()
   await fetchUnassigned()
+  const bizRes = await api.get('/settings/')
+  bizSettings.value = bizRes.data
 })
 </script>
 
@@ -302,8 +338,9 @@ onMounted(async () => {
 }
 
 /* ── Invoice Styles ── */
+
 .invoice {
-  font-family: 'Georgia', serif;
+  font-family: 'Montserrat', sans-serif;
   color: #111;
   padding: 40px;
   max-width: 100%;
@@ -323,6 +360,29 @@ onMounted(async () => {
   font-weight: bold;
   letter-spacing: 1px;
   text-transform: uppercase;
+}
+.invoice-from {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.invoice-logo {
+  max-height: 70px;
+  max-width: 200px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.invoice-detail {
+  font-size: 11px;
+  color: #444;
+}
+
+.invoice-party-sub {
+  font-size: 13px;
+  color: #444;
+  margin-top: 2px;
 }
 
 .invoice-abn {
@@ -417,4 +477,50 @@ onMounted(async () => {
   padding-top: 16px;
   margin-top: 16px;
 }
+.letterhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #111;
+}
+
+.letterhead-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.letterhead-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.letterhead-logo {
+  max-height: 52px;
+  max-width: 52px;
+  object-fit: contain;
+}
+
+.letterhead-name {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #111;
+  margin: 0;
+}
+
+.letterhead-details {
+  padding-left: 4px;
+}
+
+.letterhead-detail {
+  font-size: 11px;
+  color: #555;
+  margin: 2px 0;
+}
+
 </style>

@@ -1,6 +1,12 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-6">
+        <button
+          @click="$router.back()"
+          class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+        >
+          ← Back
+        </button>
       <h1 class="text-xl font-mono font-bold text-white">Entries</h1>
       <router-link
         to="/entries/create"
@@ -46,7 +52,7 @@
             <td class="py-3 pr-4 text-gray-300">{{ entry.car_name }}</td>
             <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.total_kms }}</td>
             <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.extra_hrs }}h extra</td>
-            <td class="py-3 pr-4 font-mono text-amber-400">${{ entry.row_total }}</td>
+            <td class="py-3 pr-4 font-mono text-amber-400">{{ currencySymbol }}{{ entry.row_total }}</td>
             <td class="py-3 pr-4">
               <span
                 v-if="entry.duty_slip"
@@ -74,6 +80,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../api'
+import { currencySymbol } from '../store/currency'
 
 const entries = ref([])
 const loading = ref(true)

@@ -1,5 +1,11 @@
 <template>
   <div class="max-w-2xl">
+    <button
+      @click="$router.back()"
+      class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+    >
+      ← Back
+    </button>
     <h1 class="text-xl font-mono font-bold text-white mb-6">New Entry</h1>
 
     <form @submit.prevent="submit" class="space-y-5">
@@ -127,6 +133,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
+import { notify } from '../store/notification'
 
 const router = useRouter()
 const cars = ref([])
@@ -167,8 +174,9 @@ async function submit() {
   try {
     await api.post('/entries/', form.value)
     router.push('/')
+    notify('Entry created successfully.')
   } catch (e) {
-    error.value = JSON.stringify(e.response?.data || 'Something went wrong')
+    notify('Failed to create entry.', 'error')
   } finally {
     submitting.value = false
   }

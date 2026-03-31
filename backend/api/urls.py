@@ -7,6 +7,7 @@ urlpatterns = [
 
     # Cars
     path('cars/', views.car_list),
+    path('cars/<int:pk>/', views.car_detail),
 
     # Entries
     path('entries/', views.entry_list),
@@ -17,4 +18,8 @@ urlpatterns = [
     path('dutyslips/<int:pk>/', views.dutyslip_detail),
     path('dutyslips/<int:pk>/assign/', views.assign_entries_to_dutyslip),
     path('dutyslips/<int:pk>/remove/<int:entry_id>/', views.remove_entry_from_dutyslip),
+    
+    # Business Settings
+    path('settings/', views.business_settings),
+    
 ]

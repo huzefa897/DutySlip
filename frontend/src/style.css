@@ -1,7 +1,25 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-:root {
+
+@media print {
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+   }
+
+/*:root {
   --text: #6b6375;
   --text-h: #08060d;
   --bg: #fff;
@@ -296,4 +314,4 @@ code {
     right: 0;
     border-right-color: var(--border);
   }
-}
+} */

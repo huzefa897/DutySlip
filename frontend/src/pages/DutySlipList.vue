@@ -1,6 +1,12 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-6">
+        <button
+  @click="$router.back()"
+  class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+>
+  ← Back
+</button>   
       <h1 class="text-xl font-mono font-bold text-white">Duty Slips</h1>
       <router-link
         to="/dutyslips/create"
@@ -31,7 +37,7 @@
             </p>
           </div>
           <div class="text-right">
-            <p class="text-amber-400 font-mono font-bold">${{ slip.grand_total }}</p>
+            <p class="text-amber-400 font-mono font-bold">{{ currencySymbol }}{{ slip.grand_total }}</p>
             <p class="text-gray-600 text-xs font-mono mt-1">
               {{ slip.entries?.length ?? 0 }} entries
             </p>
@@ -45,6 +51,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../api'
+import { currencySymbol } from '../store/currency'
 
 const slips = ref([])
 const loading = ref(true)
