@@ -1,0 +1,420 @@
+<template>
+  <div v-if="slip">
+
+    <!-- ── SCREEN VIEW ─────────────────────────────────────────────── -->
+    <div class="no-print">
+
+      <!-- Header -->
+      <div class="flex items-start justify-between mb-8">
+        <div>
+          <h1 class="text-xl font-mono font-bold text-white">{{ slip.party_name }}</h1>
+          <p class="text-gray-500 text-sm font-mono mt-1">
+            {{ slip.company_name }} · Created {{ slip.created_at?.slice(0, 10) }}
+          </p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button
+            @click="printInvoice"
+            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+          >
+            🖨 Print Invoice
+          </button>
+          <div class="text-right">
+            <p class="text-xs text-gray-500 font-mono mb-1">Grand Total</p>
+            <p class="text-2xl font-mono font-bold text-amber-400">${{ slip.grand_total }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assigned Entries Table -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-mono text-gray-400 uppercase tracking-wider">Entries</h2>
+          <button
+            @click="showModal = true"
+            class="bg-amber-400 text-gray-950 text-xs font-bold px-3 py-1.5 rounded hover:bg-amber-300 transition-colors"
+          >
+            + Add Entry
+          </button>
+        </div>
+
+        <p v-if="slip.entries?.length === 0" class="text-gray-600 text-sm">
+          No entries yet — add one above.
+        </p>
+
+        <div v-else class="overflow-x-auto">
+          <table class="w-full text-sm border-collapse">
+            <thead>
+              <tr class="border-b border-gray-800 text-gray-400 text-left">
+                <th class="py-3 pr-4 font-mono font-normal">Date</th>
+                <th class="py-3 pr-4 font-mono font-normal">Car</th>
+                <th class="py-3 pr-4 font-mono font-normal">Start KMs</th>
+                <th class="py-3 pr-4 font-mono font-normal">End KMs</th>
+                <th class="py-3 pr-4 font-mono font-normal">Total KMs</th>
+                <th class="py-3 pr-4 font-mono font-normal">Extra KMs</th>
+                <th class="py-3 pr-4 font-mono font-normal">Extra Hrs</th>
+                <th class="py-3 pr-4 font-mono font-normal">Bhatta</th>
+                <th class="py-3 pr-4 font-mono font-normal">Parking</th>
+                <th class="py-3 pr-4 font-mono font-normal">Row Total</th>
+                <th class="py-3 font-mono font-normal"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="entry in slip.entries"
+                :key="entry.id"
+                class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors"
+              >
+                <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.date }}</td>
+                <td class="py-3 pr-4 text-gray-300">{{ entry.car_name }}</td>
+                <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.start_kms }}</td>
+                <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.end_kms }}</td>
+                <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.total_kms }}</td>
+                <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.extra_kms }}</td>
+                <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.extra_hrs }}h</td>
+                <td class="py-3 pr-4 font-mono text-gray-300">${{ entry.driver_bhatta }}</td>
+                <td class="py-3 pr-4 font-mono text-gray-300">${{ entry.parking }}</td>
+                <td class="py-3 pr-4 font-mono text-amber-400">${{ entry.row_total }}</td>
+                <td class="py-3">
+                  <button
+                    @click="removeEntry(entry.id)"
+                    class="text-xs text-red-500 hover:text-red-400 transition-colors"
+                  >
+                    Remove
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Bulk Assign Unassigned Entries -->
+      <div class="border-t border-gray-800 pt-6" v-if="unassigned.length > 0">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-mono text-gray-400 uppercase tracking-wider">
+            Unassigned Entries for {{ slip.party_name }}
+          </h2>
+          <button
+            @click="bulkAssign"
+            :disabled="selected.length === 0"
+            class="bg-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-30"
+          >
+            Assign Selected ({{ selected.length }})
+          </button>
+        </div>
+        <div class="space-y-2">
+          <label
+            v-for="entry in unassigned"
+            :key="entry.id"
+            class="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded px-4 py-3 cursor-pointer hover:border-gray-600 transition-colors"
+          >
+            <input
+              type="checkbox"
+              :value="entry.id"
+              v-model="selected"
+              class="accent-amber-400"
+            />
+            <span class="font-mono text-sm text-gray-300">
+              {{ entry.date }} · {{ entry.car_name }} · ${{ entry.row_total }}
+            </span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+    <!-- ── END SCREEN VIEW ─────────────────────────────────────────── -->
+
+
+    <!-- ── PRINT / INVOICE VIEW ───────────────────────────────────── -->
+    <div class="print-only invoice">
+
+      <!-- Invoice Header -->
+      <div class="invoice-header">
+        <div>
+          <h1 class="invoice-company">{{ slip.company_name }}</h1>
+          <p class="invoice-abn">ABN: {{ companyAbn }}</p>
+        </div>
+        <div class="invoice-title-block">
+          <h2 class="invoice-title">INVOICE</h2>
+          <p class="invoice-meta">Date: {{ today }}</p>
+          <p class="invoice-meta">Ref: #{{ slip.id }}</p>
+        </div>
+      </div>
+
+      <!-- Party Info -->
+      <div class="invoice-party">
+        <p class="invoice-label">Billed To</p>
+        <p class="invoice-party-name">{{ slip.party_name }}</p>
+      </div>
+
+      <!-- Entries Table -->
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Car</th>
+            <th>Start KMs</th>
+            <th>End KMs</th>
+            <th>Total KMs</th>
+            <th>Extra KMs</th>
+            <th>Extra KMs ($)</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Extra Hrs</th>
+            <th>Extra Hrs ($)</th>
+            <th>Base Rate</th>
+            <th>Bhatta</th>
+            <th>Parking</th>
+            <th>Row Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="entry in slip.entries" :key="entry.id">
+            <td>{{ entry.date }}</td>
+            <td>{{ entry.car_name }}</td>
+            <td>{{ entry.start_kms }}</td>
+            <td>{{ entry.end_kms }}</td>
+            <td>{{ entry.total_kms }}</td>
+            <td>{{ entry.extra_kms }}</td>
+            <td>${{ entry.extra_kms_amount }}</td>
+            <td>{{ entry.start_time }}</td>
+            <td>{{ entry.end_time }}</td>
+            <td>{{ entry.extra_hrs }}</td>
+            <td>${{ entry.extra_hrs_amount }}</td>
+            <td>${{ getBaseRate(entry.car) }}</td>
+            <td>${{ entry.driver_bhatta }}</td>
+            <td>${{ entry.parking }}</td>
+            <td>${{ entry.row_total }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="14" class="grand-total-label">GRAND TOTAL</td>
+            <td class="grand-total-value">${{ slip.grand_total }}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- Footer -->
+      <div class="invoice-footer">
+        <p>Thank you for your business.</p>
+      </div>
+
+    </div>
+    <!-- ── END PRINT VIEW ─────────────────────────────────────────── -->
+
+  </div>
+
+  <p v-else class="text-gray-500 text-sm">Loading...</p>
+
+  <!-- Modal -->
+  <EntryFormModal
+    v-if="showModal"
+    :party-name="slip?.party_name"
+    :company-id="slip?.company"
+    :duty-slip-id="slip?.id"
+    @close="showModal = false"
+    @saved="onEntrySaved"
+  />
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import api from '../api'
+import EntryFormModal from '../components/EntryFormModal.vue'
+
+const route = useRoute()
+const slip = ref(null)
+const unassigned = ref([])
+const selected = ref([])
+const showModal = ref(false)
+const companyAbn = ref('')
+const cars = ref([])
+
+const today = new Date().toLocaleDateString('en-AU', {
+  day: '2-digit', month: 'long', year: 'numeric'
+})
+
+function getBaseRate(carId) {
+  const car = cars.value.find(c => c.id === carId)
+  return car ? car.base_rate : '—'
+}
+
+function printInvoice() {
+  window.print()
+}
+
+async function fetchSlip() {
+  const res = await api.get(`/dutyslips/${route.params.id}/`)
+  slip.value = res.data
+  // fetch company ABN
+  const companyRes = await api.get(`/companies/`)
+  const company = companyRes.data.find(c => c.id === res.data.company)
+  companyAbn.value = company?.abn || ''
+}
+
+async function fetchUnassigned() {
+  const res = await api.get('/entries/')
+  unassigned.value = res.data.filter(
+    e => !e.duty_slip && e.party_name === slip.value.party_name
+  )
+}
+
+async function removeEntry(entryId) {
+  await api.post(`/dutyslips/${route.params.id}/remove/${entryId}/`)
+  await fetchSlip()
+  await fetchUnassigned()
+}
+
+async function bulkAssign() {
+  if (selected.value.length === 0) return
+  await api.post(`/dutyslips/${route.params.id}/assign/`, {
+    entry_ids: selected.value
+  })
+  selected.value = []
+  await fetchSlip()
+  await fetchUnassigned()
+}
+
+async function onEntrySaved() {
+  await fetchSlip()
+  await fetchUnassigned()
+}
+
+onMounted(async () => {
+  const carsRes = await api.get('/cars/')
+  cars.value = carsRes.data
+  await fetchSlip()
+  await fetchUnassigned()
+})
+</script>
+
+<style scoped>
+/* ── Hide print view on screen ── */
+.print-only { display: none; }
+
+/* ── Hide screen view when printing ── */
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+}
+
+/* ── Invoice Styles ── */
+.invoice {
+  font-family: 'Georgia', serif;
+  color: #111;
+  padding: 40px;
+  max-width: 100%;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #111;
+}
+
+.invoice-company {
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.invoice-abn {
+  font-size: 12px;
+  color: #555;
+  margin-top: 4px;
+}
+
+.invoice-title-block {
+  text-align: right;
+}
+
+.invoice-title {
+  font-size: 28px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: #111;
+}
+
+.invoice-meta {
+  font-size: 12px;
+  color: #555;
+  margin-top: 4px;
+}
+
+.invoice-party {
+  margin-bottom: 24px;
+}
+
+.invoice-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.invoice-party-name {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  margin-bottom: 32px;
+}
+
+.invoice-table th {
+  background: #111;
+  color: #fff;
+  padding: 8px 6px;
+  text-align: left;
+  font-weight: normal;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.invoice-table td {
+  padding: 7px 6px;
+  border-bottom: 1px solid #ddd;
+  white-space: nowrap;
+}
+
+.invoice-table tbody tr:nth-child(even) td {
+  background: #f9f9f9;
+}
+
+.grand-total-label {
+  text-align: right;
+  font-weight: bold;
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding-right: 12px;
+  border-top: 2px solid #111;
+  padding-top: 10px;
+}
+
+.grand-total-value {
+  font-weight: bold;
+  font-size: 14px;
+  border-top: 2px solid #111;
+  padding-top: 10px;
+}
+
+.invoice-footer {
+  text-align: center;
+  font-size: 11px;
+  color: #888;
+  border-top: 1px solid #ddd;
+  padding-top: 16px;
+  margin-top: 16px;
+}
+</style>
