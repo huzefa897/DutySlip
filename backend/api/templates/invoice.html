@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@page {
+    size: A4 landscape;
+    margin: 20px 30px;
+  }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Montserrat', sans-serif;
+      color: #111;
+      padding: 40px;
+      font-size: 12px;
+    }
+
+    /* ── Letterhead ── */
+    .letterhead {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #111;
+      margin-bottom: 28px;
+    }
+
+    .letterhead-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .letterhead-logo {
+      max-height: 52px;
+      max-width: 52px;
+      object-fit: contain;
+    }
+
+    .letterhead-name {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .letterhead-detail {
+      font-size: 10px;
+      color: #555;
+      margin: 2px 0;
+    }
+
+    .invoice-title-block {
+      text-align: right;
+    }
+
+    .invoice-title {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 4px;
+    }
+
+    .invoice-meta {
+      font-size: 11px;
+      color: #555;
+      margin-top: 4px;
+    }
+
+    .invoice-status {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 6px;
+      color: #444;
+    }
+
+    /* ── Billed To ── */
+    .billed-to {
+      margin-bottom: 24px;
+    }
+
+    .billed-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+
+    .billed-company {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .billed-party {
+      font-size: 12px;
+      color: #444;
+      margin-top: 2px;
+    }
+
+    /* ── Table ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+      margin-bottom: 28px;
+    }
+
+    thead tr {
+      background: #111;
+      color: #fff;
+    }
+
+    th {
+      padding: 8px 6px;
+      text-align: left;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 7px 6px;
+      border-bottom: 1px solid #e0e0e0;
+      white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) td {
+      background: #f9f9f9;
+    }
+
+    tfoot td {
+      border-top: 2px solid #111;
+      padding-top: 10px;
+      font-weight: 700;
+    }
+
+    .grand-total-label {
+      text-align: right;
+      padding-right: 12px;
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+
+    .grand-total-value {
+      font-size: 13px;
+    }
+
+    /* ── Footer ── */
+    .invoice-footer {
+      text-align: center;
+      font-size: 10px;
+      color: #aaa;
+      border-top: 1px solid #ddd;
+      padding-top: 14px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Letterhead -->
+  <div class="letterhead">
+    <div>
+      <div class="letterhead-brand">
+        {% if settings.logo %}
+          <img src="{{ logo_url }}" class="letterhead-logo" alt="Logo" />
+        {% endif %}
+        <h1 class="letterhead-name">{{ settings.name }}</h1>
+      </div>
+      <p class="letterhead-detail">{{ settings.address }}</p>
+      <p class="letterhead-detail">{{ settings.phone }} · {{ settings.email }}</p>
+      <p class="letterhead-detail">ABN: {{ settings.abn }}</p>
+    </div>
+    <div class="invoice-title-block">
+      <h2 class="invoice-title">INVOICE</h2>
+      <p class="invoice-meta">Date: {{ today }}</p>
+      <p class="invoice-meta">Ref: {{ invoice_ref }}</p>
+      <p class="invoice-status">{{ slip.status }}</p>
+    </div>
+  </div>
+
+  <!-- Billed To -->
+  <div class="billed-to">
+    <p class="billed-label">Billed To</p>
+    <p class="billed-company">{{ slip.company.name }}</p>
+    <p class="billed-party">{{ slip.party_name }}</p>
+  </div>
+
+  <!-- Entries Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Car</th>
+        <th>Start KMs</th>
+        <th>End KMs</th>
+        <th>Total KMs</th>
+        <th>Extra KMs</th>
+        <th>Extra KMs ({{ currency }})</th>
+        <th>Start Time</th>
+        <th>End Time</th>
+        <th>Extra Hrs</th>
+        <th>Extra Hrs ({{ currency }})</th>
+        <th>Base Rate</th>
+        <th>Bhatta</th>
+        <th>Parking</th>
+        <th>Row Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in entries %}
+      <tr>
+        <td>{{ entry.date }}</td>
+        <td>{{ entry.car.name }}</td>
+        <td>{{ entry.start_kms }}</td>
+        <td>{{ entry.end_kms }}</td>
+        <td>{{ entry.total_kms }}</td>
+        <td>{{ entry.extra_kms }}</td>
+        <td>{{ currency }}{{ entry.extra_kms_amount }}</td>
+        <td>{{ entry.start_time }}</td>
+        <td>{{ entry.end_time }}</td>
+        <td>{{ entry.extra_hrs }}</td>
+        <td>{{ currency }}{{ entry.extra_hrs_amount }}</td>
+        <td>{{ currency }}{{ entry.car.base_rate }}</td>
+        <td>{{ currency }}{{ entry.driver_bhatta }}</td>
+        <td>{{ currency }}{{ entry.parking }}</td>
+        <td>{{ currency }}{{ entry.row_total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="14" class="grand-total-label">GRAND TOTAL</td>
+        <td class="grand-total-value">{{ currency }}{{ slip.grand_total }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="invoice-footer">
+    <p>Thank you for your business.</p>
+  </div>
+
+</body>
+</html>
