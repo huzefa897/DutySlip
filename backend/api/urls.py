@@ -34,5 +34,8 @@ urlpatterns = [
   # Backup and Restore Settings
     path('backup/',  views.backup_database),
     path('restore/', views.restore_database),
+    path('backup/github/push/',    views.push_backup_github),
+    path('backup/github/list/',    views.list_github_backups),
+    path('backup/github/restore/', views.restore_from_github),
     
 ]
