@@ -27,7 +27,7 @@ urlpatterns = [
     path('dutyslips/<int:pk>/assign/', views.assign_entries_to_dutyslip),
     path('dutyslips/<int:pk>/remove/<int:entry_id>/', views.remove_entry_from_dutyslip),
     path('dutyslips/<int:pk>/status/', views.update_dutyslip_status),
-
+    path('dutyslips/<int:pk>/pdf/', views.download_invoice_pdf),
     # Business Settings
     path('settings/', views.business_settings),
     
