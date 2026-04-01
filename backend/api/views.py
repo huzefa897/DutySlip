@@ -77,7 +77,19 @@ def company_detail(request, pk):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-
+@api_view(['GET'])
+def company_parties(request, company_id):
+    """
+    Returns distinct party names previously used for a company.
+    """
+    names = (
+        DutySlipEntry.objects
+        .filter(company_id=company_id)
+        .values_list('party_name', flat=True)
+        .distinct()
+        .order_by('party_name')
+    )
+    return Response(list(names))
 
 # ── Company Car Rates ────────────────────────────────────────────────────────
 
