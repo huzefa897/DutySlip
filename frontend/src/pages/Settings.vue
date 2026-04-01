@@ -100,9 +100,87 @@
           {{ submitting ? 'Saving...' : 'Save Settings' }}
         </button>
       </div>
+<!-- Backup & Restore -->
+<div class="border-t border-gray-800 pt-6 mt-6">
+  <h2 class="text-sm font-mono font-bold text-white mb-1">Backup & Restore</h2>
+  <p class="text-xs text-gray-500 font-mono mb-4">
+    Export all your data as a JSON file, or restore from a previous backup.
+  </p>
 
+  <div class="space-y-4">
+
+    <!-- Export -->
+    <div class="bg-gray-900 border border-gray-800 rounded p-4">
+      <p class="text-sm text-white font-medium mb-1">Export Backup</p>
+      <p class="text-xs text-gray-500 font-mono mb-3">
+        Downloads a JSON file containing all companies, cars, duty slips and entries.
+      </p>
+      
+       <a href="http://127.0.0.1:8000/api/backup/"
+        download
+        class="inline-block bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+      >
+        ⬇ Download Backup
+      </a>
+    </div>
+
+    <!-- Import -->
+    <div class="bg-gray-900 border border-gray-800 rounded p-4">
+      <p class="text-sm text-white font-medium mb-1">Restore from Backup</p>
+      <p class="text-xs text-gray-500 font-mono mb-1">
+        Upload a previously exported JSON backup file.
+      </p>
+      <p class="text-xs text-red-400 font-mono mb-3">
+        ⚠ Warning — this will replace ALL existing data.
+      </p>
+
+      <div class="flex items-center gap-3">
+        <input
+          type="file"
+          accept=".json"
+          @change="onBackupFileChange"
+          class="hidden"
+          ref="backupFileInput"
+        />
+        <button
+          type="button"
+          @click="$refs.backupFileInput.click()"
+          class="bg-gray-800 border border-gray-700 text-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+        >
+          Choose File
+        </button>
+        <span class="text-xs text-gray-500 font-mono">
+          {{ backupFile ? backupFile.name : 'No file chosen' }}
+        </span>
+        <button
+          v-if="backupFile"
+          type="button"
+          @click="restoreBackup"
+          :disabled="restoring"
+          class="bg-red-700 hover:bg-red-600 text-white text-sm font-bold px-4 py-2 rounded transition-colors disabled:opacity-50"
+        >
+          {{ restoring ? 'Restoring...' : 'Restore' }}
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Confirm restore dialog -->
+<ConfirmDialog
+  :visible="confirmVisible"
+  :title="confirmTitle"
+  :message="confirmMessage"
+  :confirm-label="confirmLabel"
+  :destructive="destructive"
+  @confirm="onConfirm"
+  @cancel="onCancel"
+/>
     </form>
   </div>
+
+  
 </template>
 
 <script setup>
@@ -111,13 +189,22 @@ import api from '../api'
 import { notify } from '../store/notification'
 import { setCurrency } from '../store/currency'
 
+
 const loading = ref(true)
 const submitting = ref(false)
 const currentLogo = ref('')
 const logoPreview = ref('')
 const logoFile = ref(null)
 const fileInput = ref(null)
+import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { useConfirm } from '../composables/useConfirm'
 
+const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
+        confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
+
+const backupFile = ref(null)
+const backupFileInput = ref(null)
+const restoring = ref(false)
 const form = ref({
   name: '',
   abn: '',
@@ -184,4 +271,36 @@ onMounted(async () => {
     loading.value = false
   }
 })
+
+function onBackupFileChange(e) {
+  backupFile.value = e.target.files[0] || null
+}
+
+async function restoreBackup() {
+  const ok = await ask({
+    title: 'Restore Backup',
+    message: 'This will permanently delete ALL existing data and replace it with the backup. This cannot be undone. Are you absolutely sure?',
+    confirmLabel: 'Yes, Restore',
+    destructive: true,
+  })
+  if (!ok) return
+
+  restoring.value = true
+  try {
+    const text = await backupFile.value.text()
+    await api.post('/restore/', JSON.parse(text), {
+      headers: { 'Content-Type': 'application/json' }
+    })
+    notify('Backup restored successfully. Reloading...')
+    setTimeout(() => window.location.reload(), 1500)
+  } catch (e) {
+    notify(
+      e.response?.data?.error || 'Restore failed. Make sure the file is a valid backup.',
+      'error'
+    )
+  } finally {
+    restoring.value = false
+    backupFile.value = null
+  }
+}
 </script>

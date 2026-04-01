@@ -1,4 +1,4 @@
-import { notify } from '../store/notification'
+
 
 <template>
   <div>
@@ -157,7 +157,15 @@ import { notify } from '../store/notification'
         </form>
       </div>
     </div>
-
+<ConfirmDialog
+  :visible="confirmVisible"
+  :title="confirmTitle"
+  :message="confirmMessage"
+  :confirm-label="confirmLabel"
+  :destructive="destructive"
+  @confirm="onConfirm"
+  @cancel="onCancel"
+/>
   </div>
 </template>
 
@@ -165,6 +173,12 @@ import { notify } from '../store/notification'
 import { ref, onMounted } from 'vue'
 import api from '../api'
 import { currencySymbol } from '../store/currency'
+import { notify } from '../store/notification'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { useConfirm } from '../composables/useConfirm'
+
+const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
+        confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
 
 const cars = ref([])
 const loading = ref(true)
@@ -240,7 +254,12 @@ async function submit() {
 }
 
 async function deleteCar(car) {
-  if (!confirm(`Delete "${car.name}"?`)) return
+  const ok = await ask({
+    title: `Delete "${car.name}"`,
+    message: `This will permanently delete the ${car.name}. This cannot be undone.`,
+    confirmLabel: 'Delete',
+  })
+  if (!ok) return
   try {
     await api.delete(`/cars/${car.id}/`)
     cars.value = cars.value.filter(c => c.id !== car.id)

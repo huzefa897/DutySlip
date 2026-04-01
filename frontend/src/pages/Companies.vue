@@ -185,7 +185,15 @@
         </form>
       </div>
     </div>
-
+<ConfirmDialog
+  :visible="confirmVisible"
+  :title="confirmTitle"
+  :message="confirmMessage"
+  :confirm-label="confirmLabel"
+  :destructive="destructive"
+  @confirm="onConfirm"
+  @cancel="onCancel"
+/>
   </div>
 </template>
 
@@ -194,7 +202,11 @@ import { ref, onMounted } from 'vue'
 import api from '../api'
 import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { useConfirm } from '../composables/useConfirm'
 
+const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
+        confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
 const companies = ref([])
 const cars = ref([])
 const loading = ref(true)
@@ -298,7 +310,12 @@ async function submit() {
 }
 
 async function deleteCompany(company) {
-  if (!confirm(`Delete "${company.name}"?`)) return
+  const ok = await ask({
+    title: `Delete "${company.name}"`,
+    message: `This will permanently delete ${company.name} and all associated data. This cannot be undone.`,
+    confirmLabel: 'Delete',
+  })
+  if (!ok) return
   try {
     await api.delete(`/companies/${company.id}/`)
     companies.value = companies.value.filter(c => c.id !== company.id)

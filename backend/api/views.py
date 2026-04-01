@@ -364,3 +364,99 @@ def download_invoice_pdf(request, pk):
     response = HttpResponse(pdf, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="invoice-{invoice_ref}.pdf"'
     return response
+
+
+# ── BackUp
+# ──────────────────────────────────────────────────────────────────
+import json
+from django.http import JsonResponse
+from django.core import serializers as django_serializers
+
+@api_view(['GET'])
+def backup_database(request):
+    """
+    Exports all business data as a JSON backup file.
+    """
+    from .models import Company, Car, DutySlip, DutySlipEntry, BusinessSettings, CompanyCarRate
+
+    data = {
+        'version': '1.0',
+        'exported_at': datetime.datetime.now().isoformat(),
+        'companies': list(Company.objects.values()),
+        'cars': list(Car.objects.values()),
+        'company_car_rates': list(CompanyCarRate.objects.values()),
+        'duty_slips': list(DutySlip.objects.values()),
+        'entries': list(DutySlipEntry.objects.values()),
+        'business_settings': list(BusinessSettings.objects.values()),
+    }
+
+    response = JsonResponse(data, json_dumps_params={'indent': 2})
+    response['Content-Disposition'] = f'attachment; filename="dutyslip-backup-{datetime.date.today()}.json"'
+    return response
+
+
+@api_view(['POST'])
+def restore_database(request):
+    """
+    Restores data from a JSON backup file.
+    Clears existing data and replaces with backup.
+    """
+    from .models import Company, Car, DutySlip, DutySlipEntry, BusinessSettings, CompanyCarRate
+
+    try:
+        backup = json.loads(request.body)
+    except json.JSONDecodeError:
+        return Response({'error': 'Invalid JSON file.'}, status=400)
+
+    if backup.get('version') != '1.0':
+        return Response({'error': 'Incompatible backup version.'}, status=400)
+
+    try:
+        # ── Clear existing data in correct order ──────────────────
+        DutySlipEntry.objects.all().delete()
+        DutySlip.objects.all().delete()
+        CompanyCarRate.objects.all().delete()
+        Company.objects.all().delete()
+        Car.objects.all().delete()
+        BusinessSettings.objects.all().delete()
+
+        # ── Restore in correct order (respect FK dependencies) ────
+
+        # Companies first
+        for row in backup.get('companies', []):
+            Company.objects.create(**row)
+
+        # Cars
+        for row in backup.get('cars', []):
+            Car.objects.create(**row)
+
+        # Company car rates
+        for row in backup.get('company_car_rates', []):
+            CompanyCarRate.objects.create(**row)
+
+        # Duty slips
+        for row in backup.get('duty_slips', []):
+            DutySlip.objects.create(**row)
+
+        # Entries
+        for row in backup.get('entries', []):
+            DutySlipEntry.objects.create(**row)
+
+        # Business settings
+        for row in backup.get('business_settings', []):
+            # don't restore logo path — it won't exist on new machine
+            row.pop('logo', None)
+            BusinessSettings.objects.create(**row)
+
+        return Response({
+            'message': 'Restore successful.',
+            'summary': {
+                'companies':    len(backup.get('companies', [])),
+                'cars':         len(backup.get('cars', [])),
+                'duty_slips':   len(backup.get('duty_slips', [])),
+                'entries':      len(backup.get('entries', [])),
+            }
+        })
+
+    except Exception as e:
+        return Response({'error': f'Restore failed: {str(e)}'}, status=500)
