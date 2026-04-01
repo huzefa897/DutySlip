@@ -31,6 +31,13 @@
           </p>
         </div>
         <div class="flex items-center gap-3">
+          <a :href="`http://127.0.0.1:8000/api/dutyslips/${slip.id}/pdf/`"
+  target="_blank"
+  download
+  class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+>
+  ⬇ Download PDF
+</a>
           <button
             @click="printInvoice"
             class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"

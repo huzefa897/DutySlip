@@ -10,6 +10,9 @@ urlpatterns = [
     path('companies/<int:company_id>/rates/', views.company_car_rates),
     path('companies/<int:company_id>/rates/<int:car_id>/', views.delete_company_car_rate),
 
+    # Company Parties
+    path('companies/<int:company_id>/parties/', views.company_parties),
+
     # Cars
     path('cars/', views.car_list),
     path('cars/<int:pk>/', views.car_detail),
@@ -24,7 +27,7 @@ urlpatterns = [
     path('dutyslips/<int:pk>/assign/', views.assign_entries_to_dutyslip),
     path('dutyslips/<int:pk>/remove/<int:entry_id>/', views.remove_entry_from_dutyslip),
     path('dutyslips/<int:pk>/status/', views.update_dutyslip_status),
-
+    path('dutyslips/<int:pk>/pdf/', views.download_invoice_pdf),
     # Business Settings
     path('settings/', views.business_settings),
     

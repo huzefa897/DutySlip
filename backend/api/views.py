@@ -8,6 +8,10 @@ from .serializers import (
     BusinessSettingsSerializer, CompanyCarRateSerializer
 )
 from .services import compute_entry, compute_duty_slip_total
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from weasyprint import HTML
+import datetime
 
 # ── Business Settings ─────────────────────────────────────────────────────────
 @api_view(['GET'])
@@ -77,7 +81,19 @@ def company_detail(request, pk):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-
+@api_view(['GET'])
+def company_parties(request, company_id):
+    """
+    Returns distinct party names previously used for a company.
+    """
+    names = (
+        DutySlipEntry.objects
+        .filter(company_id=company_id)
+        .values_list('party_name', flat=True)
+        .distinct()
+        .order_by('party_name')
+    )
+    return Response(list(names))
 
 # ── Company Car Rates ────────────────────────────────────────────────────────
 
@@ -304,3 +320,47 @@ def update_dutyslip_status(request, pk):
     slip.status = new_status
     slip.save()
     return Response(DutySlipSerializer(slip).data)
+
+# ── DutySlip ──────────────────────────────────────────────────────────────────
+@api_view(['GET'])
+def download_invoice_pdf(request, pk):
+    try:
+        slip = DutySlip.objects.select_related('company').get(pk=pk)
+    except DutySlip.DoesNotExist:
+        return Response({'error': 'Not found'}, status=404)
+
+    entries = DutySlipEntry.objects.filter(
+        duty_slip=slip
+    ).select_related('car').order_by('date')
+
+    biz = BusinessSettings.objects.first()
+
+    # currency symbol
+    currency = '₹' if biz and biz.currency == 'INR' else '$'
+
+    # formatted invoice ref
+    year = datetime.date.today().year
+    invoice_ref = f"786/110/{year}{str(slip.id).zfill(3)}"
+
+    # logo absolute path for weasyprint
+    logo_url = ''
+    if biz and biz.logo:
+        logo_url = request.build_absolute_uri(biz.logo.url)
+
+    today = datetime.date.today().strftime('%d %B %Y')
+
+    html_string = render_to_string('invoice.html', {
+        'slip': slip,
+        'entries': entries,
+        'settings': biz,
+        'currency': currency,
+        'invoice_ref': invoice_ref,
+        'logo_url': logo_url,
+        'today': today,
+    })
+
+    pdf = HTML(string=html_string, base_url=request.build_absolute_uri()).write_pdf()
+
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="invoice-{invoice_ref}.pdf"'
+    return response
