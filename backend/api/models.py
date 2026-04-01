@@ -120,3 +120,28 @@ class CompanyCarRate(models.Model):
 
     def __str__(self):
         return f"{self.company.name} — {self.car.name}"
+
+
+class BusinessSettings(models.Model):
+    name = models.CharField(max_length=255)
+    abn = models.CharField(max_length=50)
+    address = models.TextField()
+    phone = models.CharField(max_length=50)
+    email = models.EmailField()
+    logo = models.ImageField(upload_to='logos/', blank=True, null=True)
+    currency = models.CharField(
+        max_length=5,
+        choices=[('USD', 'Dollar ($)'), ('INR', 'Rupee (₹)')],
+        default='USD'
+    )
+    # GitHub backup config
+    github_token    = models.CharField(max_length=255, blank=True, null=True)
+    github_username = models.CharField(max_length=100, blank=True, null=True)
+    github_repo     = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Business Settings'
+        verbose_name_plural = 'Business Settings'
+
+    def __str__(self):
+        return self.name
