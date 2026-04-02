@@ -571,6 +571,22 @@ def _do_restore(backup):
                 name='', abn='', address='', phone='', email=''
             )
 
+        # ── Reset PostgreSQL sequences after restore ──────────────
+        from django.db import connection
+        with connection.cursor() as cursor:
+            tables = [
+                'api_company',
+                'api_car',
+                'api_dutyslip',
+                'api_dutyslipentry',
+                'api_companycarrate',
+                'api_businesssettings',
+            ]
+            for table in tables:
+                cursor.execute(
+                    f"SELECT setval('{table}_id_seq', COALESCE((SELECT MAX(id) FROM {table}), 1))"
+                )
+
         return Response({
             'message': 'Restore successful.',
             'summary': {
@@ -582,7 +598,6 @@ def _do_restore(backup):
         })
     except Exception as e:
         return Response({'error': f'Restore failed: {str(e)}'}, status=500)
-
 
 @api_view(['POST'])
 def restore_database(request):
