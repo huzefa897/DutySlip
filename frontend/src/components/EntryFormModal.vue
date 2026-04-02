@@ -144,7 +144,7 @@
 import { ref, onMounted, watch } from 'vue'
 import api from '../api'
 import { currencySymbol } from '../store/currency'
-import AutocompleteInput from './AutocompleteInput.vue'
+import AutocompleteInput from './AutoCompleteInput.vue'
 // ── 1. Props first ────────────────────────────────────────────
 const props = defineProps({
     partyName: String,

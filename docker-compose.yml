@@ -1,17 +1,48 @@
 version: '3.8'
 
 services:
+
   db:
     image: postgres:15
     container_name: dutyslip_db
+    env_file: .env
     environment:
-      POSTGRES_DB: dutyslip
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: secret
-    ports:
-      - "5433:5432"
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: dutyslip_backend
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+    volumes:
+      - media_files:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py seed_cars &&
+             python manage.py seed_settings &&
+             gunicorn dutyslip.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+
+  frontend:
+    build: ./frontend
+    container_name: dutyslip_frontend
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
 
 volumes:
   postgres_data:
+  media_files:

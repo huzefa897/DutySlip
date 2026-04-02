@@ -155,7 +155,7 @@ import api from '../api'
 import { notify } from '../store/notification'
 import { ref, onMounted, watch } from 'vue'
 import { currencySymbol } from '../store/currency'
-import AutocompleteInput from '../components/AutocompleteInput.vue'
+import AutocompleteInput from '../components/AutoCompleteInput.vue'
 const router = useRouter()
 const cars = ref([])
 const dutySlips = ref([])
