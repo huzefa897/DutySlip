@@ -58,7 +58,7 @@
 
     <div v-else class="space-y-3">
       <router-link
-        v-for="slip in filteredSlips"
+         v-for="slip in paginatedSlips"
         :key="slip.id"
         :to="`/dutyslips/${slip.id}`"
         class="block bg-gray-900 border border-gray-800 rounded p-4 hover:border-amber-400/50 transition-colors"
@@ -86,6 +86,20 @@
       </router-link>
     </div>
   </div>
+  <!-- Load More -->
+<div v-if="hasMore" class="flex items-center justify-center mt-6">
+  <button
+    @click="loadMore"
+    class="bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 text-sm font-mono px-6 py-2.5 rounded transition-colors"
+  >
+    Load more ({{ remaining }} remaining)
+  </button>
+</div>
+
+<p v-else-if="paginatedSlips.length > 10"
+  class="text-center text-xs text-gray-600 font-mono mt-6">
+  All {{ filteredSlips.length }} duty slips loaded
+</p>
 </template>
 
 <script setup>
@@ -94,6 +108,7 @@ import api from '../api'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
 import StatusBadge from '../components/StatusBadge.vue'
+import { usePagination } from '../composables/usePagination'
 
 const slips = ref([])
 const companies = ref([])
@@ -125,7 +140,7 @@ const filteredSlips = computed(() => {
 function clearFilters() {
   filters.value = { party_name: '', company: '', status: '' }
 }
-
+const { paginated: paginatedSlips, hasMore, remaining, loadMore } = usePagination(filteredSlips)
 async function fetchData() {
   try {
     const [slipsRes, companiesRes] = await Promise.all([

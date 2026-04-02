@@ -82,11 +82,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="entry in filteredEntries"
-            :key="entry.id"
-            class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors"
-          >
+        <tr
+  v-for="entry in paginatedEntries"
+  :key="entry.id"
+  class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors"
+>
             <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.date }}</td>
             <td class="py-3 pr-4 text-white">{{ entry.party_name }}</td>
             <td class="py-3 pr-4 text-gray-300">{{ entry.company_name }}</td>
@@ -118,6 +118,21 @@
           </tr>
         </tbody>
       </table>
+      <!-- Load More -->
+<div v-if="hasMore" class="flex items-center justify-center mt-6">
+  <button
+    @click="loadMore"
+    class="bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 text-sm font-mono px-6 py-2.5 rounded transition-colors"
+  >
+    Load more ({{ remaining }} remaining)
+  </button>
+</div>
+
+<!-- All loaded indicator -->
+<p v-else-if="paginatedEntries.length > 10"
+  class="text-center text-xs text-gray-600 font-mono mt-6">
+  All {{ filteredEntries.length }} entries loaded
+</p>
     </div>
 
     <EntryFormModal
@@ -147,6 +162,8 @@ import { notify } from '../store/notification'
 import EntryFormModal from '../components/EntryFormModal.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { useConfirm } from '../composables/useConfirm'
+import { usePagination } from '../composables/usePagination'
+
 
 const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
         confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
@@ -190,7 +207,7 @@ const filteredEntries = computed(() => {
 function clearFilters() {
   filters.value = { party_name: '', company: '', car: '', date_from: '', date_to: '' }
 }
-
+const { paginated: paginatedEntries, hasMore, remaining, loadMore } = usePagination(filteredEntries)
 async function fetchEntries() {
   try {
     const [entriesRes, carsRes, companiesRes] = await Promise.all([
