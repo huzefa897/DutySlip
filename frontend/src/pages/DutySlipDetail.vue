@@ -39,12 +39,21 @@
 >
   ⬇ Download PDF
 </a>
-          <button
-            @click="printInvoice"
-            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
-          >
-            🖨 Print Invoice
-          </button>
+
+          <div class="flex items-center gap-3">
+  <button
+    @click="deleteSlip"
+    class="bg-red-900/50 border border-red-800 text-red-400 text-sm px-4 py-2 rounded hover:bg-red-900 transition-colors font-mono"
+  >
+    🗑 Delete
+  </button>
+  <button
+    @click="printInvoice"
+    class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+  >
+    🖨 Print Invoice
+  </button>
+</div>
           <div class="text-right">
             <p class="text-xs text-gray-500 font-mono mb-1">Grand Total</p>
             <p class="text-2xl font-mono font-bold text-amber-400">${{ slip.grand_total }}</p>
@@ -273,6 +282,16 @@
   @close="showModal = false; editingEntry = null"
   @saved="onEntrySaved"
 />
+
+<ConfirmDialog
+  :visible="confirmVisible"
+  :title="confirmTitle"
+  :message="confirmMessage"
+  :confirm-label="confirmLabel"
+  :destructive="destructive"
+  @confirm="onConfirm"
+  @cancel="onCancel"
+/>
 </template>
 
 <script setup>
@@ -284,6 +303,31 @@ import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
 import StatusBadge from '../components/StatusBadge.vue'
+import { useRouter } from 'vue-router'
+import { useConfirm } from '../composables/useConfirm'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
+
+const router = useRouter()
+
+const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
+        confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
+
+async function deleteSlip() {
+  const ok = await ask({
+    title: `Delete "${slip.value.party_name}"`,
+    message: `This will permanently delete duty slip ${formatSlipId(slip.value.id)} and unassign all its entries. This cannot be undone.`,
+    confirmLabel: 'Delete',
+  })
+  if (!ok) return
+
+  try {
+    await api.delete(`/dutyslips/${route.params.id}/`)
+    notify('Duty slip deleted.')
+    router.push('/dutyslips')
+  } catch (e) {
+    notify('Failed to delete duty slip.', 'error')
+  }
+}
 
 const mediaUrl = import.meta.env.VITE_MEDIA_URL || ''
 const apiUrl = import.meta.env.VITE_API_URL || '/api'

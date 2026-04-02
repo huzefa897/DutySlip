@@ -1,35 +1,9 @@
-# Python
-**/__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.env
-
-# Virtual env
-venv/
-env/
-.venv/
-
-# Django
-*.log
-db.sqlite3
-media/
-
-# Node
-node_modules/
-dist/
-.cache/
-
-# Env files
+# Environment
 .env
-.env.local
-.env.*.local
 
 # OS
 .DS_Store
 Thumbs.db
 
-# IDE
-.vscode/
-.idea/
+# Docker
+postgres_data/

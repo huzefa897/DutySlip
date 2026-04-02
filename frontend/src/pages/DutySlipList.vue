@@ -57,33 +57,41 @@
     </p>
 
     <div v-else class="space-y-3">
-      <router-link
-         v-for="slip in paginatedSlips"
-        :key="slip.id"
-        :to="`/dutyslips/${slip.id}`"
-        class="block bg-gray-900 border border-gray-800 rounded p-4 hover:border-amber-400/50 transition-colors"
+     <router-link
+  v-for="slip in paginatedSlips"
+  :key="slip.id"
+  :to="`/dutyslips/${slip.id}`"
+  class="block bg-gray-900 border border-gray-800 rounded p-4 hover:border-amber-400/50 transition-colors relative"
+>
+  <div class="flex items-center justify-between">
+    <div>
+      <p class="text-xs font-mono text-amber-400/70 mb-0.5">{{ formatSlipId(slip.id) }}</p>
+      <p class="text-white font-medium">{{ slip.party_name }}</p>
+      <div class="flex items-center gap-2 mt-1">
+        <p class="text-gray-500 text-xs font-mono">
+          {{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}
+        </p>
+        <StatusBadge :status="slip.status" />
+      </div>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="text-right">
+        <p class="text-amber-400 font-mono font-bold">
+          {{ currencySymbol }}{{ slip.grand_total }}
+        </p>
+        <p class="text-gray-600 text-xs font-mono mt-1">
+          {{ slip.entries?.length ?? 0 }} entries
+        </p>
+      </div>
+      <button
+        @click="deleteSlip(slip, $event)"
+        class="text-xs text-red-500 hover:text-red-400 transition-colors p-1"
       >
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs font-mono text-amber-400/70 mb-0.5">{{ formatSlipId(slip.id) }}</p>
-            <p class="text-white font-medium">{{ slip.party_name }}</p>
-            <div class="flex items-center gap-2 mt-1">
-              <p class="text-gray-500 text-xs font-mono">
-                {{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}
-              </p>
-              <StatusBadge :status="slip.status" />
-            </div>
-          </div>
-          <div class="text-right">
-            <p class="text-amber-400 font-mono font-bold">
-              {{ currencySymbol }}{{ slip.grand_total }}
-            </p>
-            <p class="text-gray-600 text-xs font-mono mt-1">
-              {{ slip.entries?.length ?? 0 }} entries
-            </p>
-          </div>
-        </div>
-      </router-link>
+        Delete
+      </button>
+    </div>
+  </div>
+</router-link>
     </div>
   </div>
   <!-- Load More -->
@@ -100,6 +108,15 @@
   class="text-center text-xs text-gray-600 font-mono mt-6">
   All {{ filteredSlips.length }} duty slips loaded
 </p>
+<ConfirmDialog
+  :visible="confirmVisible"
+  :title="confirmTitle"
+  :message="confirmMessage"
+  :confirm-label="confirmLabel"
+  :destructive="destructive"
+  @confirm="onConfirm"
+  @cancel="onCancel"
+/>
 </template>
 
 <script setup>
@@ -109,7 +126,32 @@ import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
 import StatusBadge from '../components/StatusBadge.vue'
 import { usePagination } from '../composables/usePagination'
+import { useConfirm } from '../composables/useConfirm'
+import { notify } from '../store/notification'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
 
+const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
+        confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
+
+async function deleteSlip(slip, e) {
+  e.preventDefault()  // prevent router-link navigation
+  e.stopPropagation()
+
+  const ok = await ask({
+    title: `Delete "${slip.party_name}"`,
+    message: `This will permanently delete duty slip ${formatSlipId(slip.id)} and unassign all its entries. This cannot be undone.`,
+    confirmLabel: 'Delete',
+  })
+  if (!ok) return
+
+  try {
+    await api.delete(`/dutyslips/${slip.id}/`)
+    slips.value = slips.value.filter(s => s.id !== slip.id)
+    notify(`Duty slip ${formatSlipId(slip.id)} deleted.`)
+  } catch (e) {
+    notify('Failed to delete duty slip.', 'error')
+  }
+}
 const slips = ref([])
 const companies = ref([])
 const loading = ref(true)
