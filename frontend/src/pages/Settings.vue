@@ -18,7 +18,7 @@
         <div class="flex items-center gap-4">
           <img
             v-if="logoPreview || currentLogo"
-            :src="logoPreview || `http://127.0.0.1:8000${currentLogo}`"
+          :src="logoPreview || `${mediaUrl}${currentLogo}`"
             class="h-16 object-contain bg-white rounded p-1"
             alt="Logo"
           />
@@ -108,7 +108,9 @@
               Downloads a JSON file. If GitHub is configured, also pushes to your repo automatically.
             </p>
             <div class="flex items-center gap-3 flex-wrap">
-              <a href="http://127.0.0.1:8000/api/backup/" download
+            <a :href="`${apiUrl}/backup/`" download
+
+
                 class="inline-block bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono">
                 ⬇ Download + Push
               </a>
@@ -233,6 +235,8 @@ import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { useConfirm } from '../composables/useConfirm'
 
 const savingGithub = ref(false)
+const mediaUrl = import.meta.env.VITE_MEDIA_URL || ''
+const apiUrl = import.meta.env.VITE_API_URL || '/api'
 
 async function saveGithubSettings() {
   if (!form.value.github_username || !form.value.github_repo) {

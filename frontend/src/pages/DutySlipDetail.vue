@@ -31,7 +31,8 @@
           </p>
         </div>
         <div class="flex items-center gap-3">
-          <a :href="`http://127.0.0.1:8000/api/dutyslips/${slip.id}/pdf/`"
+          <a :href="`${apiUrl}/dutyslips/${slip.id}/pdf/`"
+
   target="_blank"
   download
   class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
@@ -169,7 +170,7 @@
     <div class="letterhead-brand">
       <img
         v-if="bizSettings?.logo"
-        :src="`http://127.0.0.1:8000${bizSettings.logo}`"
+        :src="`${mediaUrl}${bizSettings.logo}`"
         class="letterhead-logo"
         alt="Logo"
       />
@@ -284,6 +285,8 @@ import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
 import StatusBadge from '../components/StatusBadge.vue'
 
+const mediaUrl = import.meta.env.VITE_MEDIA_URL || ''
+const apiUrl = import.meta.env.VITE_API_URL || '/api'
 const editingEntry = ref(null)
 const route = useRoute()
 const slip = ref(null)
