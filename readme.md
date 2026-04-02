@@ -1,493 +1,244 @@
-# 🏗️ Project Roadmap — Duty Slip & Invoice System
+# DutySlip — Production Setup Guide
+
+Fleet management and invoicing system built with Django, Vue, PostgreSQL, and Docker.
 
 ---
 
-## 🏗️ Phase 1 — Project Setup & Infrastructure
+## Prerequisites
 
-**Goal:**
+Before running DutySlip, make sure you have the following installed:
 
-Everything running locally, nothing broken before we write features.
-
-### Setup Tasks
-
-- Create project folder structure
-- Setup Python virtual environment (`venv`)
-- Install dependencies
-- Create Django project + `api` app
-- Setup PostgreSQL via Docker Compose
-- Connect Django to PostgreSQL
-- Run Django dev server (`localhost:8000`)
-- Setup Vue + Vite + Tailwind (`localhost:5173`)
-
-### ✅ End Result
-
-- Two servers running:
-    - Backend (Django)
-    - Frontend (Vue)
-- Both connected to a single PostgreSQL database
-- No features yet — just a working skeleton
+| Tool | Purpose | Download |
+|---|---|---|
+| Docker Desktop | Runs all services | [docker.com](https://www.docker.com/products/docker-desktop) |
+| Git | Pull the code | [git-scm.com](https://git-scm.com) |
 
 ---
 
-## 🗄️ Phase 2 — Database Models & Seed Data
+## Option A — Run via Electron App (Recommended)
 
-**Goal:**
+The easiest way to run DutySlip is using the desktop control panel.
 
-Define database structure and populate initial data.
+### 1. Download the app
 
-### Models
+Go to the [Releases page](https://github.com/huzefa897/DutySlip/releases) and download:
+- **Mac:** `DutySlip-x.x.x.dmg`
+- **Windows:** `DutySlip-x.x.x-Setup.exe`
 
-- **Car**
-    - `name`
-    - `base_rate`
-    - `extra_km_rate`
-    - `extra_hr_rate`
-- **Session**
-    - `party_names`
-    - `created_date`
-- **DutySlipEntry**
-    - `date`
-    - `car`
-    - `kms`
-    - `time_start`
-    - `time_end`
-    - `bhatta`
-    - `parking`
+### 2. Install
 
-### Tasks
+**Mac:**
+1. Open the `.dmg` file
+2. Drag DutySlip to your Applications folder
+3. Open DutySlip from Applications
 
-- Run migrations (create tables in PostgreSQL)
-- Seed car catalogue:
-    - Ute
-    - Camry
-    - HiAce
-    - etc.
-- Register models in Django Admin
+**Windows:**
+1. Run the `.exe` installer
+2. Follow the setup wizard
+3. Launch DutySlip from the Start menu
 
-### ✅ End Result
+### 3. Start the app
 
-- Database tables created
-- Seed data available
-- Data viewable via Django Admin UI
+1. Make sure **Docker Desktop is running**
+2. Open the DutySlip control panel
+3. Click **▶ Start Application**
+4. Wait for the status to show **DutySlip is running** (green dot)
+5. Your browser will open automatically at `http://localhost`
+
+### 4. Stop the app
+
+Click **■ Stop Application** in the control panel.
+
+> **Note:** Closing the control panel window minimizes it to the system tray. Right-click the tray icon and select **Quit** to fully exit.
 
 ---
 
-## ⚙️ Phase 3 — Backend API (Django REST Framework)
+## Option B — Run via Docker (Developer Setup)
 
-**Goal:**
+### 1. Clone the repository
 
-Fully functional REST API with business logic.
-
-### Endpoints
-
-### Cars
-
-- `GET /api/cars/`
-
-### Sessions
-
-- `POST /api/sessions/`
-- `GET /api/sessions/`
-- `GET /api/sessions/{id}/`
-
-### Entries
-
-- `POST /api/sessions/{id}/entries/`
-- `PUT /api/entries/{id}/`
-- `DELETE /api/entries/{id}/`
-
-### Invoice
-
-- `GET /api/sessions/{id}/invoice/`
-
-### Features
-
-- Serializers for all models
-- Business logic:
-    - Extra km calculation
-    - Extra hour calculation
-    - Row totals
-    - Grand total
-
-### ✅ End Result
-
-- Fully working backend
-- Testable via Postman / Bruno
-- All calculations handled server-side
-
----
-
-## 🎨 Phase 4 — Frontend (Vue + Vite + Tailwind)
-
-**Goal:**
-
-Complete UI connected to backend API.
-
-### Setup
-
-- Axios configuration
-- Base API URL setup
-
-### Pages
-
-- **Sessions List**
-    - View all sessions
-    - Click to open
-- **Create Session**
-    - Enter party names
-    - Select start date
-- **Duty Slip Page**
-    - Add daily entries
-    - Edit/delete entries
-    - Fields:
-        - Date
-        - Car
-        - KMs
-        - Time
-        - Bhatta
-        - Parking
-- **Invoice Page**
-    - Computed rows
-    - Grand total
-    - Print button
-
-### UI Style
-
-- Dark theme
-- Minimal, clean, utilitarian design
-
-### ✅ End Result
-
-- Fully working frontend
-- Real-time interaction with backend
-- Smooth workflow from session → entries → invoice
-
----
-
-## 🖨️ Phase 5 — Invoice PDF & Print
-
-**Goal:**
-
-Generate professional invoices.
-
-### Features
-
-- Print-friendly CSS
-- PDF export:
-    - Browser print OR library (e.g. `react-pdf`)
-- Invoice includes:
-    - Company name
-    - Party name
-    - All entries
-    - Grand total
-
-### ✅ End Result
-
-- Clean printable invoice
-- Ready to share with clients
-
----
-
-## 🐳 Phase 6 — Full Docker Setup
-
-**Goal:**
-
-Run entire app with one command.
-
-### Setup
-
-- Dockerfile for Django backend
-- Dockerfile for frontend
-- `docker-compose.yml` for:
-    - PostgreSQL
-    - Backend
-    - Frontend
-- Environment variables configured properly
-
-### ✅ End Result
-
-```
-docker compose up
+```bash
+git clone https://github.com/huzefa897/DutySlip.git
+cd DutySlip
 ```
 
-→ Entire application running
+### 2. Create your `.env` file
 
----
-
-## 🚀 Phase 7 — Deployment (Optional)
-
-**Goal:**
-
-Make app accessible online.
-
-### Steps
-
-- Deploy to VPS (DigitalOcean / Hetzner)
-- Setup Nginx as reverse proxy
-- Configure SSL (HTTPS)
-- Apply Django production settings
-
-### ✅ End Result
-
-- Live application accessible via domain
-- Secure and production-ready
-
----
-
-## 🧠 Final Outcome
-
-You end up with:
-
-- Full-stack production-ready system
-- Backend with real business logic
-- Clean frontend UI
-- Printable invoices
-- Dockerized deployment
-- Optional cloud hosting
-
-# 🏗️ Project Roadmap — Duty Slip & Invoice System
-
----
-
-## 🏗️ Phase 1 — Project Setup & Infrastructure
-
-**Goal:**
-
-Everything running locally, nothing broken before we write features.
-
-### Setup Tasks
-
-- Create project folder structure
-- Setup Python virtual environment (`venv`)
-- Install dependencies
-- Create Django project + `api` app
-- Setup PostgreSQL via Docker Compose
-- Connect Django to PostgreSQL
-- Run Django dev server (`localhost:8000`)
-- Setup Vue + Vite + Tailwind (`localhost:5173`)
-
-### ✅ End Result
-
-- Two servers running:
-    - Backend (Django)
-    - Frontend (Vue)
-- Both connected to a single PostgreSQL database
-- No features yet — just a working skeleton
-
----
-
-## 🗄️ Phase 2 — Database Models & Seed Data
-
-**Goal:**
-
-Define database structure and populate initial data.
-
-### Models
-
-- **Car**
-    - `name`
-    - `base_rate`
-    - `extra_km_rate`
-    - `extra_hr_rate`
-- **Session**
-    - `party_names`
-    - `created_date`
-- **DutySlipEntry**
-    - `date`
-    - `car`
-    - `kms`
-    - `time_start`
-    - `time_end`
-    - `bhatta`
-    - `parking`
-
-### Tasks
-
-- Run migrations (create tables in PostgreSQL)
-- Seed car catalogue:
-    - Ute
-    - Camry
-    - HiAce
-    - etc.
-- Register models in Django Admin
-
-### ✅ End Result
-
-- Database tables created
-- Seed data available
-- Data viewable via Django Admin UI
-
----
-
-## ⚙️ Phase 3 — Backend API (Django REST Framework)
-
-**Goal:**
-
-Fully functional REST API with business logic.
-
-### Endpoints
-
-### Cars
-
-- `GET /api/cars/`
-
-### Sessions
-
-- `POST /api/sessions/`
-- `GET /api/sessions/`
-- `GET /api/sessions/{id}/`
-
-### Entries
-
-- `POST /api/sessions/{id}/entries/`
-- `PUT /api/entries/{id}/`
-- `DELETE /api/entries/{id}/`
-
-### Invoice
-
-- `GET /api/sessions/{id}/invoice/`
-
-### Features
-
-- Serializers for all models
-- Business logic:
-    - Extra km calculation
-    - Extra hour calculation
-    - Row totals
-    - Grand total
-
-### ✅ End Result
-
-- Fully working backend
-- Testable via Postman / Bruno
-- All calculations handled server-side
-
----
-
-## 🎨 Phase 4 — Frontend (Vue + Vite + Tailwind)
-
-**Goal:**
-
-Complete UI connected to backend API.
-
-### Setup
-
-- Axios configuration
-- Base API URL setup
-
-### Pages
-
-- **Sessions List**
-    - View all sessions
-    - Click to open
-- **Create Session**
-    - Enter party names
-    - Select start date
-- **Duty Slip Page**
-    - Add daily entries
-    - Edit/delete entries
-    - Fields:
-        - Date
-        - Car
-        - KMs
-        - Time
-        - Bhatta
-        - Parking
-- **Invoice Page**
-    - Computed rows
-    - Grand total
-    - Print button
-
-### UI Style
-
-- Dark theme
-- Minimal, clean, utilitarian design
-
-### ✅ End Result
-
-- Fully working frontend
-- Real-time interaction with backend
-- Smooth workflow from session → entries → invoice
-
----
-
-## 🖨️ Phase 5 — Invoice PDF & Print
-
-**Goal:**
-
-Generate professional invoices.
-
-### Features
-
-- Print-friendly CSS
-- PDF export:
-    - Browser print OR library (e.g. `react-pdf`)
-- Invoice includes:
-    - Company name
-    - Party name
-    - All entries
-    - Grand total
-
-### ✅ End Result
-
-- Clean printable invoice
-- Ready to share with clients
-
----
-
-## 🐳 Phase 6 — Full Docker Setup
-
-**Goal:**
-
-Run entire app with one command.
-
-### Setup
-
-- Dockerfile for Django backend
-- Dockerfile for frontend
-- `docker-compose.yml` for:
-    - PostgreSQL
-    - Backend
-    - Frontend
-- Environment variables configured properly
-
-### ✅ End Result
-
-```
-docker compose up
+```bash
+cp .env.example .env
 ```
 
-→ Entire application running
+The default values in `.env.example` work out of the box for local development. Edit if needed:
+
+```env
+POSTGRES_DB=dutyslip
+POSTGRES_USER=admin
+POSTGRES_PASSWORD=secret
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+DJANGO_SECRET_KEY=your-secret-key-here
+DJANGO_DEBUG=False
+DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+```
+
+### 3. Build and start
+
+```bash
+docker compose up --build
+```
+
+First run takes 3–5 minutes (downloads base images, installs dependencies, builds frontend).
+
+### 4. Access the app
+
+Visit `http://localhost` in your browser.
+
+### 5. Stop the app
+
+```bash
+docker compose down
+```
 
 ---
 
-## 🚀 Phase 7 — Deployment (Optional)
+## First-Time Setup (Both Options)
 
-**Goal:**
+After starting the app for the first time:
 
-Make app accessible online.
-
-### Steps
-
-- Deploy to VPS (DigitalOcean / Hetzner)
-- Setup Nginx as reverse proxy
-- Configure SSL (HTTPS)
-- Apply Django production settings
-
-### ✅ End Result
-
-- Live application accessible via domain
-- Secure and production-ready
+1. Go to **⚙ Settings** in the navbar
+2. Fill in your **Business Details** (name, ABN, address, phone, email)
+3. Upload your **Logo**
+4. Select your **Currency** ($ or ₹)
+5. Click **Save Settings**
 
 ---
 
-## 🧠 Final Outcome
+## Backup & Restore
 
-You end up with:
+### Export a backup
 
-- Full-stack production-ready system
-- Backend with real business logic
-- Clean frontend UI
-- Printable invoices
-- Dockerized deployment
-- Optional cloud hosting
+Go to **Settings → Backup & Restore → Download + Push**
+
+This downloads a JSON file locally and (if configured) pushes to your GitHub backup repo.
+
+### Restore from backup
+
+**From a local file:**
+Settings → Restore from Local File → Choose File → Restore
+
+**From GitHub:**
+Settings → Load GitHub Backups → select a backup → Restore
+
+> ⚠️ Restoring replaces ALL existing data.
+
+---
+
+## GitHub Backup Setup (Optional)
+
+To enable automatic cloud backups to a private GitHub repo:
+
+1. Create a private GitHub repository (e.g. `dutyslip-backups`)
+2. Generate a Personal Access Token with `repo` scope at `github.com → Settings → Developer Settings → Personal Access Tokens`
+3. In the app go to **Settings → GitHub Backup**
+4. Enter your GitHub username, repo name, and token
+5. Click **Save GitHub Settings**
+
+Every backup will now also push a versioned JSON file to your private repo.
+
+---
+
+## Updating to a New Version
+
+### Electron App
+
+1. Open the DutySlip control panel
+2. Click **↑ Check for Updates**
+3. If an update is available, click the download link
+4. Install the new version — your data is stored in Docker volumes and is not affected
+
+### Docker (Developer)
+
+```bash
+git pull
+docker compose up --build
+```
+
+---
+
+## Troubleshooting
+
+### App won't start — "Docker not running"
+Make sure Docker Desktop is open and the engine is running (check the Docker icon in your system tray/menu bar).
+
+### App won't start — "Failed to start"
+Try stopping first then starting again:
+```bash
+docker compose down
+docker compose up --build
+```
+
+### Port 80 already in use
+Another service is using port 80. Stop it or change the port in `docker-compose.yml`:
+```yaml
+ports:
+  - "8080:80"   # change 80 to any free port
+```
+Then access the app at `http://localhost:8080`.
+
+### Data lost after Docker volume wipe
+Always export a backup before running `docker compose down -v`. The `-v` flag deletes volumes (your database).
+
+### Logo not restored after backup
+The logo image file is not included in the JSON backup. To fully backup including the logo, copy the `backend/media/` folder alongside your JSON file.
+
+---
+
+## Project Structure
+
+```
+DutySlip/
+├── backend/          ← Django + DRF API
+├── frontend/         ← Vue + Vite + Tailwind
+├── electron/         ← Desktop control panel
+├── docker-compose.yml
+├── .env.example
+└── .github/
+    └── workflows/
+        └── release.yml   ← Auto-builds .dmg + .exe on tag
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Python, Django, Django REST Framework |
+| Frontend | Vue 3, Vite, Tailwind CSS |
+| Database | PostgreSQL 15 |
+| PDF Generation | WeasyPrint |
+| Desktop App | Electron |
+| Containerisation | Docker, Docker Compose |
+| Web Server | Nginx |
+| CI/CD | GitHub Actions |
+
+---
+
+## Release Process (Maintainer)
+
+```bash
+# 1. Bump version in electron/package.json
+# 2. Commit changes
+git add .
+git commit -m "release: vX.X.X"
+
+# 3. Tag and push
+git tag vX.X.X
+git push origin main --tags
+
+# GitHub Actions automatically builds .dmg + .exe and creates a release
+```
+
+---
+
+*Built by Huzefa Saleem*

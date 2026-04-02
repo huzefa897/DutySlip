@@ -1,8 +1,9 @@
 {
   "name": "dutyslip",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "description": "DutySlip Desktop Control Panel",
   "main": "main.js",
+  "author": "Huzefa Saleem",
   "scripts": {
     "start": "electron .",
     "build:mac": "electron-builder --mac",
@@ -10,17 +11,21 @@
     "build:all": "electron-builder --mac --win"
   },
   "build": {
-  "appId": "com.dutyslip.app",
-  "productName": "DutySlip",
-  "publish": {
-    "provider": "github",
-    "owner": "huzefa897",
-    "repo": "DutySlip"
-  },
+    "appId": "com.dutyslip.app",
+    "productName": "DutySlip",
+    "publish": {
+      "provider": "github",
+      "owner": "huzefa897",
+      "repo": "DutySlip"
+    },
+    "directories": {
+      "output": "dist"
+    },
     "files": [
       "main.js",
       "preload.js",
       "index.html",
+      "renderer.js",
       "assets/**"
     ],
     "extraResources": [
@@ -44,9 +49,7 @@
     }
   },
   "devDependencies": {
+    "electron": "^29.0.0",
     "electron-builder": "^24.0.0"
-  },
-  "dependencies": {
-    "electron": "^29.0.0"
   }
 }
