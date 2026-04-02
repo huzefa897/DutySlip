@@ -1,6 +1,6 @@
 {
   "name": "dutyslip",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "DutySlip Desktop Control Panel",
   "main": "main.js",
   "scripts": {
@@ -10,11 +10,13 @@
     "build:all": "electron-builder --mac --win"
   },
   "build": {
-    "appId": "com.dutyslip.app",
-    "productName": "DutySlip",
-    "directories": {
-      "output": "dist"
-    },
+  "appId": "com.dutyslip.app",
+  "productName": "DutySlip",
+  "publish": {
+    "provider": "github",
+    "owner": "huzefa897",
+    "repo": "DutySlip"
+  },
     "files": [
       "main.js",
       "preload.js",
