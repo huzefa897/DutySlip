@@ -12,7 +12,20 @@ const HEALTH_URL   = 'http://localhost/api/cars/'
 let mainWindow = null
 let isQuitting  = false
 
-// ── Get docker-compose path ───────────────────────────────────
+// ── Mac PATH fix ──────────────────────────────────────────────
+if (process.platform === 'darwin') {
+  process.env.PATH = [
+    '/usr/local/bin',
+    '/usr/bin',
+    '/bin',
+    '/usr/sbin',
+    '/sbin',
+    '/Applications/Docker.app/Contents/Resources/bin',
+    process.env.PATH
+  ].join(':')
+}
+
+// ── Helpers ───────────────────────────────────────────────────
 function getComposePath() {
   if (app.isPackaged) {
     return path.join(process.resourcesPath, 'docker-compose.yml')
@@ -26,20 +39,19 @@ function getEnvPath() {
   }
   return path.join(__dirname, '..', '.env')
 }
+
 function sendLog(message, type = '') {
   if (mainWindow) {
     mainWindow.webContents.send('log-update', { message, type })
   }
 }
 
-// ── Send status to renderer ───────────────────────────────────
 function sendStatus(message, state) {
   if (mainWindow) {
     mainWindow.webContents.send('status-update', { message, state })
   }
 }
 
-// ── Check if Docker is installed ─────────────────────────────
 function isDockerInstalled() {
   try {
     execSync('docker --version', { stdio: 'ignore' })
@@ -49,17 +61,20 @@ function isDockerInstalled() {
   }
 }
 
-// ── Check if Docker daemon is running ─────────────────────────
 function isDockerRunning() {
   try {
     execSync('docker info', { stdio: 'ignore' })
     return true
   } catch {
-    return false
+    try {
+      execSync('docker context inspect', { stdio: 'ignore' })
+      return true
+    } catch {
+      return false
+    }
   }
 }
 
-// ── Check if containers are already up ───────────────────────
 function areContainersRunning() {
   try {
     const result = execSync(
@@ -72,8 +87,7 @@ function areContainersRunning() {
   }
 }
 
-// ── Health check — wait for app to be ready ───────────────────
-function waitForApp(retries = 30) {
+function waitForApp(retries = 60) {
   return new Promise((resolve, reject) => {
     let attempts = 0
 
@@ -105,95 +119,115 @@ function waitForApp(retries = 30) {
 ipcMain.handle('check-docker', async () => {
   if (!isDockerInstalled()) {
     sendStatus('Docker not installed', 'stopped')
+    sendLog('Docker not found on this machine', 'error')
     return { installed: false, running: false }
   }
   if (!isDockerRunning()) {
     sendStatus('Docker not running — open Docker Desktop first', 'stopped')
+    sendLog('Docker daemon not responding', 'error')
     return { installed: true, running: false }
   }
   if (areContainersRunning()) {
     sendStatus('DutySlip is running', 'running')
+    sendLog('Containers already running', 'success')
     return { installed: true, running: true, containersUp: true }
   }
   sendStatus('Ready to start', 'stopped')
+  sendLog('Docker ready — click Start to launch', 'info')
   return { installed: true, running: true, containersUp: false }
 })
 
 // ── IPC: start app ────────────────────────────────────────────
 ipcMain.handle('start-app', async () => {
+  sendLog('Checking Docker installation...', 'info')
+
   if (!isDockerInstalled()) {
     sendStatus('Docker not installed — download it first', 'error')
-    return { success: false, error: 'Docker not installed' }
+    sendLog('Docker not found', 'error')
+    return { success: false }
   }
+
+  sendLog('Docker installed ✓', 'success')
+  sendLog('Checking Docker daemon...', 'info')
 
   if (!isDockerRunning()) {
     sendStatus('Docker is not running — open Docker Desktop first', 'error')
-    return { success: false, error: 'Docker not running' }
+    sendLog('Docker daemon not responding', 'error')
+    return { success: false }
   }
+
+  sendLog('Docker running ✓', 'success')
+  sendLog('Checking containers...', 'info')
 
   // already running — just open browser
   if (areContainersRunning()) {
+    sendLog('Containers already running — opening browser', 'success')
     sendStatus('DutySlip is running', 'running')
     shell.openExternal(APP_URL)
     return { success: true }
   }
-})
 
- // start containers
-sendStatus('Building and starting (first run may take 5 mins)...', 'loading')
+  sendLog('Containers not running — starting now...', 'info')
+  sendStatus('Building and starting (first run may take 5 mins)...', 'loading')
 
-const composePath = getComposePath()
-const envPath = getEnvPath()
+  const composePath = getComposePath()
+  const envPath = getEnvPath()
 
-// use spawn so we can stream output
-const docker = spawn('docker', [
-  'compose',
-  '-f', composePath,
-  '--env-file', envPath,
-  'up', '-d', '--build'
-])
+  const docker = spawn('docker', [
+    'compose',
+    '-f', composePath,
+    '--env-file', envPath,
+    'up', '-d', '--build'
+  ])
 
-docker.stdout.on('data', (data) => {
-  const lines = data.toString().split('\n').filter(l => l.trim())
-  lines.forEach(line => {
-    if (line.includes('Pulling'))   { sendStatus('Downloading images...', 'loading');  sendLog(line.trim(), 'info') }
-    if (line.includes('Building'))  { sendStatus('Building app...', 'loading');        sendLog(line.trim(), 'info') }
-    if (line.includes('Starting'))  { sendStatus('Starting containers...', 'loading'); sendLog(line.trim(), 'warning') }
-    if (line.includes('Started'))   { sendStatus('Almost ready...', 'loading');        sendLog(line.trim(), 'success') }
-    if (line.includes('Error') || line.includes('error')) {
-      sendLog(line.trim(), 'error')
-    }
-  })
-})
-
-docker.stderr.on('data', (data) => {
-  const lines = data.toString().split('\n').filter(l => l.trim())
-  lines.forEach(line => {
-    if (line.includes('Pulling'))   { sendLog('Pulling ' + line.split('Pulling')[1]?.trim(), 'info') }
-    if (line.includes('Building'))  { sendLog('Building...', 'info') }
-    if (line.includes('Starting'))  { sendLog('Starting ' + line.split('Starting')[1]?.trim(), 'warning') }
-    if (line.includes('error') || line.includes('Error')) {
-      sendLog(line.trim(), 'error')
-    }
-  })
-})
-
-docker.on('close', (code) => {
-  if (code !== 0) {
-    sendStatus('Failed to start — check Docker is running', 'error')
-    return
-  }
-
-  sendStatus('Waiting for app to be ready...', 'loading')
-
-  waitForApp()
-    .then(() => {
-      sendStatus('DutySlip is running', 'running')
-      shell.openExternal(APP_URL)
+  docker.stdout.on('data', (data) => {
+    const lines = data.toString().split('\n').filter(l => l.trim())
+    lines.forEach(line => {
+      if (line.includes('Pulling'))  { sendStatus('Downloading images...', 'loading');  sendLog(line.trim(), 'info') }
+      if (line.includes('Building')) { sendStatus('Building app...', 'loading');        sendLog(line.trim(), 'info') }
+      if (line.includes('Starting')) { sendStatus('Starting containers...', 'loading'); sendLog(line.trim(), 'warning') }
+      if (line.includes('Started'))  { sendStatus('Almost ready...', 'loading');        sendLog(line.trim(), 'success') }
+      if (line.includes('Error') || line.includes('error')) {
+        sendLog(line.trim(), 'error')
+      }
     })
-    .catch(() => {
-      sendStatus('Startup timed out — try again', 'error')
+  })
+
+  docker.stderr.on('data', (data) => {
+    const lines = data.toString().split('\n').filter(l => l.trim())
+    lines.forEach(line => {
+      if (line.includes('Pulling'))  { sendLog('Pulling ' + line.split('Pulling')[1]?.trim(), 'info') }
+      if (line.includes('Building')) { sendLog('Building...', 'info') }
+      if (line.includes('Starting')) { sendLog('Starting ' + line.split('Starting')[1]?.trim(), 'warning') }
+      if (line.includes('error') || line.includes('Error')) {
+        sendLog(line.trim(), 'error')
+      }
     })
+  })
+
+  docker.on('close', (code) => {
+    if (code !== 0) {
+      sendStatus('Failed to start — check Docker is running', 'error')
+      sendLog(`Docker exited with code ${code}`, 'error')
+      return
+    }
+
+    sendStatus('Waiting for app to be ready...', 'loading')
+    sendLog('Containers started — waiting for health check...', 'info')
+
+    waitForApp(60)
+      .then(() => {
+        sendStatus('DutySlip is running', 'running')
+        sendLog('App is ready ✓', 'success')
+        shell.openExternal(APP_URL)
+      })
+      .catch(() => {
+        sendStatus('Startup timed out — try again', 'error')
+        sendLog('Health check timed out', 'error')
+      })
+  })
+
+  return { success: true }
 })
 
 // ── IPC: stop app ─────────────────────────────────────────────
@@ -201,13 +235,17 @@ ipcMain.handle('stop-app', async () => {
   const composePath = getComposePath()
   const envPath = getEnvPath()
 
+  sendLog('Stopping containers...', 'warning')
+
   exec(
     `docker compose -f "${composePath}" --env-file "${envPath}" down`,
     (error) => {
       if (error) {
         sendStatus('Failed to stop containers', 'error')
+        sendLog('Failed to stop containers', 'error')
       } else {
         sendStatus('DutySlip stopped', 'stopped')
+        sendLog('Containers stopped ✓', 'success')
       }
     }
   )
@@ -232,9 +270,7 @@ ipcMain.handle('check-updates', async () => {
           const release = JSON.parse(data)
           const latest = release.tag_name?.replace('v', '')
           const current = CURRENT_VERSION
-
           const updateAvailable = latest && latest !== current
-
           resolve({
             current,
             latest,
@@ -261,7 +297,7 @@ ipcMain.handle('get-version', () => CURRENT_VERSION)
 function createWindow() {
   mainWindow = new BrowserWindow({
     width:           360,
-    height: 620,  
+    height:          620,
     resizable:       false,
     titleBarStyle:   'hiddenInset',
     backgroundColor: '#030712',
@@ -286,7 +322,6 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow()
 
-  // tray
   const trayIcon = nativeImage.createFromPath(
     path.join(__dirname, 'assets', 'tray.png')
   )
