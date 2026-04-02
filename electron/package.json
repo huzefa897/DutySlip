@@ -34,7 +34,7 @@
         "to": "docker-compose.yml"
       },
       {
-        "from": "../.env",
+        "from": "../.env.example",
         "to": ".env"
       }
     ],
