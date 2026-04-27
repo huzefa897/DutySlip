@@ -1,3 +1,54 @@
-# .gitignore
-**/__pycache__/
-*.pyc
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Django ────────────────────────────────────────────────────
+backend/venv/
+backend/media/
+*.sqlite3
+backend/dutyslip/settings_local.py
+
+# Keep migrations but ignore future pyc inside them
+backend/api/migrations/__pycache__/
+
+# ── Environment ───────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Node / Frontend ───────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+
+# ── Node / Electron ───────────────────────────────────────────
+electron/node_modules/
+electron/dist/
+electron/out/
+
+# ── Build artifacts ───────────────────────────────────────────
+dist/
+dist-electron/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.rpm
+release/
+
+# ── OS ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDE ───────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+.env
+backend/media/
+__pycache__/
+.DS_Store
