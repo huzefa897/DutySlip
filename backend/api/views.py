@@ -16,7 +16,6 @@ from .serializers import (
     BusinessSettingsSerializer, CompanyCarRateSerializer
 )
 from .services import compute_entry, compute_duty_slip_total
-import datetime
 from decimal import Decimal
 
 class DecimalEncoder(json.JSONEncoder):
@@ -87,7 +86,6 @@ def company_detail(request, pk):
                 {'error': 'Cannot delete — company is used in existing records.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
 
 @api_view(['GET'])
 def company_parties(request, company_id):
@@ -336,6 +334,7 @@ def update_dutyslip_status(request, pk):
     slip.save()
     return Response(DutySlipSerializer(slip).data)
 
+# ── DutySlip ──────────────────────────────────────────────────────────────────
 
 # ── Invoice PDF ───────────────────────────────────────────────
 @api_view(['GET'])

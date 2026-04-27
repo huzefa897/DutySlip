@@ -8,16 +8,19 @@
 
     <form @submit.prevent="submit" class="space-y-5">
 
-      <!-- Party Name -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Party Name</label>
-        <AutocompleteInput v-model="form.party_name" :suggestions="partyNames" placeholder="Enter or select party name"
-          required />
-        <p v-if="partyNames.length > 0" class="text-xs text-gray-600 font-mono mt-1">
-          {{ partyNames.length }} saved name(s) for this company
-        </p>
-      </div>
-
+     <!-- Party Name -->
+<div>
+  <label class="block text-xs text-gray-400 font-mono mb-1">Party Name</label>
+  <AutocompleteInput
+    v-model="form.party_name"
+    :suggestions="partyNames"
+    placeholder="Enter or select party name"
+    required
+  />
+  <p v-if="partyNames.length > 0" class="text-xs text-gray-600 font-mono mt-1">
+    {{ partyNames.length }} saved name(s) for this company
+  </p>
+</div>
       <!-- Company -->
       <div>
         <label class="block text-xs text-gray-400 font-mono mb-1">Company</label>
@@ -175,8 +178,7 @@ import { useRouter } from 'vue-router'
 import api from '../api'
 import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
-import AutocompleteInput from '../components/AutoCompleteInput.vue'
-
+import AutocompleteInput from '../components/AutocompleteInput.vue'
 const router = useRouter()
 const cars = ref([])
 const dutySlips = ref([])
@@ -218,6 +220,19 @@ watch(
 )
 
 // ── Watch company + car → load rate overrides ─────────────────
+watch(
+  () => form.value.company,
+  async (companyId) => {
+    partyNames.value = []
+    if (!companyId) return
+    try {
+      const res = await api.get(`/companies/${companyId}/parties/`)
+      partyNames.value = res.data
+    } catch {
+      partyNames.value = []
+    }
+  }
+)
 watch(
   () => [form.value.company, form.value.car],
   async ([companyId, carId]) => {
