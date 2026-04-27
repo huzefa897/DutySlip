@@ -1,169 +1,140 @@
 <template>
-  <div class="max-w-xl">
-    <button
-      @click="$router.back()"
-      class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
-    >
-      ← Back
-    </button>
-    <h1 class="text-xl font-mono font-bold text-white mb-6">Business Settings</h1>
+  <div class="container">
+    <button @click="$router.back()" class="back-btn">← Back</button>
+    <h1 class="title">Business Settings</h1>
 
-    <div v-if="loading" class="text-gray-500 text-sm">Loading...</div>
+    <div v-if="loading" class="loading-text">Loading...</div>
 
-    <form v-else @submit.prevent="submit" class="space-y-5">
+    <form v-else @submit.prevent="submit" class="form">
 
       <!-- Logo Preview -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-2">Logo</label>
-        <div class="flex items-center gap-4">
+      <div class="field">
+        <label class="label">Logo</label>
+        <div class="logo-row">
           <img
             v-if="logoPreview || currentLogo"
-          :src="logoPreview || `${mediaUrl}${currentLogo}`"
-            class="h-16 object-contain bg-white rounded p-1"
+            :src="logoPreview || `${mediaUrl}${currentLogo}`"
+            class="logo-img"
             alt="Logo"
           />
-          <div v-else class="h-16 w-32 bg-gray-800 border border-gray-700 rounded flex items-center justify-center">
-            <span class="text-gray-600 text-xs font-mono">No logo</span>
+          <div v-else class="logo-placeholder">
+            <span class="logo-placeholder-text">No logo</span>
           </div>
           <div>
-            <input type="file" accept="image/*" @change="onLogoChange" class="hidden" ref="fileInput" />
-            <button type="button" @click="$refs.fileInput.click()"
-              class="text-xs bg-gray-800 border border-gray-700 text-gray-300 px-3 py-2 rounded hover:bg-gray-700 transition-colors">
+            <input type="file" accept="image/*" @change="onLogoChange" class="hidden-input" ref="fileInput" />
+            <button type="button" @click="$refs.fileInput.click()" class="upload-btn">
               Upload Logo
             </button>
-            <p class="text-gray-600 text-xs mt-1">PNG, JPG recommended</p>
+            <p class="upload-hint">PNG, JPG recommended</p>
           </div>
         </div>
       </div>
 
       <!-- Business Name -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Business Name</label>
-        <input v-model="form.name" type="text" required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+      <div class="field">
+        <label class="label">Business Name</label>
+        <input v-model="form.name" type="text" required class="input" />
       </div>
 
       <!-- ABN -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">ABN</label>
-        <input v-model="form.abn" type="text" required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+      <div class="field">
+        <label class="label">ABN</label>
+        <input v-model="form.abn" type="text" required class="input" />
       </div>
 
       <!-- Address -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Address</label>
-        <textarea v-model="form.address" rows="2" required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+      <div class="field">
+        <label class="label">Address</label>
+        <textarea v-model="form.address" rows="2" required class="input textarea" />
       </div>
 
       <!-- Phone -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Phone</label>
-        <input v-model="form.phone" type="text" required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+      <div class="field">
+        <label class="label">Phone</label>
+        <input v-model="form.phone" type="text" required class="input" />
       </div>
 
       <!-- Email -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Email</label>
-        <input v-model="form.email" type="email" required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+      <div class="field">
+        <label class="label">Email</label>
+        <input v-model="form.email" type="email" required class="input" />
       </div>
 
       <!-- Currency -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Currency</label>
-        <select v-model="form.currency"
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400">
+      <div class="field">
+        <label class="label">Currency</label>
+        <select v-model="form.currency" class="input">
           <option value="USD">Dollar ($)</option>
           <option value="INR">Rupee (₹)</option>
         </select>
       </div>
 
-   
-      
-
       <!-- Submit -->
-      <div class="flex gap-3 pt-2">
-        <button type="submit" :disabled="submitting"
-          class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50">
+      <div class="actions">
+        <button type="submit" :disabled="submitting" class="btn-primary">
           {{ submitting ? 'Saving...' : 'Save Settings' }}
         </button>
       </div>
 
       <!-- Backup & Restore -->
-      <div class="border-t border-gray-800 pt-6 mt-2">
-        <h2 class="text-sm font-mono font-bold text-white mb-1">Backup & Restore</h2>
-        <p class="text-xs text-gray-500 font-mono mb-4">
-          Export data locally or sync with GitHub.
-        </p>
+      <div class="section-divider">
+        <h2 class="section-title">Backup & Restore</h2>
+        <p class="section-desc">Export data locally or sync with GitHub.</p>
 
-        <div class="space-y-4">
+        <div class="backup-sections">
 
           <!-- Export + GitHub Push -->
-          <div class="bg-gray-900 border border-gray-800 rounded p-4">
-            <p class="text-sm text-white font-medium mb-1">Export Backup</p>
-            <p class="text-xs text-gray-500 font-mono mb-3">
+          <div class="backup-card">
+            <p class="card-title">Export Backup</p>
+            <p class="card-desc">
               Downloads a JSON file. If GitHub is configured, also pushes to your repo automatically.
             </p>
-            <div class="flex items-center gap-3 flex-wrap">
-            <a :href="`${apiUrl}/backup/`" download
-
-
-                class="inline-block bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono">
+            <div class="card-actions">
+              <a :href="`${apiUrl}/backup/`" download class="btn-secondary">
                 ⬇ Download + Push
               </a>
-              <button type="button" @click="pushToGithub" :disabled="pushing"
-                class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono disabled:opacity-50">
+              <button type="button" @click="pushToGithub" :disabled="pushing" class="btn-secondary">
                 {{ pushing ? 'Pushing...' : '⬆ Push to GitHub Only' }}
               </button>
             </div>
           </div>
-<!-- Restore from GitHub -->
-<div class="bg-gray-900 border border-gray-800 rounded p-4">
-  <p class="text-sm text-white font-medium mb-2">Restore from GitHub</p>
-  <button type="button" @click="fetchGithubBackups" :disabled="loadingBackups"
-    class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono mb-3 disabled:opacity-50">
-    {{ loadingBackups ? 'Loading...' : '↻ Load GitHub Backups' }}
-  </button>
 
-  <div v-if="githubBackups.length > 0" class="space-y-2">
-    <div v-for="backup in githubBackups" :key="backup.name"
-      class="flex items-center justify-between bg-gray-800 rounded px-3 py-2">
-      <div>
-        <p class="text-xs font-mono text-white">{{ backup.name }}</p>
-        <p class="text-xs font-mono text-gray-500">{{ (backup.size / 1024).toFixed(1) }} KB</p>
-      </div>
-      <button @click="restoreFromGithub(backup)"
-        class="text-xs text-amber-400 hover:text-amber-300 font-mono transition-colors">
-        Restore
-      </button>
-    </div>
-  </div>
+          <!-- Restore from GitHub -->
+          <div class="backup-card">
+            <p class="card-title">Restore from GitHub</p>
+            <button type="button" @click="fetchGithubBackups" :disabled="loadingBackups" class="btn-secondary mb-3">
+              {{ loadingBackups ? 'Loading...' : '↻ Load GitHub Backups' }}
+            </button>
 
-  <p v-else-if="backupsLoaded && githubBackups.length === 0"
-    class="text-xs text-gray-600 font-mono">
-    No backups found in GitHub repo.
-  </p>
-</div>
+            <div v-if="githubBackups.length > 0" class="backup-list">
+              <div v-for="backup in githubBackups" :key="backup.name" class="backup-item">
+                <div>
+                  <p class="backup-name">{{ backup.name }}</p>
+                  <p class="backup-size">{{ (backup.size / 1024).toFixed(1) }} KB</p>
+                </div>
+                <button @click="restoreFromGithub(backup)" class="btn-restore">
+                  Restore
+                </button>
+              </div>
+            </div>
+
+            <p v-else-if="backupsLoaded && githubBackups.length === 0" class="no-backups">
+              No backups found in GitHub repo.
+            </p>
+          </div>
 
           <!-- Restore from local file -->
-          <div class="bg-gray-900 border border-gray-800 rounded p-4">
-            <p class="text-sm text-white font-medium mb-1">Restore from Local File</p>
-            <p class="text-xs text-gray-500 font-mono mb-1">Upload a previously exported JSON backup.</p>
-            <p class="text-xs text-red-400 font-mono mb-3">⚠ This will replace ALL existing data.</p>
-            <div class="flex items-center gap-3">
-              <input type="file" accept=".json" @change="onBackupFileChange" class="hidden" ref="backupFileInput" />
-              <button type="button" @click="$refs.backupFileInput.click()"
-                class="bg-gray-800 border border-gray-700 text-gray-300 text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono">
+          <div class="backup-card">
+            <p class="card-title">Restore from Local File</p>
+            <p class="card-desc">Upload a previously exported JSON backup.</p>
+            <p class="card-warn">⚠ This will replace ALL existing data.</p>
+            <div class="card-actions">
+              <input type="file" accept=".json" @change="onBackupFileChange" class="hidden-input" ref="backupFileInput" />
+              <button type="button" @click="$refs.backupFileInput.click()" class="btn-secondary">
                 Choose File
               </button>
-              <span class="text-xs text-gray-500 font-mono">
-                {{ backupFile ? backupFile.name : 'No file chosen' }}
-              </span>
-              <button v-if="backupFile" type="button" @click="restoreLocalBackup" :disabled="restoring"
-                class="bg-red-700 hover:bg-red-600 text-white text-sm font-bold px-4 py-2 rounded transition-colors disabled:opacity-50">
+              <span class="file-name">{{ backupFile ? backupFile.name : 'No file chosen' }}</span>
+              <button v-if="backupFile" type="button" @click="restoreLocalBackup" :disabled="restoring" class="btn-danger">
                 {{ restoring ? 'Restoring...' : 'Restore' }}
               </button>
             </div>
@@ -175,42 +146,30 @@
     </form>
 
     <!-- GitHub Backup Config -->
-<div class="border-t border-gray-800 pt-5">
-  <h2 class="text-sm font-mono font-bold text-white mb-1">GitHub Backup</h2>
-  <p class="text-xs text-gray-500 font-mono mb-4">
-    Connect a private GitHub repo as your backup destination.
-  </p>
-  <div class="space-y-4">
-    <div>
-      <label class="block text-xs text-gray-400 font-mono mb-1">GitHub Username</label>
-      <input v-model="form.github_username" type="text" placeholder="e.g. huzefa"
-        class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+    <div class="section-divider">
+      <h2 class="section-title">GitHub Backup</h2>
+      <p class="section-desc">Connect a private GitHub repo as your backup destination.</p>
+      <div class="form">
+        <div class="field">
+          <label class="label">GitHub Username</label>
+          <input v-model="form.github_username" type="text" placeholder="e.g. huzefa" class="input" />
+        </div>
+        <div class="field">
+          <label class="label">Repository Name</label>
+          <input v-model="form.github_repo" type="text" placeholder="e.g. dutyslip-backups" class="input" />
+        </div>
+        <div class="field">
+          <label class="label">
+            Personal Access Token
+            <span class="label-hint">(stored securely, never shown)</span>
+          </label>
+          <input v-model="form.github_token" type="password" placeholder="ghp_xxxxxxxxxxxx" class="input" />
+        </div>
+        <button type="button" @click="saveGithubSettings" :disabled="savingGithub" class="btn-secondary btn-github-save">
+          {{ savingGithub ? 'Saving...' : 'Save GitHub Settings' }}
+        </button>
+      </div>
     </div>
-    <div>
-      <label class="block text-xs text-gray-400 font-mono mb-1">Repository Name</label>
-      <input v-model="form.github_repo" type="text" placeholder="e.g. dutyslip-backups"
-        class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
-    </div>
-    <div>
-      <label class="block text-xs text-gray-400 font-mono mb-1">
-        Personal Access Token
-        <span class="text-gray-600 normal-case ml-1">(stored securely, never shown)</span>
-      </label>
-      <input v-model="form.github_token" type="password" placeholder="ghp_xxxxxxxxxxxx"
-        class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
-    </div>
-
-    <!-- Separate GitHub save button -->
-    <button
-      type="button"
-      @click="saveGithubSettings"
-      :disabled="savingGithub"
-      class="bg-gray-800 border border-gray-700 text-white text-sm font-bold px-5 py-2 rounded hover:bg-gray-700 transition-colors disabled:opacity-50"
-    >
-      {{ savingGithub ? 'Saving...' : 'Save GitHub Settings' }}
-    </button>
-  </div>
-</div>
 
     <!-- Confirm dialog -->
     <ConfirmDialog
@@ -263,26 +222,23 @@ async function saveGithubSettings() {
   }
 }
 
-// ── Confirm dialog ────────────────────────────────────────────
 const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
         confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
 
-// ── State ─────────────────────────────────────────────────────
-const loading       = ref(true)
-const submitting    = ref(false)
-const currentLogo   = ref('')
-const logoPreview   = ref('')
-const logoFile      = ref(null)
-const fileInput     = ref(null)
-const backupFile    = ref(null)
+const loading         = ref(true)
+const submitting      = ref(false)
+const currentLogo     = ref('')
+const logoPreview     = ref('')
+const logoFile        = ref(null)
+const fileInput       = ref(null)
+const backupFile      = ref(null)
 const backupFileInput = ref(null)
-const restoring     = ref(false)
-const pushing       = ref(false)
-const loadingBackups = ref(false)
-const backupsLoaded = ref(false)
-const githubBackups = ref([])
+const restoring       = ref(false)
+const pushing         = ref(false)
+const loadingBackups  = ref(false)
+const backupsLoaded   = ref(false)
+const githubBackups   = ref([])
 
-// ── Form ──────────────────────────────────────────────────────
 const form = ref({
   name:            '',
   abn:             '',
@@ -295,7 +251,6 @@ const form = ref({
   github_token:    '',
 })
 
-// ── Logo ──────────────────────────────────────────────────────
 function onLogoChange(e) {
   const file = e.target.files[0]
   if (!file) return
@@ -303,7 +258,6 @@ function onLogoChange(e) {
   logoPreview.value = URL.createObjectURL(file)
 }
 
-// ── Submit settings ───────────────────────────────────────────
 async function submit() {
   submitting.value = true
   try {
@@ -328,7 +282,7 @@ async function submit() {
     currentLogo.value = res.data.logo || ''
     logoFile.value = null
     logoPreview.value = ''
-    form.value.github_token = '' // clear token field after save
+    form.value.github_token = ''
     setCurrency(res.data.currency)
     notify('Settings saved successfully.')
   } catch (e) {
@@ -343,7 +297,6 @@ async function submit() {
   }
 }
 
-// ── Mount ─────────────────────────────────────────────────────
 onMounted(async () => {
   try {
     const res = await api.get('/settings/')
@@ -356,7 +309,7 @@ onMounted(async () => {
       currency:        res.data.currency        || 'USD',
       github_username: res.data.github_username || '',
       github_repo:     res.data.github_repo     || '',
-      github_token:    '', // never prefill token
+      github_token:    '',
     }
     currentLogo.value = res.data.logo || ''
   } finally {
@@ -364,7 +317,6 @@ onMounted(async () => {
   }
 })
 
-// ── Backup: local file ────────────────────────────────────────
 function onBackupFileChange(e) {
   backupFile.value = e.target.files[0] || null
 }
@@ -393,7 +345,6 @@ async function restoreLocalBackup() {
   }
 }
 
-// ── Backup: GitHub ────────────────────────────────────────────
 async function pushToGithub() {
   pushing.value = true
   try {
@@ -440,3 +391,343 @@ async function restoreFromGithub(backup) {
   }
 }
 </script>
+
+<style scoped>
+.container {
+  max-width: 36rem;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-family: monospace;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.back-btn:hover {
+  color: #ffffff;
+}
+
+.title {
+  font-family: monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+}
+
+.loading-text {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+}
+
+.label-hint {
+  color: #4b5563;
+  font-weight: 400;
+  margin-left: 0.25rem;
+  text-transform: none;
+}
+
+.input {
+  width: 100%;
+  background-color: #111827;
+  border: 1px solid #374151;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  color: #ffffff;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: #fbbf24;
+}
+
+.textarea {
+  resize: vertical;
+}
+
+.hidden-input {
+  display: none;
+}
+
+/* Logo */
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo-img {
+  height: 4rem;
+  object-fit: contain;
+  background-color: #ffffff;
+  border-radius: 0.25rem;
+  padding: 0.25rem;
+}
+
+.logo-placeholder {
+  height: 4rem;
+  width: 8rem;
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-placeholder-text {
+  color: #4b5563;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.upload-btn {
+  font-family: monospace;
+  font-size: 0.75rem;
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  color: #d1d5db;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.upload-btn:hover {
+  background-color: #374151;
+}
+
+.upload-hint {
+  color: #4b5563;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+/* Buttons */
+.actions {
+  padding-top: 0.5rem;
+}
+
+.btn-primary {
+  background-color: #fbbf24;
+  color: #030712;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #fcd34d;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  font-family: monospace;
+  font-size: 0.875rem;
+  background-color: #1f2937;
+  border: 1px solid #374151;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: background-color 0.2s;
+}
+
+.btn-secondary:hover {
+  background-color: #374151;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-github-save {
+  font-weight: 700;
+  padding: 0.5rem 1.25rem;
+}
+
+.btn-danger {
+  background-color: #b91c1c;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-restore {
+  background: none;
+  border: none;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #fbbf24;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0;
+}
+
+.btn-restore:hover {
+  color: #fcd34d;
+}
+
+/* Section dividers */
+.section-divider {
+  border-top: 1px solid #1f2937;
+  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.section-title {
+  font-family: monospace;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.25rem;
+}
+
+.section-desc {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+/* Backup cards */
+.backup-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.backup-card {
+  background-color: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 0.25rem;
+  padding: 1rem;
+}
+
+.card-title {
+  font-size: 0.875rem;
+  color: #ffffff;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.card-desc {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.card-warn {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #f87171;
+  margin-bottom: 0.75rem;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.mb-3 {
+  margin-bottom: 0.75rem;
+}
+
+.file-name {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+/* Backup list */
+.backup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.backup-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #1f2937;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.backup-name {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #ffffff;
+}
+
+.backup-size {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.no-backups {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+</style>
