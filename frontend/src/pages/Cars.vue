@@ -1,19 +1,13 @@
-
-
 <template>
   <div>
-    <button
-      @click="$router.back()"
-      class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
-    >
+    <button @click="$router.back()"
+      class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1">
       ← Back
     </button>
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-mono font-bold text-white">Cars</h1>
-      <button
-        @click="openCreate"
-        class="bg-amber-400 text-gray-950 text-sm font-bold px-4 py-2 rounded hover:bg-amber-300 transition-colors"
-      >
+      <button @click="openCreate"
+        class="bg-amber-400 text-gray-950 text-sm font-bold px-4 py-2 rounded hover:bg-amber-300 transition-colors">
         + New Car
       </button>
     </div>
@@ -32,30 +26,23 @@
             <th class="py-3 pr-6 font-mono font-normal">Base Rate</th>
             <th class="py-3 pr-6 font-mono font-normal">Extra KM Rate</th>
             <th class="py-3 pr-6 font-mono font-normal">Extra Hr Rate</th>
+            <th class="py-3 pr-6 font-mono font-normal">Outstation Rate</th>
+
             <th class="py-3 font-mono font-normal"></th>
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="car in cars"
-            :key="car.id"
-            class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors"
-          >
+          <tr v-for="car in cars" :key="car.id" class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors">
             <td class="py-3 pr-6 text-white font-medium">{{ car.name }}</td>
             <td class="py-3 pr-6 font-mono text-amber-400">{{ currencySymbol }}{{ car.base_rate }}</td>
             <td class="py-3 pr-6 font-mono text-gray-300">{{ currencySymbol }}{{ car.extra_km_rate }}/km</td>
             <td class="py-3 pr-6 font-mono text-gray-300">{{ currencySymbol }}{{ car.extra_hr_rate }}/hr</td>
+            <td class="py-3 pr-6 font-mono text-gray-300">{{ currencySymbol }}{{ car.outstation_rate }}/km</td>
             <td class="py-3 flex items-center gap-4">
-              <button
-                @click="openEdit(car)"
-                class="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-              >
+              <button @click="openEdit(car)" class="text-xs text-blue-400 hover:text-blue-300 transition-colors">
                 Edit
               </button>
-              <button
-                @click="deleteCar(car)"
-                class="text-xs text-red-500 hover:text-red-400 transition-colors"
-              >
+              <button @click="deleteCar(car)" class="text-xs text-red-500 hover:text-red-400 transition-colors">
                 Delete
               </button>
             </td>
@@ -65,11 +52,8 @@
     </div>
 
     <!-- Modal -->
-    <div
-      v-if="showModal"
-      class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
-      @click.self="closeModal"
-    >
+    <div v-if="showModal" class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      @click.self="closeModal">
       <div class="bg-gray-900 border border-gray-800 rounded-lg w-full max-w-md">
 
         <!-- Modal Header -->
@@ -77,10 +61,7 @@
           <h2 class="text-sm font-mono font-bold text-white uppercase tracking-wider">
             {{ editingCar ? 'Edit Car' : 'New Car' }}
           </h2>
-          <button
-            @click="closeModal"
-            class="text-gray-500 hover:text-white transition-colors text-xl leading-none"
-          >
+          <button @click="closeModal" class="text-gray-500 hover:text-white transition-colors text-xl leading-none">
             ×
           </button>
         </div>
@@ -90,66 +71,42 @@
 
           <div>
             <label class="block text-xs text-gray-400 font-mono mb-1">Car Name</label>
-            <input
-              v-model="form.name"
-              type="text"
-              required
-              placeholder="e.g. Ute, Camry, HiAce"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
-            />
+            <input v-model="form.name" type="text" required placeholder="e.g. Ute, Camry, HiAce"
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
           </div>
 
           <div>
             <label class="block text-xs text-gray-400 font-mono mb-1">Base Rate ($)</label>
-            <input
-              v-model="form.base_rate"
-              type="number"
-              step="0.01"
-              required
-              placeholder="e.g. 100.00"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
-            />
+            <input v-model="form.base_rate" type="number" step="0.01" required placeholder="e.g. 100.00"
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
           </div>
 
           <div>
             <label class="block text-xs text-gray-400 font-mono mb-1">Extra KM Rate ($ per km over 80)</label>
-            <input
-              v-model="form.extra_km_rate"
-              type="number"
-              step="0.01"
-              required
-              placeholder="e.g. 1.20"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
-            />
+            <input v-model="form.extra_km_rate" type="number" step="0.01" required placeholder="e.g. 1.20"
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
           </div>
 
           <div>
             <label class="block text-xs text-gray-400 font-mono mb-1">Extra Hour Rate ($ per hr over 8)</label>
-            <input
-              v-model="form.extra_hr_rate"
-              type="number"
-              step="0.01"
-              required
-              placeholder="e.g. 12.00"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
-            />
+            <input v-model="form.extra_hr_rate" type="number" step="0.01" required placeholder="e.g. 12.00"
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+          </div>
+          <div>
+            <label class="block text-xs text-gray-400 font-mono mb-1">Outstation Rate ($ per km)</label>
+            <input v-model="form.outstation_rate" type="number" step="0.01" placeholder="e.g. 2.00"
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
           </div>
 
           <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
 
           <div class="flex gap-3 pt-2">
-            <button
-              type="submit"
-              :disabled="submitting"
-              class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50"
-            >
+            <button type="submit" :disabled="submitting"
+              class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50">
               {{ submitting ? 'Saving...' : editingCar ? 'Save Changes' : 'Create Car' }}
             </button>
-            <button
-              type="button"
-              @click="closeModal"
-              class="text-sm text-gray-400 hover:text-white px-4 py-2 transition-colors"
-            >
+            <button type="button" @click="closeModal"
+              class="text-sm text-gray-400 hover:text-white px-4 py-2 transition-colors">
               Cancel
             </button>
           </div>
@@ -157,15 +114,8 @@
         </form>
       </div>
     </div>
-<ConfirmDialog
-  :visible="confirmVisible"
-  :title="confirmTitle"
-  :message="confirmMessage"
-  :confirm-label="confirmLabel"
-  :destructive="destructive"
-  @confirm="onConfirm"
-  @cancel="onCancel"
-/>
+    <ConfirmDialog :visible="confirmVisible" :title="confirmTitle" :message="confirmMessage"
+      :confirm-label="confirmLabel" :destructive="destructive" @confirm="onConfirm" @cancel="onCancel" />
   </div>
 </template>
 
@@ -178,7 +128,7 @@ import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { useConfirm } from '../composables/useConfirm'
 
 const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
-        confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
+  confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
 
 const cars = ref([])
 const loading = ref(true)
@@ -192,6 +142,7 @@ const form = ref({
   base_rate: '',
   extra_km_rate: '',
   extra_hr_rate: '',
+  outstation_rate: '',
 })
 
 async function fetchCars() {
@@ -205,11 +156,10 @@ async function fetchCars() {
 
 function openCreate() {
   editingCar.value = null
-  form.value = { name: '', base_rate: '', extra_km_rate: '', extra_hr_rate: '' }
+  form.value = { name: '', base_rate: '', extra_km_rate: '', extra_hr_rate: '', outstation_rate: '' }
   error.value = ''
   showModal.value = true
 }
-
 function openEdit(car) {
   editingCar.value = car
   form.value = {
@@ -217,6 +167,7 @@ function openEdit(car) {
     base_rate: car.base_rate,
     extra_km_rate: car.extra_km_rate,
     extra_hr_rate: car.extra_hr_rate,
+    outstation_rate: car.outstation_rate,
   }
   error.value = ''
   showModal.value = true
