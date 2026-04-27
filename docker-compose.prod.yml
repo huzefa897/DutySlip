@@ -1,11 +1,7 @@
-version: '3.8'
-
 services:
-
   db:
     image: postgres:15
     container_name: dutyslip_db
-    env_file: .env
     environment:
       POSTGRES_DB:       ${POSTGRES_DB}
       POSTGRES_USER:     ${POSTGRES_USER}
@@ -19,11 +15,16 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    image: ${DOCKERHUB_USERNAME}/dutyslip-backend:latest
     container_name: dutyslip_backend
-    env_file: .env
     environment:
-      POSTGRES_HOST: db
+      POSTGRES_HOST:     db
+      POSTGRES_DB:       ${POSTGRES_DB}
+      POSTGRES_USER:     ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG:      ${DJANGO_DEBUG}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
     volumes:
       - media_files:/app/media
     depends_on:
@@ -36,7 +37,7 @@ services:
              gunicorn dutyslip.wsgi:application --bind 0.0.0.0:8000 --workers 3"
 
   frontend:
-    build: ./frontend
+    image: ${DOCKERHUB_USERNAME}/dutyslip-frontend:latest
     container_name: dutyslip_frontend
     depends_on:
       - backend

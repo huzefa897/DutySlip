@@ -1,41 +1,52 @@
 <template>
-  <div class="max-w-2xl">
-    <button
-      @click="$router.back()"
-      class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
-    >
-      ← Back
-    </button>
-    <h1 class="text-xl font-mono font-bold text-white mb-6">New Duty Slip</h1>
+  <div class="container">
+    <button @click="$router.back()" class="back-btn">← Back</button>
+    <h1 class="title">New Duty Slip</h1>
 
-    <form @submit.prevent="submit" class="space-y-5">
+    <form @submit.prevent="submit" class="form">
 
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Party Name</label>
-        <input v-model="form.party_name" type="text" required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+      <div class="field">
+        <label class="label">Party Name</label>
+        <input v-model="form.party_name" type="text" required class="input" />
       </div>
 
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Company</label>
-        <select v-model="form.company" required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400">
+      <div class="field">
+        <label class="label">Company</label>
+        <select v-model="form.company" required class="input">
           <option value="" disabled>Select company</option>
           <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
       </div>
 
-      <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
+      <div class="field">
+        <label class="label">Slip Type</label>
+        <div class="toggle-group">
+          <button
+            type="button"
+            @click="form.slip_type = 'regular'"
+            class="toggle-btn"
+            :class="{ 'toggle-btn--regular': form.slip_type === 'regular' }"
+          >
+            Regular
+          </button>
+          <button
+            type="button"
+            @click="form.slip_type = 'outstation'"
+            class="toggle-btn"
+            :class="{ 'toggle-btn--outstation': form.slip_type === 'outstation' }"
+          >
+            Outstation
+          </button>
+        </div>
+      </div>
 
-      <div class="flex gap-3">
-        <button type="submit" :disabled="submitting"
-          class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50">
+      <p v-if="error" class="error">{{ error }}</p>
+
+      <div class="actions">
+        <button type="submit" :disabled="submitting" class="btn-primary">
           {{ submitting ? 'Creating...' : 'Create Duty Slip' }}
         </button>
-        <router-link to="/dutyslips"
-          class="text-sm text-gray-400 hover:text-white px-4 py-2 transition-colors">
-          Cancel
-        </router-link>
+        <router-link to="/dutyslips" class="btn-cancel">Cancel</router-link>
       </div>
 
     </form>
@@ -52,7 +63,11 @@ const companies = ref([])
 const submitting = ref(false)
 const error = ref('')
 
-const form = ref({ party_name: '', company: '' })
+const form = ref({
+  party_name: '',
+  company: '',
+  slip_type: 'regular',
+})
 
 async function submit() {
   submitting.value = true
@@ -72,3 +87,152 @@ onMounted(async () => {
   companies.value = res.data
 })
 </script>
+
+<style scoped>
+.container {
+  max-width: 42rem;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-family: monospace;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  padding: 0;
+  transition: color 0.2s;
+}
+
+.back-btn:hover {
+  color: #ffffff;
+}
+
+.title {
+  font-family: monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+}
+
+.input {
+  width: 100%;
+  background-color: #111827;
+  border: 1px solid #374151;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  color: #ffffff;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: #fbbf24;
+}
+
+.toggle-group {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 0.5rem;
+  font-family: monospace;
+  font-size: 0.75rem;
+  border-radius: 0.25rem;
+  border: 1px solid #374151;
+  background-color: #111827;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+
+.toggle-btn:hover {
+  border-color: #6b7280;
+}
+
+.toggle-btn--regular {
+  background-color: #fbbf24;
+  border-color: #fbbf24;
+  color: #030712;
+  font-weight: 700;
+}
+
+.toggle-btn--outstation {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.error {
+  color: #f87171;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.btn-primary {
+  background-color: #fbbf24;
+  color: #030712;
+  font-size: 0.875rem;
+  font-weight: 700;
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #fcd34d;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-cancel {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.btn-cancel:hover {
+  color: #ffffff;
+}
+</style>

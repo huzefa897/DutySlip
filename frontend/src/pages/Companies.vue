@@ -133,7 +133,16 @@
                   class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
                 />
               </div>
-            </div>
+              <div>
+                <label class="block text-xs text-gray-500 font-mono mb-1">Outstation /km</label>
+                <input
+                  v-model="rateForm.outstation_rate"
+                  type="number" step="0.01"
+                  placeholder="e.g. 2.00"
+                  class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
+                />
+              </div>
+            </div>          
             <button
               @click="saveRate(company.id)"
               :disabled="!rateForm.car"
@@ -185,7 +194,15 @@
         </form>
       </div>
     </div>
-
+<ConfirmDialog
+  :visible="confirmVisible"
+  :title="confirmTitle"
+  :message="confirmMessage"
+  :confirm-label="confirmLabel"
+  :destructive="destructive"
+  @confirm="onConfirm"
+  @cancel="onCancel"
+/>
   </div>
 </template>
 
@@ -194,7 +211,11 @@ import { ref, onMounted } from 'vue'
 import api from '../api'
 import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
+import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { useConfirm } from '../composables/useConfirm'
 
+const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
+        confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
 const companies = ref([])
 const cars = ref([])
 const loading = ref(true)
@@ -206,8 +227,13 @@ const expandedCompany = ref(null)
 const companyRates = ref([])
 
 const form = ref({ name: '', abn: '' })
-const rateForm = ref({ car: '', base_rate: '', extra_km_rate: '', extra_hr_rate: '' })
-
+const rateForm = ref({
+  car: '',
+  base_rate: '',
+  extra_km_rate: '',
+  extra_hr_rate: '',
+  outstation_rate: '',
+})
 async function fetchCompanies() {
   try {
     const res = await api.get('/companies/')
@@ -217,6 +243,26 @@ async function fetchCompanies() {
   }
 }
 
+
+
+async function fetchRates(companyId) {
+  const res = await api.get(`/companies/${companyId}/rates/`)
+  companyRates.value = res.data
+}
+async function saveRate(companyId) {
+  if (!rateForm.value.car) return
+  await api.post(`/companies/${companyId}/rates/`, {
+    car:             rateForm.value.car,
+    company:         companyId,
+    base_rate:       rateForm.value.base_rate       || null,
+    extra_km_rate:   rateForm.value.extra_km_rate   || null,
+    extra_hr_rate:   rateForm.value.extra_hr_rate   || null,
+    outstation_rate: rateForm.value.outstation_rate || null,
+  })
+  rateForm.value = { car: '', base_rate: '', extra_km_rate: '', extra_hr_rate: '', outstation_rate: '' }
+  await fetchRates(companyId)
+  notify('Rate override saved.')
+}
 async function toggleRates(company) {
   if (expandedCompany.value === company.id) {
     expandedCompany.value = null
@@ -224,27 +270,8 @@ async function toggleRates(company) {
     return
   }
   expandedCompany.value = company.id
-  rateForm.value = { car: '', base_rate: '', extra_km_rate: '', extra_hr_rate: '' }
+  rateForm.value = { car: '', base_rate: '', extra_km_rate: '', extra_hr_rate: '', outstation_rate: '' }
   await fetchRates(company.id)
-}
-
-async function fetchRates(companyId) {
-  const res = await api.get(`/companies/${companyId}/rates/`)
-  companyRates.value = res.data
-}
-
-async function saveRate(companyId) {
-  if (!rateForm.value.car) return
-  await api.post(`/companies/${companyId}/rates/`, {
-    car: rateForm.value.car,
-    company: companyId,
-    base_rate: rateForm.value.base_rate || null,
-    extra_km_rate: rateForm.value.extra_km_rate || null,
-    extra_hr_rate: rateForm.value.extra_hr_rate || null,
-  })
-  rateForm.value = { car: '', base_rate: '', extra_km_rate: '', extra_hr_rate: '' }
-  await fetchRates(companyId)
-  notify('Rate override saved.')
 }
 
 async function deleteRate(companyId, carId) {
@@ -298,7 +325,12 @@ async function submit() {
 }
 
 async function deleteCompany(company) {
-  if (!confirm(`Delete "${company.name}"?`)) return
+  const ok = await ask({
+    title: `Delete "${company.name}"`,
+    message: `This will permanently delete ${company.name} and all associated data. This cannot be undone.`,
+    confirmLabel: 'Delete',
+  })
+  if (!ok) return
   try {
     await api.delete(`/companies/${company.id}/`)
     companies.value = companies.value.filter(c => c.id !== company.id)

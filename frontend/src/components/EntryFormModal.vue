@@ -41,6 +41,24 @@
                     <input v-model="form.date" type="date" required
                         class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
                 </div>
+                <!-- Entry Type -->
+                <div>
+                    <label class="block text-xs text-gray-400 font-mono mb-1">Entry Type</label>
+                    <div class="flex gap-2">
+                        <button type="button" @click="form.entry_type = 'regular'"
+                            class="flex-1 py-2 text-xs font-mono rounded border transition-colors" :class="form.entry_type === 'regular'
+                                ? 'bg-amber-400 border-amber-400 text-gray-950 font-bold'
+                                : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'">
+                            Regular
+                        </button>
+                        <button type="button" @click="form.entry_type = 'outstation'"
+                            class="flex-1 py-2 text-xs font-mono rounded border transition-colors" :class="form.entry_type === 'outstation'
+                                ? 'bg-blue-500 border-blue-500 text-white font-bold'
+                                : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'">
+                            Outstation
+                        </button>
+                    </div>
+                </div>
 
                 <!-- Car -->
                 <div>
@@ -85,17 +103,26 @@
                     </div>
                 </div>
 
-                <!-- Times -->
-                <div class="grid grid-cols-2 gap-3">
+                <!-- Times — regular only -->
+                <div v-if="form.entry_type === 'regular'" class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs text-gray-400 font-mono mb-1">Start Time</label>
-                        <input v-model="form.start_time" type="time" required
+                        <input v-model="form.start_time" type="time" :required="form.entry_type === 'regular'"
                             class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
                     </div>
                     <div>
                         <label class="block text-xs text-gray-400 font-mono mb-1">End Time</label>
-                        <input v-model="form.end_time" type="time" required
+                        <input v-model="form.end_time" type="time" :required="form.entry_type === 'regular'"
                             class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+                    </div>
+                </div>
+                <!-- Outstation rate info -->
+                <div v-if="form.entry_type === 'outstation' && rateOverride?.outstation_rate"
+                    class="mt-2 flex items-start gap-2 bg-blue-400/10 border border-blue-400/30 rounded px-3 py-2">
+                    <span class="text-blue-400 text-xs mt-0.5">⚡</span>
+                    <div class="text-xs font-mono text-blue-300">
+                        <p class="font-bold text-blue-400">Custom outstation rate applied</p>
+                        <p>{{ currencySymbol }}{{ rateOverride.outstation_rate }}/km</p>
                     </div>
                 </div>
 
@@ -144,7 +171,7 @@
 import { ref, onMounted, watch } from 'vue'
 import api from '../api'
 import { currencySymbol } from '../store/currency'
-import AutocompleteInput from './AutocompleteInput.vue'
+import AutocompleteInput from './AutoCompleteInput.vue'
 // ── 1. Props first ────────────────────────────────────────────
 const props = defineProps({
     partyName: String,
@@ -174,6 +201,7 @@ const form = ref({
     end_time: props.entry?.end_time || '',
     driver_bhatta: props.entry?.driver_bhatta || '0',
     parking: props.entry?.parking || '0',
+    entry_type: props.entry?.entry_type || 'regular',
     notes: props.entry?.notes || '',
 })
 

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>DutySlip</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #030712;
+      color: #f9fafb;
+      font-family: 'Courier New', monospace;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+
+    .panel {
+      -webkit-app-region: no-drag;
+      width: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .brand h1 {
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: #fbbf24;
+    }
+
+    .brand p {
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #374151;
+      margin-top: 4px;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f172a;
+      border: 1px solid #1f2937;
+      border-radius: 6px;
+      padding: 10px 16px;
+      width: 100%;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #9ca3af;
+      min-height: 40px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: #374151;
+      transition: background 0.3s;
+    }
+
+    .dot.green  { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .dot.yellow { background: #fbbf24; box-shadow: 0 0 6px #fbbf24; animation: pulse 1s infinite; }
+    .dot.red    { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    button {
+      width: 100%;
+      padding: 11px 16px;
+      border-radius: 6px;
+      border: 1px solid #1f2937;
+      background: #0f172a;
+      color: #d1d5db;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button:hover:not(:disabled) {
+      background: #1f2937;
+      border-color: #374151;
+      color: #f9fafb;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background: #fbbf24;
+      border-color: #fbbf24;
+      color: #030712;
+      font-weight: bold;
+    }
+
+    button.primary:hover:not(:disabled) {
+      background: #f59e0b;
+      border-color: #f59e0b;
+    }
+
+    button.danger {
+      border-color: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    button.danger:hover:not(:disabled) {
+      background: #7f1d1d;
+      border-color: #ef4444;
+      color: #fff;
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: #1f2937;
+      margin: 8px 0;
+    }
+
+    .version {
+      font-size: 10px;
+      color: #374151;
+      letter-spacing: 2px;
+      margin-top: 16px;
+    }
+
+    .update-badge {
+      display: none;
+      background: #fbbf24;
+      color: #030712;
+      font-size: 9px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 10px;
+      letter-spacing: 1px;
+      margin-left: auto;
+    }
+
+    .log-box {
+  width: 100%;
+  background: #000;
+  border: 1px solid #1f2937;
+  border-radius: 6px;
+  padding: 10px 12px;
+  height: 100px;
+  overflow-y: auto;
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  color: #4b5563;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.log-line {
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.log-line.success { color: #22c55e; }
+.log-line.error   { color: #ef4444; }
+.log-line.warning { color: #fbbf24; }
+.log-line.info    { color: #60a5fa; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="brand">
+      <h1>DutySlip</h1>
+      <p>by Huzefa Saleem</p>
+    </div>
+
+    <div class="status-bar">
+      <div class="dot" id="dot"></div>
+      <span id="status-text">Checking status...</span>
+    </div>
+
+    <button class="primary" id="btn-start">
+      <span>▶</span> Start Application
+    </button>
+
+    <button class="danger" id="btn-stop" disabled>
+      <span>■</span> Stop Application
+    </button>
+
+    <div class="divider"></div>
+
+    <button id="btn-docker">
+      <span>↓</span> Download Docker Desktop
+    </button>
+
+    <button id="btn-update">
+      <span>↑</span> Check for Updates
+      <span class="update-badge" id="update-badge">NEW</span>
+    </button>
+
+    <div class="version" id="version">v1.0.0</div>
+    <div class="divider"></div>
+
+<div class="log-box" id="log-box">
+  <div class="log-line" id="log-content">Waiting for action...</div>
+</div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
