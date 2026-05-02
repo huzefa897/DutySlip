@@ -178,7 +178,7 @@ import { useRouter } from 'vue-router'
 import api from '../api'
 import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
-import AutocompleteInput from '../components/AutocompleteInput.vue'
+import AutocompleteInput from '../components/AutoCompleteInput.vue'
 const router = useRouter()
 const cars = ref([])
 const dutySlips = ref([])
