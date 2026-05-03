@@ -8,6 +8,7 @@ import datetime
 import json
 import base64
 import requests as http_requests
+from pathlib import Path
 
 from .models import (
     Company,
@@ -397,7 +398,9 @@ def download_invoice_pdf(request, pk):
     invoice_ref = f"786/110/{year}{str(slip.id).zfill(3)}"
     logo_url = ""
     if biz and biz.logo:
-        logo_url = request.build_absolute_uri(biz.logo.url)
+        logo_path = Path(biz.logo.path)
+        if logo_path.exists():
+            logo_url = logo_path.as_uri()
     today = datetime.date.today().strftime("%d %B %Y")
 
     html_string = render_to_string(
