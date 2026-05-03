@@ -357,9 +357,7 @@ async function saveGithubSettings() {
     if (form.value.github_token) {
       payload.append('github_token', form.value.github_token)
     }
-    await api.patch('/settings/', payload, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    await api.patch('/settings/', payload)
     form.value.github_token = ''
     notify('GitHub settings saved.')
   } catch {
@@ -422,9 +420,7 @@ async function submit() {
     }
     if (logoFile.value) payload.append('logo', logoFile.value)
 
-    const res = await api.patch('/settings/', payload, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
+    const res = await api.patch('/settings/', payload)
 
     currentLogo.value = res.data.logo || ''
     logoFile.value = null
