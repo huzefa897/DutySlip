@@ -17,3 +17,10 @@ repos:
         language: system
         pass_filenames: false
         files: ^frontend/
+
+      - id: electron-lint
+        name: electron-lint
+        entry: bash -c 'cd electron && npm run lint'
+        language: system
+        pass_filenames: false
+        files: ^electron/

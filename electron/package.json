@@ -8,7 +8,8 @@
     "start": "electron .",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
-    "build:all": "electron-builder --mac --win"
+    "build:all": "electron-builder --mac --win",
+    "lint": "eslint ."
   },
   "build": {
     "appId": "com.dutyslip.app",
@@ -41,15 +42,26 @@
     "mac": {
       "icon": "assets/icon.png",
       "category": "public.app-category.business",
-      "target": ["dmg", "zip"]
+      "target": [
+        "dmg",
+        "zip"
+      ]
     },
     "win": {
       "icon": "assets/icon.ico",
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     }
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "electron": "^29.0.0",
-    "electron-builder": "^24.0.0"
+    "electron-builder": "^24.0.0",
+    "eslint": "^9.39.4",
+    "globals": "^17.6.0"
+  },
+  "dependencies": {
+    "lint": "^1.2.2"
   }
 }

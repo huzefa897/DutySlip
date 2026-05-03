@@ -8,6 +8,7 @@ const GITHUB_OWNER = 'huzefa897'
 const GITHUB_REPO  = 'DutySlip'
 const APP_URL      = 'http://localhost'
 const HEALTH_URL   = 'http://localhost/api/cars/'
+const COMPOSE_PROJECT_NAME = 'dutyslip'
 
 let mainWindow = null
 let isQuitting  = false
@@ -78,7 +79,7 @@ function isDockerRunning() {
 function areContainersRunning() {
   try {
     const result = execSync(
-      `docker compose -f "${getComposePath()}" ps --services --filter status=running`,
+      `docker compose -p ${COMPOSE_PROJECT_NAME} -f "${getComposePath()}" ps --services --filter status=running`,
       { encoding: 'utf8' }
     )
     return result.trim().includes('frontend')
@@ -175,9 +176,10 @@ ipcMain.handle('start-app', async () => {
 
   const docker = spawn('docker', [
     'compose',
+    '-p', COMPOSE_PROJECT_NAME,
     '-f', composePath,
     '--env-file', envPath,
-    'up', '-d', '--build'
+    'up', '-d', '--build', '--remove-orphans'
   ])
 
   docker.stdout.on('data', (data) => {
@@ -238,7 +240,7 @@ ipcMain.handle('stop-app', async () => {
   sendLog('Stopping containers...', 'warning')
 
   exec(
-    `docker compose -f "${composePath}" --env-file "${envPath}" down`,
+    `docker compose -p ${COMPOSE_PROJECT_NAME} -f "${composePath}" --env-file "${envPath}" down`,
     (error) => {
       if (error) {
         sendStatus('Failed to stop containers', 'error')
