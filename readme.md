@@ -2,6 +2,8 @@
 
 Fleet management and invoicing system built with Django, Vue, PostgreSQL, and Docker.
 
+For a complete feature walkthrough and day-to-day usage instructions, see the [DutySlip User Guide](docs/USER_GUIDE.md).
+
 ---
 
 ## Prerequisites
