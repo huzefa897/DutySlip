@@ -30,7 +30,7 @@ jobs:
           pip install pre-commit pytest
 
       - name: Run pre-commit
-        run: pre-commit run --all-files
+        run: pre-commit run ruff ruff-format --all-files
 
       - name: Run backend tests
         working-directory: backend
