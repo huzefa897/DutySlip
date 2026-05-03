@@ -10,10 +10,9 @@
 <script setup>
 defineProps({ status: String })
 
-const labels = { draft: 'Draft', finalised: 'UnPaid / Finalised', paid: 'Paid' }
+const labels = { draft: 'Draft', finalised: 'Finalised' }
 const styles = {
   draft:      'bg-gray-800 text-gray-400',
   finalised:  'bg-blue-900 text-blue-300',
-  paid:       'bg-green-900 text-green-400',
 }
 </script>

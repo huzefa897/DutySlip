@@ -48,6 +48,17 @@
         <option value="finalised">
           Finalised
         </option>
+      </select>
+      <select
+        v-model="filters.payment_status"
+        class="input"
+      >
+        <option value="">
+          All Payments
+        </option>
+        <option value="unpaid">
+          Unpaid
+        </option>
         <option value="paid">
           Paid
         </option>
@@ -101,6 +112,7 @@
                 {{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}
               </p>
               <StatusBadge :status="slip.status" />
+              <PaymentStatusBadge :status="slip.payment_status" />
               <span
                 v-if="slip.slip_type === 'outstation'"
                 class="outstation-badge"
@@ -130,25 +142,40 @@
       </router-link>
     </div>
 
-    <!-- Load More -->
+    <!-- Pagination -->
     <div
-      v-if="hasMore"
-      class="load-more-row"
+      v-if="filteredSlips.length > 0"
+      class="pagination-row"
     >
+      <p class="pagination-info">
+        Showing {{ pageStart }}-{{ pageEnd }} of {{ filteredSlips.length }}
+      </p>
       <button
-        class="btn-load-more"
-        @click="loadMore"
+        class="btn-page"
+        :disabled="!hasPrev"
+        @click="prevPage"
       >
-        Load more ({{ remaining }} remaining)
+        Previous
+      </button>
+      <div class="page-numbers">
+        <button
+          v-for="page in totalPages"
+          :key="page"
+          class="btn-page-number"
+          :class="{ 'btn-page-number--active': page === currentPage }"
+          @click="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+      </div>
+      <button
+        class="btn-page"
+        :disabled="!hasNext"
+        @click="nextPage"
+      >
+        Next
       </button>
     </div>
-
-    <p
-      v-else-if="paginatedSlips.length > 10"
-      class="all-loaded"
-    >
-      All {{ filteredSlips.length }} duty slips loaded
-    </p>
 
     <ConfirmDialog
       :visible="confirmVisible"
@@ -168,6 +195,7 @@ import api from '../api'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
 import StatusBadge from '../components/StatusBadge.vue'
+import PaymentStatusBadge from '../components/PaymentStatusBadge.vue'
 import { usePagination } from '../composables/usePagination'
 import { useConfirm } from '../composables/useConfirm'
 import { notify } from '../store/notification'
@@ -189,7 +217,7 @@ async function deleteSlip(slip, e) {
     await api.delete(`/dutyslips/${slip.id}/`)
     slips.value = slips.value.filter(s => s.id !== slip.id)
     notify(`Duty slip ${formatSlipId(slip.id)} deleted.`)
-  } catch (e) {
+  } catch {
     notify('Failed to delete duty slip.', 'error')
   }
 }
@@ -198,7 +226,7 @@ const slips     = ref([])
 const companies = ref([])
 const loading   = ref(true)
 
-const filters = ref({ party_name: '', company: '', status: '' })
+const filters = ref({ party_name: '', company: '', status: '', payment_status: '' })
 
 const isFiltered = computed(() => Object.values(filters.value).some(v => v !== ''))
 
@@ -208,15 +236,28 @@ const filteredSlips = computed(() =>
         !s.party_name.toLowerCase().includes(filters.value.party_name.toLowerCase())) return false
     if (filters.value.company && s.company !== filters.value.company) return false
     if (filters.value.status && s.status !== filters.value.status) return false
+    if (filters.value.payment_status &&
+        s.payment_status !== filters.value.payment_status) return false
     return true
   })
 )
 
 function clearFilters() {
-  filters.value = { party_name: '', company: '', status: '' }
+  filters.value = { party_name: '', company: '', status: '', payment_status: '' }
 }
 
-const { paginated: paginatedSlips, hasMore, remaining, loadMore } = usePagination(filteredSlips)
+const {
+  paginated: paginatedSlips,
+  currentPage,
+  totalPages,
+  pageStart,
+  pageEnd,
+  hasPrev,
+  hasNext,
+  goToPage,
+  prevPage,
+  nextPage,
+} = usePagination(filteredSlips)
 
 async function fetchData() {
   try {
@@ -275,7 +316,7 @@ onMounted(fetchData)
 
 @media (min-width: 640px) {
   .filters-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -440,36 +481,54 @@ onMounted(fetchData)
   color: #f87171;
 }
 
-/* Load more */
-.load-more-row {
+.pagination-row {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.75rem;
   margin-top: 1.5rem;
+  flex-wrap: wrap;
 }
 
-.btn-load-more {
+.pagination-info {
+  color: #6b7280;
+  font-family: monospace;
+  font-size: 0.75rem;
+  margin-right: 0.5rem;
+}
+
+.btn-page,
+.btn-page-number {
   background-color: #111827;
   border: 1px solid #1f2937;
   color: #9ca3af;
   font-family: monospace;
-  font-size: 0.875rem;
-  padding: 0.625rem 1.5rem;
+  font-size: 0.75rem;
+  padding: 0.5rem 0.75rem;
   border-radius: 0.25rem;
   cursor: pointer;
   transition: color 0.2s, border-color 0.2s;
 }
 
-.btn-load-more:hover {
+.btn-page:hover:not(:disabled),
+.btn-page-number:hover {
   color: #ffffff;
   border-color: #4b5563;
 }
 
-.all-loaded {
-  text-align: center;
-  font-family: monospace;
-  font-size: 0.75rem;
-  color: #4b5563;
-  margin-top: 1.5rem;
+.btn-page:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+.page-numbers {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.btn-page-number--active {
+  background-color: #fbbf24;
+  border-color: #fbbf24;
+  color: #030712;
 }
 </style>

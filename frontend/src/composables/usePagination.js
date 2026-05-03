@@ -1,32 +1,63 @@
 import { ref, computed, watch } from 'vue'
 
 export function usePagination(sourceList, perPage = 10) {
-  const currentCount = ref(perPage)
+  const currentPage = ref(1)
 
-  // reset to first page when source list changes (e.g. filters applied)
   watch(sourceList, () => {
-    currentCount.value = perPage
+    currentPage.value = 1
   })
 
+  const totalPages = computed(() =>
+    Math.max(1, Math.ceil(sourceList.value.length / perPage))
+  )
+
+  const pageStart = computed(() =>
+    sourceList.value.length === 0 ? 0 : (currentPage.value - 1) * perPage + 1
+  )
+
+  const pageEnd = computed(() =>
+    Math.min(currentPage.value * perPage, sourceList.value.length)
+  )
+
   const paginated = computed(() =>
-    sourceList.value.slice(0, currentCount.value)
+    sourceList.value.slice(pageStart.value - 1, pageEnd.value)
   )
 
-  const hasMore = computed(() =>
-    currentCount.value < sourceList.value.length
+  const hasPrev = computed(() =>
+    currentPage.value > 1
   )
 
-  const remaining = computed(() =>
-    sourceList.value.length - currentCount.value
+  const hasNext = computed(() =>
+    currentPage.value < totalPages.value
   )
 
-  function loadMore() {
-    currentCount.value += perPage
+  function goToPage(page) {
+    currentPage.value = Math.min(Math.max(page, 1), totalPages.value)
+  }
+
+  function prevPage() {
+    goToPage(currentPage.value - 1)
+  }
+
+  function nextPage() {
+    goToPage(currentPage.value + 1)
   }
 
   function reset() {
-    currentCount.value = perPage
+    currentPage.value = 1
   }
 
-  return { paginated, hasMore, remaining, loadMore, reset }
+  return {
+    paginated,
+    currentPage,
+    totalPages,
+    pageStart,
+    pageEnd,
+    hasPrev,
+    hasNext,
+    goToPage,
+    prevPage,
+    nextPage,
+    reset,
+  }
 }
