@@ -135,7 +135,7 @@
           </div>
 
           <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Base Rate ($)</label>
+            <label class="block text-xs text-gray-400 font-mono mb-1">Base Rate ({{ currencySymbol }})</label>
             <input
               v-model="form.base_rate"
               type="number"
@@ -147,7 +147,7 @@
           </div>
 
           <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Extra KM Rate ($ per km over 80)</label>
+            <label class="block text-xs text-gray-400 font-mono mb-1">Extra KM Rate ({{ currencySymbol }} per km over 80)</label>
             <input
               v-model="form.extra_km_rate"
               type="number"
@@ -159,7 +159,7 @@
           </div>
 
           <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Extra Hour Rate ($ per hr over 8)</label>
+            <label class="block text-xs text-gray-400 font-mono mb-1">Extra Hour Rate ({{ currencySymbol }} per hr over 8)</label>
             <input
               v-model="form.extra_hr_rate"
               type="number"
@@ -170,7 +170,7 @@
             >
           </div>
           <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Outstation Rate ($ per km)</label>
+            <label class="block text-xs text-gray-400 font-mono mb-1">Outstation Rate ({{ currencySymbol }} per km)</label>
             <input
               v-model="form.outstation_rate"
               type="number"

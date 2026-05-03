@@ -73,7 +73,7 @@
               Grand Total
             </p>
             <p class="text-2xl font-mono font-bold text-amber-400">
-              ${{ slip.grand_total }}
+              {{ currencySymbol }}{{ slip.grand_total }}
             </p>
           </div>
         </div>
@@ -295,11 +295,11 @@
             <th>End KMs</th>
             <th>Total KMs</th>
             <th>Extra KMs</th>
-            <th>Extra KMs ($)</th>
+            <th>Extra KMs ({{ currencySymbol }})</th>
             <th>Start Time</th>
             <th>End Time</th>
             <th>Extra Hrs</th>
-            <th>Extra Hrs ($)</th>
+            <th>Extra Hrs ({{ currencySymbol }})</th>
             <th>Base Rate</th>
             <th>Bhatta</th>
             <th>Parking</th>
