@@ -208,7 +208,7 @@
         <!-- Charges -->
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Driver Bhatta ($)</label>
+            <label class="block text-xs text-gray-400 font-mono mb-1">Driver Bhatta ({{ currencySymbol }})</label>
             <input
               v-model="form.driver_bhatta"
               type="number"
@@ -217,7 +217,7 @@
             >
           </div>
           <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Parking ($)</label>
+            <label class="block text-xs text-gray-400 font-mono mb-1">Parking ({{ currencySymbol }})</label>
             <input
               v-model="form.parking"
               type="number"

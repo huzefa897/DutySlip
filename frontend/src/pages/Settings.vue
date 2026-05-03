@@ -123,7 +123,7 @@
           class="input"
         >
           <option value="USD">
-            Dollar ($)
+            Dollar
           </option>
           <option value="INR">
             Rupee (₹)
