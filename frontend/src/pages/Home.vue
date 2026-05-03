@@ -1,61 +1,112 @@
 <template>
   <div>
-
     <!-- Hero -->
     <div class="hero">
       <h1 class="hero-title">
         Welcome back<span class="hero-dot">.</span>
       </h1>
-      <p class="hero-sub">{{ today }} · {{ bizName }}</p>
+      <p class="hero-sub">
+        {{ today }} · {{ bizName }}
+      </p>
     </div>
 
     <!-- Stats Row -->
     <div class="stats-grid">
       <div class="stat-card">
-        <p class="stat-label">Duty Slips</p>
-        <p class="stat-value">{{ stats.totalSlips }}</p>
+        <p class="stat-label">
+          Duty Slips
+        </p>
+        <p class="stat-value">
+          {{ stats.totalSlips }}
+        </p>
       </div>
       <div class="stat-card">
-        <p class="stat-label">Total Entries</p>
-        <p class="stat-value">{{ stats.totalEntries }}</p>
+        <p class="stat-label">
+          Total Entries
+        </p>
+        <p class="stat-value">
+          {{ stats.totalEntries }}
+        </p>
       </div>
       <div class="stat-card">
-        <p class="stat-label">Total Revenue</p>
-        <p class="stat-value stat-value--amber">{{ currencySymbol }}{{ stats.totalRevenue }}</p>
+        <p class="stat-label">
+          Total Revenue
+        </p>
+        <p class="stat-value stat-value--amber">
+          {{ currencySymbol }}{{ stats.totalRevenue }}
+        </p>
       </div>
     </div>
 
     <!-- Quick Actions -->
     <div class="quick-actions">
-      <h2 class="section-label">Quick Actions</h2>
+      <h2 class="section-label">
+        Quick Actions
+      </h2>
       <div class="quick-actions-row">
-        <router-link to="/entries/create" class="btn-primary">+ New Entry</router-link>
-        <router-link to="/dutyslips/create" class="btn-secondary">+ New Duty Slip</router-link>
+        <router-link
+          to="/entries/create"
+          class="btn-primary"
+        >
+          + New Entry
+        </router-link>
+        <router-link
+          to="/dutyslips/create"
+          class="btn-secondary"
+        >
+          + New Duty Slip
+        </router-link>
       </div>
     </div>
 
     <!-- Recent Duty Slips + Recent Entries side by side -->
     <div class="two-col">
-
       <!-- Recent Duty Slips -->
       <div>
         <div class="list-header">
-          <h2 class="section-label">Recent Duty Slips</h2>
-          <router-link to="/dutyslips" class="view-all">View all →</router-link>
+          <h2 class="section-label">
+            Recent Duty Slips
+          </h2>
+          <router-link
+            to="/dutyslips"
+            class="view-all"
+          >
+            View all →
+          </router-link>
         </div>
 
-        <p v-if="recentSlips.length === 0" class="empty-text">No duty slips yet.</p>
+        <p
+          v-if="recentSlips.length === 0"
+          class="empty-text"
+        >
+          No duty slips yet.
+        </p>
 
         <div class="card-list">
-          <router-link v-for="slip in recentSlips" :key="slip.id" :to="`/dutyslips/${slip.id}`" class="list-card">
+          <router-link
+            v-for="slip in recentSlips"
+            :key="slip.id"
+            :to="`/dutyslips/${slip.id}`"
+            class="list-card"
+          >
             <div>
-              <p class="card-id">{{ formatSlipId(slip.id) }}</p>
-              <p class="card-name">{{ slip.party_name }}</p>
-              <p class="card-meta">{{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}</p>
+              <p class="card-id">
+                {{ formatSlipId(slip.id) }}
+              </p>
+              <p class="card-name">
+                {{ slip.party_name }}
+              </p>
+              <p class="card-meta">
+                {{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}
+              </p>
             </div>
             <div class="card-right">
-              <p class="card-amount">{{ currencySymbol }}{{ slip.grand_total }}</p>
-              <p class="card-entries">{{ slip.entries?.length ?? 0 }} entries</p>
+              <p class="card-amount">
+                {{ currencySymbol }}{{ slip.grand_total }}
+              </p>
+              <p class="card-entries">
+                {{ slip.entries?.length ?? 0 }} entries
+              </p>
             </div>
           </router-link>
         </div>
@@ -64,29 +115,56 @@
       <!-- Recent Entries -->
       <div>
         <div class="list-header">
-          <h2 class="section-label">Recent Entries</h2>
-          <router-link to="/entries" class="view-all">View all →</router-link>
+          <h2 class="section-label">
+            Recent Entries
+          </h2>
+          <router-link
+            to="/entries"
+            class="view-all"
+          >
+            View all →
+          </router-link>
         </div>
 
-        <p v-if="recentEntries.length === 0" class="empty-text">No entries yet.</p>
+        <p
+          v-if="recentEntries.length === 0"
+          class="empty-text"
+        >
+          No entries yet.
+        </p>
 
         <div class="card-list">
-          <div v-for="entry in recentEntries" :key="entry.id" class="list-card list-card--static">
+          <div
+            v-for="entry in recentEntries"
+            :key="entry.id"
+            class="list-card list-card--static"
+          >
             <div>
-              <p class="card-name">{{ entry.party_name }}</p>
-              <p class="card-meta">{{ entry.date }} · {{ entry.car_name }}</p>
+              <p class="card-name">
+                {{ entry.party_name }}
+              </p>
+              <p class="card-meta">
+                {{ entry.date }} · {{ entry.car_name }}
+              </p>
             </div>
             <div class="card-right">
-              <p class="card-amount">{{ currencySymbol }}{{ entry.row_total }}</p>
+              <p class="card-amount">
+                {{ currencySymbol }}{{ entry.row_total }}
+              </p>
               <p class="card-status">
-                <span v-if="entry.duty_slip" class="status--assigned">assigned</span>
-                <span v-else class="status--unassigned">unassigned</span>
+                <span
+                  v-if="entry.duty_slip"
+                  class="status--assigned"
+                >assigned</span>
+                <span
+                  v-else
+                  class="status--unassigned"
+                >unassigned</span>
               </p>
             </div>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </template>

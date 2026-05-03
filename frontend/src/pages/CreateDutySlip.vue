@@ -1,20 +1,49 @@
 <template>
   <div class="container">
-    <button @click="$router.back()" class="back-btn">← Back</button>
-    <h1 class="title">New Duty Slip</h1>
+    <button
+      class="back-btn"
+      @click="$router.back()"
+    >
+      ← Back
+    </button>
+    <h1 class="title">
+      New Duty Slip
+    </h1>
 
-    <form @submit.prevent="submit" class="form">
-
+    <form
+      class="form"
+      @submit.prevent="submit"
+    >
       <div class="field">
         <label class="label">Party Name</label>
-        <input v-model="form.party_name" type="text" required class="input" />
+        <input
+          v-model="form.party_name"
+          type="text"
+          required
+          class="input"
+        >
       </div>
 
       <div class="field">
         <label class="label">Company</label>
-        <select v-model="form.company" required class="input">
-          <option value="" disabled>Select company</option>
-          <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
+        <select
+          v-model="form.company"
+          required
+          class="input"
+        >
+          <option
+            value=""
+            disabled
+          >
+            Select company
+          </option>
+          <option
+            v-for="c in companies"
+            :key="c.id"
+            :value="c.id"
+          >
+            {{ c.name }}
+          </option>
         </select>
       </div>
 
@@ -23,32 +52,45 @@
         <div class="toggle-group">
           <button
             type="button"
-            @click="form.slip_type = 'regular'"
             class="toggle-btn"
             :class="{ 'toggle-btn--regular': form.slip_type === 'regular' }"
+            @click="form.slip_type = 'regular'"
           >
             Regular
           </button>
           <button
             type="button"
-            @click="form.slip_type = 'outstation'"
             class="toggle-btn"
             :class="{ 'toggle-btn--outstation': form.slip_type === 'outstation' }"
+            @click="form.slip_type = 'outstation'"
           >
             Outstation
           </button>
         </div>
       </div>
 
-      <p v-if="error" class="error">{{ error }}</p>
+      <p
+        v-if="error"
+        class="error"
+      >
+        {{ error }}
+      </p>
 
       <div class="actions">
-        <button type="submit" :disabled="submitting" class="btn-primary">
+        <button
+          type="submit"
+          :disabled="submitting"
+          class="btn-primary"
+        >
           {{ submitting ? 'Creating...' : 'Create Duty Slip' }}
         </button>
-        <router-link to="/dutyslips" class="btn-cancel">Cancel</router-link>
+        <router-link
+          to="/dutyslips"
+          class="btn-cancel"
+        >
+          Cancel
+        </router-link>
       </div>
-
     </form>
   </div>
 </template>

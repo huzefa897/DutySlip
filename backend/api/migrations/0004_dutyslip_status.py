@@ -4,15 +4,22 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('api', '0003_businesssettings_currency'),
+        ("api", "0003_businesssettings_currency"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='dutyslip',
-            name='status',
-            field=models.CharField(choices=[('draft', 'Draft'), ('finalised', 'Finalised'), ('paid', 'Paid')], default='draft', max_length=20),
+            model_name="dutyslip",
+            name="status",
+            field=models.CharField(
+                choices=[
+                    ("draft", "Draft"),
+                    ("finalised", "Finalised"),
+                    ("paid", "Paid"),
+                ],
+                default="draft",
+                max_length=20,
+            ),
         ),
     ]

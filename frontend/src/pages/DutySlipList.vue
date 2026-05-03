@@ -1,8 +1,15 @@
 <template>
   <div>
     <div class="page-header">
-      <h1 class="title">Duty Slips</h1>
-      <router-link to="/dutyslips/create" class="btn-primary">+ New Duty Slip</router-link>
+      <h1 class="title">
+        Duty Slips
+      </h1>
+      <router-link
+        to="/dutyslips/create"
+        class="btn-primary"
+      >
+        + New Duty Slip
+      </router-link>
     </div>
 
     <!-- Filters -->
@@ -12,16 +19,38 @@
         type="text"
         placeholder="Search party name..."
         class="input"
-      />
-      <select v-model="filters.company" class="input">
-        <option value="">All Companies</option>
-        <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
+      >
+      <select
+        v-model="filters.company"
+        class="input"
+      >
+        <option value="">
+          All Companies
+        </option>
+        <option
+          v-for="c in companies"
+          :key="c.id"
+          :value="c.id"
+        >
+          {{ c.name }}
+        </option>
       </select>
-      <select v-model="filters.status" class="input">
-        <option value="">All Statuses</option>
-        <option value="draft">Draft</option>
-        <option value="finalised">Finalised</option>
-        <option value="paid">Paid</option>
+      <select
+        v-model="filters.status"
+        class="input"
+      >
+        <option value="">
+          All Statuses
+        </option>
+        <option value="draft">
+          Draft
+        </option>
+        <option value="finalised">
+          Finalised
+        </option>
+        <option value="paid">
+          Paid
+        </option>
       </select>
     </div>
 
@@ -30,15 +59,32 @@
       <p class="filter-count">
         Showing {{ filteredSlips.length }} of {{ slips.length }} duty slips
       </p>
-      <button v-if="isFiltered" @click="clearFilters" class="clear-filters">
+      <button
+        v-if="isFiltered"
+        class="clear-filters"
+        @click="clearFilters"
+      >
         Clear filters ×
       </button>
     </div>
 
-    <p v-if="loading" class="empty-text">Loading...</p>
-    <p v-else-if="filteredSlips.length === 0" class="empty-text">No duty slips match your filters.</p>
+    <p
+      v-if="loading"
+      class="empty-text"
+    >
+      Loading...
+    </p>
+    <p
+      v-else-if="filteredSlips.length === 0"
+      class="empty-text"
+    >
+      No duty slips match your filters.
+    </p>
 
-    <div v-else class="slip-list">
+    <div
+      v-else
+      class="slip-list"
+    >
       <router-link
         v-for="slip in paginatedSlips"
         :key="slip.id"
@@ -47,33 +93,60 @@
       >
         <div class="slip-card-inner">
           <div class="slip-left">
-            <p class="slip-id">{{ formatSlipId(slip.id) }}</p>
+            <p class="slip-id">
+              {{ formatSlipId(slip.id) }}
+            </p>
             <div class="slip-meta-row">
-              <p class="slip-meta">{{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}</p>
+              <p class="slip-meta">
+                {{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}
+              </p>
               <StatusBadge :status="slip.status" />
-              <span v-if="slip.slip_type === 'outstation'" class="outstation-badge">Outstation</span>
+              <span
+                v-if="slip.slip_type === 'outstation'"
+                class="outstation-badge"
+              >Outstation</span>
             </div>
-            <p class="slip-party">{{ slip.party_name }}</p>
+            <p class="slip-party">
+              {{ slip.party_name }}
+            </p>
           </div>
           <div class="slip-right">
             <div class="slip-totals">
-              <p class="slip-amount">{{ currencySymbol }}{{ slip.grand_total }}</p>
-              <p class="slip-entries">{{ slip.entries?.length ?? 0 }} entries</p>
+              <p class="slip-amount">
+                {{ currencySymbol }}{{ slip.grand_total }}
+              </p>
+              <p class="slip-entries">
+                {{ slip.entries?.length ?? 0 }} entries
+              </p>
             </div>
-            <button @click="deleteSlip(slip, $event)" class="btn-delete">Delete</button>
+            <button
+              class="btn-delete"
+              @click="deleteSlip(slip, $event)"
+            >
+              Delete
+            </button>
           </div>
         </div>
       </router-link>
     </div>
 
     <!-- Load More -->
-    <div v-if="hasMore" class="load-more-row">
-      <button @click="loadMore" class="btn-load-more">
+    <div
+      v-if="hasMore"
+      class="load-more-row"
+    >
+      <button
+        class="btn-load-more"
+        @click="loadMore"
+      >
         Load more ({{ remaining }} remaining)
       </button>
     </div>
 
-    <p v-else-if="paginatedSlips.length > 10" class="all-loaded">
+    <p
+      v-else-if="paginatedSlips.length > 10"
+      class="all-loaded"
+    >
       All {{ filteredSlips.length }} duty slips loaded
     </p>
 

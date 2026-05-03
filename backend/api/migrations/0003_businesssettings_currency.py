@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('api', '0002_businesssettings'),
+        ("api", "0002_businesssettings"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='businesssettings',
-            name='currency',
-            field=models.CharField(choices=[('USD', 'Dollar ($)'), ('INR', 'Rupee (₹)')], default='USD', max_length=5),
+            model_name="businesssettings",
+            name="currency",
+            field=models.CharField(
+                choices=[("USD", "Dollar ($)"), ("INR", "Rupee (₹)")],
+                default="USD",
+                max_length=5,
+            ),
         ),
     ]

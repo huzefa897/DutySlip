@@ -1,7 +1,9 @@
 <template>
   <div>
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-xl font-mono font-bold text-white">Entries</h1>
+      <h1 class="text-xl font-mono font-bold text-white">
+        Entries
+      </h1>
       <router-link
         to="/entries/create"
         class="bg-amber-400 text-gray-950 text-sm font-bold px-4 py-2 rounded hover:bg-amber-300 transition-colors"
@@ -17,32 +19,48 @@
         type="text"
         placeholder="Search party name..."
         class="bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400 font-mono placeholder-gray-600"
-      />
+      >
       <select
         v-model="filters.company"
         class="bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
       >
-        <option value="">All Companies</option>
-        <option v-for="c in companies" :key="c.id" :value="c.id">{{ c.name }}</option>
+        <option value="">
+          All Companies
+        </option>
+        <option
+          v-for="c in companies"
+          :key="c.id"
+          :value="c.id"
+        >
+          {{ c.name }}
+        </option>
       </select>
       <select
         v-model="filters.car"
         class="bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
       >
-        <option value="">All Cars</option>
-        <option v-for="c in cars" :key="c.id" :value="c.id">{{ c.name }}</option>
+        <option value="">
+          All Cars
+        </option>
+        <option
+          v-for="c in cars"
+          :key="c.id"
+          :value="c.id"
+        >
+          {{ c.name }}
+        </option>
       </select>
       <div class="flex gap-2">
         <input
           v-model="filters.date_from"
           type="date"
           class="w-full bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
-        />
+        >
         <input
           v-model="filters.date_to"
           type="date"
           class="w-full bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
-        />
+        >
       </div>
     </div>
 
@@ -53,64 +71,110 @@
       </p>
       <button
         v-if="isFiltered"
-        @click="clearFilters"
         class="text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors"
+        @click="clearFilters"
       >
         Clear filters ×
       </button>
     </div>
 
-    <p v-if="loading" class="text-gray-500 text-sm">Loading...</p>
+    <p
+      v-if="loading"
+      class="text-gray-500 text-sm"
+    >
+      Loading...
+    </p>
 
-    <p v-else-if="filteredEntries.length === 0" class="text-gray-500 text-sm">
+    <p
+      v-else-if="filteredEntries.length === 0"
+      class="text-gray-500 text-sm"
+    >
       No entries match your filters.
     </p>
 
-    <div v-else class="overflow-x-auto">
+    <div
+      v-else
+      class="overflow-x-auto"
+    >
       <table class="w-full text-sm border-collapse">
         <thead>
           <tr class="border-b border-gray-800 text-gray-400 text-left">
-            <th class="py-3 pr-4 font-mono font-normal">Date</th>
-            <th class="py-3 pr-4 font-mono font-normal">Party</th>
-            <th class="py-3 pr-4 font-mono font-normal">Company</th>
-            <th class="py-3 pr-4 font-mono font-normal">Car</th>
-            <th class="py-3 pr-4 font-mono font-normal">KMs</th>
-            <th class="py-3 pr-4 font-mono font-normal">Extra Hrs</th>
-            <th class="py-3 pr-4 font-mono font-normal">Row Total</th>
-            <th class="py-3 pr-4 font-mono font-normal">Duty Slip</th>
-            <th class="py-3 font-mono font-normal"></th>
+            <th class="py-3 pr-4 font-mono font-normal">
+              Date
+            </th>
+            <th class="py-3 pr-4 font-mono font-normal">
+              Party
+            </th>
+            <th class="py-3 pr-4 font-mono font-normal">
+              Company
+            </th>
+            <th class="py-3 pr-4 font-mono font-normal">
+              Car
+            </th>
+            <th class="py-3 pr-4 font-mono font-normal">
+              KMs
+            </th>
+            <th class="py-3 pr-4 font-mono font-normal">
+              Extra Hrs
+            </th>
+            <th class="py-3 pr-4 font-mono font-normal">
+              Row Total
+            </th>
+            <th class="py-3 pr-4 font-mono font-normal">
+              Duty Slip
+            </th>
+            <th class="py-3 font-mono font-normal" />
           </tr>
         </thead>
         <tbody>
-        <tr
-  v-for="entry in paginatedEntries"
-  :key="entry.id"
-  class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors"
->
-            <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.date }}</td>
-            <td class="py-3 pr-4 text-white">{{ entry.party_name }}</td>
-            <td class="py-3 pr-4 text-gray-300">{{ entry.company_name }}</td>
-            <td class="py-3 pr-4 text-gray-300">{{ entry.car_name }}</td>
-            <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.total_kms }}</td>
-            <td class="py-3 pr-4 font-mono text-gray-300">{{ entry.extra_hrs }}h extra</td>
-            <td class="py-3 pr-4 font-mono text-amber-400">{{ currencySymbol }}{{ entry.row_total }}</td>
+          <tr
+            v-for="entry in paginatedEntries"
+            :key="entry.id"
+            class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors"
+          >
+            <td class="py-3 pr-4 font-mono text-gray-300">
+              {{ entry.date }}
+            </td>
+            <td class="py-3 pr-4 text-white">
+              {{ entry.party_name }}
+            </td>
+            <td class="py-3 pr-4 text-gray-300">
+              {{ entry.company_name }}
+            </td>
+            <td class="py-3 pr-4 text-gray-300">
+              {{ entry.car_name }}
+            </td>
+            <td class="py-3 pr-4 font-mono text-gray-300">
+              {{ entry.total_kms }}
+            </td>
+            <td class="py-3 pr-4 font-mono text-gray-300">
+              {{ entry.extra_hrs }}h extra
+            </td>
+            <td class="py-3 pr-4 font-mono text-amber-400">
+              {{ currencySymbol }}{{ entry.row_total }}
+            </td>
             <td class="py-3 pr-4">
-              <span v-if="entry.duty_slip"
-                class="text-xs bg-green-900 text-green-400 px-2 py-1 rounded font-mono">
+              <span
+                v-if="entry.duty_slip"
+                class="text-xs bg-green-900 text-green-400 px-2 py-1 rounded font-mono"
+              >
                 {{ formatSlipId(entry.duty_slip) }}
               </span>
-              <span v-else class="text-xs text-gray-600 font-mono">unassigned</span>
+              <span
+                v-else
+                class="text-xs text-gray-600 font-mono"
+              >unassigned</span>
             </td>
             <td class="py-3 flex items-center gap-3">
               <button
-                @click="editingEntry = entry; showModal = true"
                 class="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                @click="editingEntry = entry; showModal = true"
               >
                 Edit
               </button>
               <button
-                @click="deleteEntry(entry.id)"
                 class="text-xs text-red-500 hover:text-red-400 transition-colors"
+                @click="deleteEntry(entry.id)"
               >
                 Delete
               </button>
@@ -119,20 +183,25 @@
         </tbody>
       </table>
       <!-- Load More -->
-<div v-if="hasMore" class="flex items-center justify-center mt-6">
-  <button
-    @click="loadMore"
-    class="bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 text-sm font-mono px-6 py-2.5 rounded transition-colors"
-  >
-    Load more ({{ remaining }} remaining)
-  </button>
-</div>
+      <div
+        v-if="hasMore"
+        class="flex items-center justify-center mt-6"
+      >
+        <button
+          class="bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 text-sm font-mono px-6 py-2.5 rounded transition-colors"
+          @click="loadMore"
+        >
+          Load more ({{ remaining }} remaining)
+        </button>
+      </div>
 
-<!-- All loaded indicator -->
-<p v-else-if="paginatedEntries.length > 10"
-  class="text-center text-xs text-gray-600 font-mono mt-6">
-  All {{ filteredEntries.length }} entries loaded
-</p>
+      <!-- All loaded indicator -->
+      <p
+        v-else-if="paginatedEntries.length > 10"
+        class="text-center text-xs text-gray-600 font-mono mt-6"
+      >
+        All {{ filteredEntries.length }} entries loaded
+      </p>
     </div>
 
     <EntryFormModal
@@ -142,14 +211,14 @@
       @saved="onEntrySaved"
     />
     <ConfirmDialog
-  :visible="confirmVisible"
-  :title="confirmTitle"
-  :message="confirmMessage"
-  :confirm-label="confirmLabel"
-  :destructive="destructive"
-  @confirm="onConfirm"
-  @cancel="onCancel"
-/>
+      :visible="confirmVisible"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      :confirm-label="confirmLabel"
+      :destructive="destructive"
+      @confirm="onConfirm"
+      @cancel="onCancel"
+    />
   </div>
 </template>
 

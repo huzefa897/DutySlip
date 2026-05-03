@@ -1,5 +1,8 @@
 <template>
-  <span class="text-xs font-mono px-2 py-1 rounded" :class="styles[status]">
+  <span
+    class="text-xs font-mono px-2 py-1 rounded"
+    :class="styles[status]"
+  >
     {{ labels[status] }}
   </span>
 </template>

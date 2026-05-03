@@ -3,39 +3,34 @@ from . import views
 
 urlpatterns = [
     # Companies
-    path('companies/', views.company_list),
-    path('companies/<int:pk>/', views.company_detail),
-
+    path("companies/", views.company_list),
+    path("companies/<int:pk>/", views.company_detail),
     # Company Car Rates
-    path('companies/<int:company_id>/rates/', views.company_car_rates),
-    path('companies/<int:company_id>/rates/<int:car_id>/', views.delete_company_car_rate),
-
+    path("companies/<int:company_id>/rates/", views.company_car_rates),
+    path(
+        "companies/<int:company_id>/rates/<int:car_id>/", views.delete_company_car_rate
+    ),
     # Company Parties
-    path('companies/<int:company_id>/parties/', views.company_parties),
-
+    path("companies/<int:company_id>/parties/", views.company_parties),
     # Cars
-    path('cars/', views.car_list),
-    path('cars/<int:pk>/', views.car_detail),
-
+    path("cars/", views.car_list),
+    path("cars/<int:pk>/", views.car_detail),
     # Entries
-    path('entries/', views.entry_list),
-    path('entries/<int:pk>/', views.entry_detail),
-
+    path("entries/", views.entry_list),
+    path("entries/<int:pk>/", views.entry_detail),
     # DutySlips
-    path('dutyslips/', views.dutyslip_list),
-    path('dutyslips/<int:pk>/', views.dutyslip_detail),
-    path('dutyslips/<int:pk>/assign/', views.assign_entries_to_dutyslip),
-    path('dutyslips/<int:pk>/remove/<int:entry_id>/', views.remove_entry_from_dutyslip),
-    path('dutyslips/<int:pk>/status/', views.update_dutyslip_status),
-    path('dutyslips/<int:pk>/pdf/', views.download_invoice_pdf),
+    path("dutyslips/", views.dutyslip_list),
+    path("dutyslips/<int:pk>/", views.dutyslip_detail),
+    path("dutyslips/<int:pk>/assign/", views.assign_entries_to_dutyslip),
+    path("dutyslips/<int:pk>/remove/<int:entry_id>/", views.remove_entry_from_dutyslip),
+    path("dutyslips/<int:pk>/status/", views.update_dutyslip_status),
+    path("dutyslips/<int:pk>/pdf/", views.download_invoice_pdf),
     # Business Settings
-    path('settings/', views.business_settings),
-
-  # Backup and Restore Settings
-    path('backup/',  views.backup_database),
-    path('restore/', views.restore_database),
-    path('backup/github/push/',    views.push_backup_github),
-    path('backup/github/list/',    views.list_github_backups),
-    path('backup/github/restore/', views.restore_from_github),
-    
+    path("settings/", views.business_settings),
+    # Backup and Restore Settings
+    path("backup/", views.backup_database),
+    path("restore/", views.restore_database),
+    path("backup/github/push/", views.push_backup_github),
+    path("backup/github/list/", views.list_github_backups),
+    path("backup/github/restore/", views.restore_from_github),
 ]

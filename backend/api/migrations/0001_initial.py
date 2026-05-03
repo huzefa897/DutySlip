@@ -5,63 +5,148 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Car',
+            name="Car",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=100)),
-                ('base_rate', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('extra_km_rate', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('extra_hr_rate', models.DecimalField(decimal_places=2, max_digits=10)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=100)),
+                ("base_rate", models.DecimalField(decimal_places=2, max_digits=10)),
+                ("extra_km_rate", models.DecimalField(decimal_places=2, max_digits=10)),
+                ("extra_hr_rate", models.DecimalField(decimal_places=2, max_digits=10)),
             ],
         ),
         migrations.CreateModel(
-            name='Company',
+            name="Company",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=255)),
-                ('abn', models.CharField(max_length=50, unique=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("name", models.CharField(max_length=255)),
+                ("abn", models.CharField(max_length=50, unique=True)),
             ],
         ),
         migrations.CreateModel(
-            name='DutySlip',
+            name="DutySlip",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('party_name', models.CharField(max_length=255)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('grand_total', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('company', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='duty_slips', to='api.company')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("party_name", models.CharField(max_length=255)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "grand_total",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "company",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="duty_slips",
+                        to="api.company",
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='DutySlipEntry',
+            name="DutySlipEntry",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('party_name', models.CharField(max_length=255)),
-                ('date', models.DateField()),
-                ('start_kms', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('end_kms', models.DecimalField(decimal_places=2, max_digits=10)),
-                ('total_kms', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('extra_kms', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('extra_kms_amount', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('start_time', models.TimeField()),
-                ('end_time', models.TimeField()),
-                ('extra_hrs', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('extra_hrs_amount', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('driver_bhatta', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('parking', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('row_total', models.DecimalField(decimal_places=2, default=0, max_digits=10)),
-                ('notes', models.TextField(blank=True, null=True)),
-                ('car', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to='api.car')),
-                ('company', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='entries', to='api.company')),
-                ('duty_slip', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='entries', to='api.dutyslip')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("party_name", models.CharField(max_length=255)),
+                ("date", models.DateField()),
+                ("start_kms", models.DecimalField(decimal_places=2, max_digits=10)),
+                ("end_kms", models.DecimalField(decimal_places=2, max_digits=10)),
+                (
+                    "total_kms",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "extra_kms",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "extra_kms_amount",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                ("start_time", models.TimeField()),
+                ("end_time", models.TimeField()),
+                (
+                    "extra_hrs",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "extra_hrs_amount",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "driver_bhatta",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "parking",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                (
+                    "row_total",
+                    models.DecimalField(decimal_places=2, default=0, max_digits=10),
+                ),
+                ("notes", models.TextField(blank=True, null=True)),
+                (
+                    "car",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT, to="api.car"
+                    ),
+                ),
+                (
+                    "company",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="entries",
+                        to="api.company",
+                    ),
+                ),
+                (
+                    "duty_slip",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="entries",
+                        to="api.dutyslip",
+                    ),
+                ),
             ],
         ),
     ]

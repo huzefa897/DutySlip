@@ -1,26 +1,41 @@
 <template>
   <div>
     <button
-      @click="$router.back()"
       class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+      @click="$router.back()"
     >
       ← Back
     </button>
 
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-xl font-mono font-bold text-white">Companies</h1>
+      <h1 class="text-xl font-mono font-bold text-white">
+        Companies
+      </h1>
       <button
-        @click="openCreate"
         class="bg-amber-400 text-gray-950 text-sm font-bold px-4 py-2 rounded hover:bg-amber-300 transition-colors"
+        @click="openCreate"
       >
         + New Company
       </button>
     </div>
 
-    <p v-if="loading" class="text-gray-500 text-sm">Loading...</p>
-    <p v-else-if="companies.length === 0" class="text-gray-500 text-sm">No companies yet.</p>
+    <p
+      v-if="loading"
+      class="text-gray-500 text-sm"
+    >
+      Loading...
+    </p>
+    <p
+      v-else-if="companies.length === 0"
+      class="text-gray-500 text-sm"
+    >
+      No companies yet.
+    </p>
 
-    <div v-else class="space-y-3">
+    <div
+      v-else
+      class="space-y-3"
+    >
       <div
         v-for="company in companies"
         :key="company.id"
@@ -29,25 +44,29 @@
         <!-- Company Row -->
         <div class="flex items-center justify-between px-4 py-3">
           <div>
-            <p class="text-white font-medium text-sm">{{ company.name }}</p>
-            <p class="text-gray-500 text-xs font-mono mt-0.5">ABN: {{ company.abn }}</p>
+            <p class="text-white font-medium text-sm">
+              {{ company.name }}
+            </p>
+            <p class="text-gray-500 text-xs font-mono mt-0.5">
+              ABN: {{ company.abn }}
+            </p>
           </div>
           <div class="flex items-center gap-3">
             <button
-              @click="toggleRates(company)"
               class="text-xs text-amber-400 hover:text-amber-300 font-mono transition-colors"
+              @click="toggleRates(company)"
             >
               {{ expandedCompany === company.id ? 'Hide Rates ↑' : 'Car Rates ↓' }}
             </button>
             <button
-              @click="openEdit(company)"
               class="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+              @click="openEdit(company)"
             >
               Edit
             </button>
             <button
-              @click="deleteCompany(company)"
               class="text-xs text-red-500 hover:text-red-400 transition-colors"
+              @click="deleteCompany(company)"
             >
               Delete
             </button>
@@ -65,7 +84,10 @@
           </p>
 
           <!-- Existing Overrides -->
-          <div v-if="companyRates.length > 0" class="mb-4 space-y-2">
+          <div
+            v-if="companyRates.length > 0"
+            class="mb-4 space-y-2"
+          >
             <div
               v-for="rate in companyRates"
               :key="rate.id"
@@ -78,21 +100,26 @@
                 /hr: {{ currencySymbol }}{{ rate.extra_hr_rate ?? '—' }}
               </span>
               <button
-                @click="deleteRate(company.id, rate.car)"
                 class="text-red-500 hover:text-red-400 transition-colors ml-4"
+                @click="deleteRate(company.id, rate.car)"
               >
                 Remove
               </button>
             </div>
           </div>
 
-          <p v-else class="text-gray-600 text-xs font-mono mb-4">
+          <p
+            v-else
+            class="text-gray-600 text-xs font-mono mb-4"
+          >
             No overrides — using global car rates.
           </p>
 
           <!-- Add Override Form -->
           <div class="bg-gray-800/50 rounded p-3 space-y-3">
-            <p class="text-xs font-mono text-gray-400">Add / Update Override</p>
+            <p class="text-xs font-mono text-gray-400">
+              Add / Update Override
+            </p>
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div>
                 <label class="block text-xs text-gray-500 font-mono mb-1">Car</label>
@@ -100,8 +127,17 @@
                   v-model="rateForm.car"
                   class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
                 >
-                  <option value="" disabled>Select</option>
-                  <option v-for="car in cars" :key="car.id" :value="car.id">
+                  <option
+                    value=""
+                    disabled
+                  >
+                    Select
+                  </option>
+                  <option
+                    v-for="car in cars"
+                    :key="car.id"
+                    :value="car.id"
+                  >
                     {{ car.name }}
                   </option>
                 </select>
@@ -110,49 +146,52 @@
                 <label class="block text-xs text-gray-500 font-mono mb-1">Base Rate</label>
                 <input
                   v-model="rateForm.base_rate"
-                  type="number" step="0.01"
+                  type="number"
+                  step="0.01"
                   placeholder="e.g. 120"
                   class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
-                />
+                >
               </div>
               <div>
                 <label class="block text-xs text-gray-500 font-mono mb-1">Extra Kms Rate</label>
                 <input
                   v-model="rateForm.extra_km_rate"
-                  type="number" step="0.01"
+                  type="number"
+                  step="0.01"
                   placeholder="e.g. 1.50"
                   class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
-                />
+                >
               </div>
               <div>
                 <label class="block text-xs text-gray-500 font-mono mb-1">Extra Hr Rate</label>
                 <input
                   v-model="rateForm.extra_hr_rate"
-                  type="number" step="0.01"
+                  type="number"
+                  step="0.01"
                   placeholder="e.g. 15"
                   class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
-                />
+                >
               </div>
               <div>
                 <label class="block text-xs text-gray-500 font-mono mb-1">Outstation /km</label>
                 <input
                   v-model="rateForm.outstation_rate"
-                  type="number" step="0.01"
+                  type="number"
+                  step="0.01"
                   placeholder="e.g. 2.00"
                   class="w-full bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-white text-xs focus:outline-none focus:border-amber-400"
-                />
+                >
               </div>
             </div>          
             <button
-              @click="saveRate(company.id)"
               :disabled="!rateForm.car"
               class="bg-amber-400 text-gray-950 text-xs font-bold px-4 py-1.5 rounded hover:bg-amber-300 transition-colors disabled:opacity-40"
+              @click="saveRate(company.id)"
             >
               Save Override
             </button>
           </div>
         </div>
-
       </div>
     </div>
 
@@ -167,42 +206,69 @@
           <h2 class="text-sm font-mono font-bold text-white uppercase tracking-wider">
             {{ editingCompany ? 'Edit Company' : 'New Company' }}
           </h2>
-          <button @click="closeModal" class="text-gray-500 hover:text-white text-xl leading-none">×</button>
+          <button
+            class="text-gray-500 hover:text-white text-xl leading-none"
+            @click="closeModal"
+          >
+            ×
+          </button>
         </div>
-        <form @submit.prevent="submit" class="px-6 py-5 space-y-4">
+        <form
+          class="px-6 py-5 space-y-4"
+          @submit.prevent="submit"
+        >
           <div>
             <label class="block text-xs text-gray-400 font-mono mb-1">Company Name</label>
-            <input v-model="form.name" type="text" required
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+            <input
+              v-model="form.name"
+              type="text"
+              required
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+            >
           </div>
           <div>
             <label class="block text-xs text-gray-400 font-mono mb-1">ABN</label>
-            <input v-model="form.abn" type="text" required
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400" />
+            <input
+              v-model="form.abn"
+              type="text"
+              required
+              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+            >
           </div>
-          <p v-if="error" class="text-red-400 text-sm">{{ error }}</p>
+          <p
+            v-if="error"
+            class="text-red-400 text-sm"
+          >
+            {{ error }}
+          </p>
           <div class="flex gap-3 pt-2">
-            <button type="submit" :disabled="submitting"
-              class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50">
+            <button
+              type="submit"
+              :disabled="submitting"
+              class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50"
+            >
               {{ submitting ? 'Saving...' : editingCompany ? 'Save Changes' : 'Create Company' }}
             </button>
-            <button type="button" @click="closeModal"
-              class="text-sm text-gray-400 hover:text-white px-4 py-2 transition-colors">
+            <button
+              type="button"
+              class="text-sm text-gray-400 hover:text-white px-4 py-2 transition-colors"
+              @click="closeModal"
+            >
               Cancel
             </button>
           </div>
         </form>
       </div>
     </div>
-<ConfirmDialog
-  :visible="confirmVisible"
-  :title="confirmTitle"
-  :message="confirmMessage"
-  :confirm-label="confirmLabel"
-  :destructive="destructive"
-  @confirm="onConfirm"
-  @cancel="onCancel"
-/>
+    <ConfirmDialog
+      :visible="confirmVisible"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      :confirm-label="confirmLabel"
+      :destructive="destructive"
+      @confirm="onConfirm"
+      @cancel="onCancel"
+    />
   </div>
 </template>
 
