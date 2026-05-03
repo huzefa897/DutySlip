@@ -24,6 +24,9 @@ class DutySlip(models.Model):
     STATUS_CHOICES = [
         ("draft", "Draft"),
         ("finalised", "Finalised"),
+    ]
+    PAYMENT_STATUS_CHOICES = [
+        ("unpaid", "Unpaid"),
         ("paid", "Paid"),
     ]
     SLIP_TYPE_CHOICES = [
@@ -38,6 +41,9 @@ class DutySlip(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
+    payment_status = models.CharField(
+        max_length=20, choices=PAYMENT_STATUS_CHOICES, default="unpaid"
+    )
     slip_type = models.CharField(
         max_length=20, choices=SLIP_TYPE_CHOICES, default="regular"
     )

@@ -348,10 +348,28 @@ def update_dutyslip_status(request, pk):
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
     new_status = request.data.get("status")
-    if new_status not in ["draft", "finalised", "paid"]:
+    if new_status not in ["draft", "finalised"]:
         return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
 
     slip.status = new_status
+    slip.save()
+    return Response(DutySlipSerializer(slip).data)
+
+
+@api_view(["PATCH"])
+def update_dutyslip_payment_status(request, pk):
+    try:
+        slip = DutySlip.objects.get(pk=pk)
+    except DutySlip.DoesNotExist:
+        return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    new_status = request.data.get("payment_status")
+    if new_status not in ["unpaid", "paid"]:
+        return Response(
+            {"error": "Invalid payment status"}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+    slip.payment_status = new_status
     slip.save()
     return Response(DutySlipSerializer(slip).data)
 

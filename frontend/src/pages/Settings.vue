@@ -362,7 +362,7 @@ async function saveGithubSettings() {
     })
     form.value.github_token = ''
     notify('GitHub settings saved.')
-  } catch (e) {
+  } catch {
     notify('Failed to save GitHub settings.', 'error')
   } finally {
     savingGithub.value = false

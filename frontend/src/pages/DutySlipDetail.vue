@@ -28,6 +28,16 @@
               <option value="finalised">
                 Finalised
               </option>
+            </select>
+            <PaymentStatusBadge :status="slip.payment_status" />
+            <select
+              :value="slip.payment_status"
+              class="bg-gray-800 border border-gray-700 text-gray-300 text-xs font-mono px-2 py-1 rounded focus:outline-none focus:border-amber-400"
+              @change="updatePaymentStatus($event.target.value)"
+            >
+              <option value="unpaid">
+                Unpaid
+              </option>
               <option value="paid">
                 Paid
               </option>
@@ -39,7 +49,7 @@
         </div>
         <div class="flex items-center gap-3">
           <a
-            :href="`http://127.0.0.1:8000/api/dutyslips/${slip.id}/pdf/`"
+            :href="`${apiUrl}/dutyslips/${slip.id}/pdf/`"
             target="_blank"
             download
             class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
@@ -52,29 +62,12 @@
           >
             🖨 Print Invoice
           </button>
-          <a
-            :href="`${apiUrl}/dutyslips/${slip.id}/pdf/`"
-            target="_blank"
-            download
-            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+          <button
+            class="bg-red-900/50 border border-red-800 text-red-400 text-sm px-4 py-2 rounded hover:bg-red-900 transition-colors font-mono"
+            @click="deleteSlip"
           >
-            ⬇ Download PDF
-          </a>
-
-          <div class="flex items-center gap-3">
-            <button
-              class="bg-red-900/50 border border-red-800 text-red-400 text-sm px-4 py-2 rounded hover:bg-red-900 transition-colors font-mono"
-              @click="deleteSlip"
-            >
-              🗑 Delete
-            </button>
-            <button
-              class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
-              @click="printInvoice"
-            >
-              🖨 Print Invoice
-            </button>
-          </div>
+            🗑 Delete
+          </button>
           <div class="text-right">
             <p class="text-xs text-gray-500 font-mono mb-1">
               Grand Total
@@ -273,6 +266,12 @@
           >
             {{ slip.status?.toUpperCase() }}
           </p>
+          <p
+            class="invoice-status"
+            :class="paymentStatusPrintClass"
+          >
+            PAYMENT: {{ slip.payment_status?.toUpperCase() }}
+          </p>
         </div>
       </div>
       <!-- Party Info -->
@@ -290,6 +289,7 @@
         <thead>
           <tr>
             <th>Date</th>
+            <th>Type</th>
             <th>Car</th>
             <th>Start KMs</th>
             <th>End KMs</th>
@@ -312,6 +312,7 @@
             :key="entry.id"
           >
             <td>{{ entry.date }}</td>
+            <td>{{ entry.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}</td>
             <td>{{ entry.car_name }}</td>
             <td>{{ entry.start_kms }}</td>
             <td>{{ entry.end_kms }}</td>
@@ -331,21 +332,12 @@
             <td>{{ currencySymbol }}{{ entry.driver_bhatta }}</td>
             <td>{{ currencySymbol }}{{ entry.parking }}</td>
             <td>{{ currencySymbol }}{{ entry.row_total }}</td>
-            <td class="py-3 pr-4 text-gray-300">
-              {{ entry.car_name }}
-              <span
-                v-if="entry.entry_type === 'outstation'"
-                class="ml-1 text-xs bg-blue-900 text-blue-300 px-1.5 py-0.5 rounded font-mono"
-              >
-                OS
-              </span>
-            </td>
           </tr>
         </tbody>
         <tfoot>
           <tr>
             <td
-              colspan="14"
+              colspan="15"
               class="grand-total-label"
             >
               GRAND TOTAL
@@ -403,6 +395,7 @@ import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
 import StatusBadge from '../components/StatusBadge.vue'
+import PaymentStatusBadge from '../components/PaymentStatusBadge.vue'
 import { useRouter } from 'vue-router'
 import { useConfirm } from '../composables/useConfirm'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
@@ -424,7 +417,7 @@ async function deleteSlip() {
     await api.delete(`/dutyslips/${route.params.id}/`)
     notify('Duty slip deleted.')
     router.push('/dutyslips')
-  } catch (e) {
+  } catch {
     notify('Failed to delete duty slip.', 'error')
   }
 }
@@ -432,9 +425,15 @@ const statusPrintClass = computed(() => {
   const map = {
     draft:      'color: #888',
     finalised:  'color: #3b82f6',
-    paid:       'color: #22c55e',
   }
   return map[slip.value?.status] || ''
+})
+const paymentStatusPrintClass = computed(() => {
+  const map = {
+    unpaid: 'color: #d97706',
+    paid:   'color: #22c55e',
+  }
+  return map[slip.value?.payment_status] || ''
 })
 const mediaUrl = import.meta.env.VITE_MEDIA_URL || ''
 const apiUrl = import.meta.env.VITE_API_URL || '/api'
@@ -444,14 +443,8 @@ const slip = ref(null)
 const unassigned = ref([])
 const selected = ref([])
 const showModal = ref(false)
-const companyAbn = ref('')
 const cars = ref([])
 const bizSettings = ref(null)
-const sortedEntries = computed(() => {
-  if (!slip.value?.entries) return []
-  return [...slip.value.entries].sort((a, b) => new Date(a.date) - new Date(b.date))
-})
-
 
 const today = new Date().toLocaleDateString('en-AU', {
   day: '2-digit', month: 'long', year: 'numeric'
@@ -470,13 +463,16 @@ async function updateStatus(newStatus) {
   await fetchSlip()
   notify(`Status updated to ${newStatus}.`)
 }
+async function updatePaymentStatus(newStatus) {
+  await api.patch(`/dutyslips/${route.params.id}/payment-status/`, {
+    payment_status: newStatus,
+  })
+  await fetchSlip()
+  notify(`Payment status updated to ${newStatus}.`)
+}
 async function fetchSlip() {
   const res = await api.get(`/dutyslips/${route.params.id}/`)
   slip.value = res.data
-  // fetch company ABN
-  const companyRes = await api.get(`/companies/`)
-  const company = companyRes.data.find(c => c.id === res.data.company)
-  companyAbn.value = company?.abn || ''
 }
 
 async function fetchUnassigned() {
@@ -484,14 +480,6 @@ async function fetchUnassigned() {
   unassigned.value = res.data.filter(
     e => !e.duty_slip && e.party_name === slip.value.party_name
   )
-}
-
-async function removeEntry(entryId) {
-  await api.post(`/dutyslips/${route.params.id}/remove/${entryId}/`)
-  await fetchSlip()
-  await fetchUnassigned()
-  notify('Entry removed from duty slip.')
-
 }
 
 async function bulkAssign() {
@@ -660,6 +648,20 @@ onMounted(async () => {
 
 .invoice-table tbody tr:nth-child(even) td {
   background: #f9f9f9;
+}
+
+.no-print .invoice-table td {
+  background: #030712;
+  border-bottom: 1px solid #1f2937;
+  color: #d1d5db;
+}
+
+.no-print .invoice-table tbody tr:nth-child(even) td {
+  background: #020617;
+}
+
+.no-print .invoice-table tbody tr:nth-child(odd) td {
+  background: #030712;
 }
 
 .grand-total-label {

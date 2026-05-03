@@ -81,7 +81,7 @@ onMounted(async () => {
   try {
     const res = await api.get('/settings/')
     setCurrency(res.data.currency || 'USD')
-  } catch (e) {
+  } catch {
     // settings not configured yet
   }
 })
