@@ -1,12 +1,27 @@
 <template>
   <div class="container">
-    <button @click="$router.back()" class="back-btn">← Back</button>
-    <h1 class="title">Business Settings</h1>
+    <button
+      class="back-btn"
+      @click="$router.back()"
+    >
+      ← Back
+    </button>
+    <h1 class="title">
+      Business Settings
+    </h1>
 
-    <div v-if="loading" class="loading-text">Loading...</div>
+    <div
+      v-if="loading"
+      class="loading-text"
+    >
+      Loading...
+    </div>
 
-    <form v-else @submit.prevent="submit" class="form">
-
+    <form
+      v-else
+      class="form"
+      @submit.prevent="submit"
+    >
       <!-- Logo Preview -->
       <div class="field">
         <label class="label">Logo</label>
@@ -16,16 +31,31 @@
             :src="logoPreview || `${mediaUrl}${currentLogo}`"
             class="logo-img"
             alt="Logo"
-          />
-          <div v-else class="logo-placeholder">
+          >
+          <div
+            v-else
+            class="logo-placeholder"
+          >
             <span class="logo-placeholder-text">No logo</span>
           </div>
           <div>
-            <input type="file" accept="image/*" @change="onLogoChange" class="hidden-input" ref="fileInput" />
-            <button type="button" @click="$refs.fileInput.click()" class="upload-btn">
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/*"
+              class="hidden-input"
+              @change="onLogoChange"
+            >
+            <button
+              type="button"
+              class="upload-btn"
+              @click="$refs.fileInput.click()"
+            >
               Upload Logo
             </button>
-            <p class="upload-hint">PNG, JPG recommended</p>
+            <p class="upload-hint">
+              PNG, JPG recommended
+            </p>
           </div>
         </div>
       </div>
@@ -33,67 +63,117 @@
       <!-- Business Name -->
       <div class="field">
         <label class="label">Business Name</label>
-        <input v-model="form.name" type="text" required class="input" />
+        <input
+          v-model="form.name"
+          type="text"
+          required
+          class="input"
+        >
       </div>
 
       <!-- ABN -->
       <div class="field">
         <label class="label">ABN</label>
-        <input v-model="form.abn" type="text" required class="input" />
+        <input
+          v-model="form.abn"
+          type="text"
+          required
+          class="input"
+        >
       </div>
 
       <!-- Address -->
       <div class="field">
         <label class="label">Address</label>
-        <textarea v-model="form.address" rows="2" required class="input textarea" />
+        <textarea
+          v-model="form.address"
+          rows="2"
+          required
+          class="input textarea"
+        />
       </div>
 
       <!-- Phone -->
       <div class="field">
         <label class="label">Phone</label>
-        <input v-model="form.phone" type="text" required class="input" />
+        <input
+          v-model="form.phone"
+          type="text"
+          required
+          class="input"
+        >
       </div>
 
       <!-- Email -->
       <div class="field">
         <label class="label">Email</label>
-        <input v-model="form.email" type="email" required class="input" />
+        <input
+          v-model="form.email"
+          type="email"
+          required
+          class="input"
+        >
       </div>
 
       <!-- Currency -->
       <div class="field">
         <label class="label">Currency</label>
-        <select v-model="form.currency" class="input">
-          <option value="USD">Dollar ($)</option>
-          <option value="INR">Rupee (₹)</option>
+        <select
+          v-model="form.currency"
+          class="input"
+        >
+          <option value="USD">
+            Dollar ($)
+          </option>
+          <option value="INR">
+            Rupee (₹)
+          </option>
         </select>
       </div>
 
       <!-- Submit -->
       <div class="actions">
-        <button type="submit" :disabled="submitting" class="btn-primary">
+        <button
+          type="submit"
+          :disabled="submitting"
+          class="btn-primary"
+        >
           {{ submitting ? 'Saving...' : 'Save Settings' }}
         </button>
       </div>
 
       <!-- Backup & Restore -->
       <div class="section-divider">
-        <h2 class="section-title">Backup & Restore</h2>
-        <p class="section-desc">Export data locally or sync with GitHub.</p>
+        <h2 class="section-title">
+          Backup & Restore
+        </h2>
+        <p class="section-desc">
+          Export data locally or sync with GitHub.
+        </p>
 
         <div class="backup-sections">
-
           <!-- Export + GitHub Push -->
           <div class="backup-card">
-            <p class="card-title">Export Backup</p>
+            <p class="card-title">
+              Export Backup
+            </p>
             <p class="card-desc">
               Downloads a JSON file. If GitHub is configured, also pushes to your repo automatically.
             </p>
             <div class="card-actions">
-              <a :href="`${apiUrl}/backup/`" download class="btn-secondary">
+              <a
+                :href="`${apiUrl}/backup/`"
+                download
+                class="btn-secondary"
+              >
                 ⬇ Download + Push
               </a>
-              <button type="button" @click="pushToGithub" :disabled="pushing" class="btn-secondary">
+              <button
+                type="button"
+                :disabled="pushing"
+                class="btn-secondary"
+                @click="pushToGithub"
+              >
                 {{ pushing ? 'Pushing...' : '⬆ Push to GitHub Only' }}
               </button>
             </div>
@@ -101,71 +181,139 @@
 
           <!-- Restore from GitHub -->
           <div class="backup-card">
-            <p class="card-title">Restore from GitHub</p>
-            <button type="button" @click="fetchGithubBackups" :disabled="loadingBackups" class="btn-secondary mb-3">
+            <p class="card-title">
+              Restore from GitHub
+            </p>
+            <button
+              type="button"
+              :disabled="loadingBackups"
+              class="btn-secondary mb-3"
+              @click="fetchGithubBackups"
+            >
               {{ loadingBackups ? 'Loading...' : '↻ Load GitHub Backups' }}
             </button>
 
-            <div v-if="githubBackups.length > 0" class="backup-list">
-              <div v-for="backup in githubBackups" :key="backup.name" class="backup-item">
+            <div
+              v-if="githubBackups.length > 0"
+              class="backup-list"
+            >
+              <div
+                v-for="backup in githubBackups"
+                :key="backup.name"
+                class="backup-item"
+              >
                 <div>
-                  <p class="backup-name">{{ backup.name }}</p>
-                  <p class="backup-size">{{ (backup.size / 1024).toFixed(1) }} KB</p>
+                  <p class="backup-name">
+                    {{ backup.name }}
+                  </p>
+                  <p class="backup-size">
+                    {{ (backup.size / 1024).toFixed(1) }} KB
+                  </p>
                 </div>
-                <button @click="restoreFromGithub(backup)" class="btn-restore">
+                <button
+                  class="btn-restore"
+                  @click="restoreFromGithub(backup)"
+                >
                   Restore
                 </button>
               </div>
             </div>
 
-            <p v-else-if="backupsLoaded && githubBackups.length === 0" class="no-backups">
+            <p
+              v-else-if="backupsLoaded && githubBackups.length === 0"
+              class="no-backups"
+            >
               No backups found in GitHub repo.
             </p>
           </div>
 
           <!-- Restore from local file -->
           <div class="backup-card">
-            <p class="card-title">Restore from Local File</p>
-            <p class="card-desc">Upload a previously exported JSON backup.</p>
-            <p class="card-warn">⚠ This will replace ALL existing data.</p>
+            <p class="card-title">
+              Restore from Local File
+            </p>
+            <p class="card-desc">
+              Upload a previously exported JSON backup.
+            </p>
+            <p class="card-warn">
+              ⚠ This will replace ALL existing data.
+            </p>
             <div class="card-actions">
-              <input type="file" accept=".json" @change="onBackupFileChange" class="hidden-input" ref="backupFileInput" />
-              <button type="button" @click="$refs.backupFileInput.click()" class="btn-secondary">
+              <input
+                ref="backupFileInput"
+                type="file"
+                accept=".json"
+                class="hidden-input"
+                @change="onBackupFileChange"
+              >
+              <button
+                type="button"
+                class="btn-secondary"
+                @click="$refs.backupFileInput.click()"
+              >
                 Choose File
               </button>
               <span class="file-name">{{ backupFile ? backupFile.name : 'No file chosen' }}</span>
-              <button v-if="backupFile" type="button" @click="restoreLocalBackup" :disabled="restoring" class="btn-danger">
+              <button
+                v-if="backupFile"
+                type="button"
+                :disabled="restoring"
+                class="btn-danger"
+                @click="restoreLocalBackup"
+              >
                 {{ restoring ? 'Restoring...' : 'Restore' }}
               </button>
             </div>
           </div>
-
         </div>
       </div>
-
     </form>
 
     <!-- GitHub Backup Config -->
     <div class="section-divider">
-      <h2 class="section-title">GitHub Backup</h2>
-      <p class="section-desc">Connect a private GitHub repo as your backup destination.</p>
+      <h2 class="section-title">
+        GitHub Backup
+      </h2>
+      <p class="section-desc">
+        Connect a private GitHub repo as your backup destination.
+      </p>
       <div class="form">
         <div class="field">
           <label class="label">GitHub Username</label>
-          <input v-model="form.github_username" type="text" placeholder="e.g. huzefa" class="input" />
+          <input
+            v-model="form.github_username"
+            type="text"
+            placeholder="e.g. huzefa"
+            class="input"
+          >
         </div>
         <div class="field">
           <label class="label">Repository Name</label>
-          <input v-model="form.github_repo" type="text" placeholder="e.g. dutyslip-backups" class="input" />
+          <input
+            v-model="form.github_repo"
+            type="text"
+            placeholder="e.g. dutyslip-backups"
+            class="input"
+          >
         </div>
         <div class="field">
           <label class="label">
             Personal Access Token
             <span class="label-hint">(stored securely, never shown)</span>
           </label>
-          <input v-model="form.github_token" type="password" placeholder="ghp_xxxxxxxxxxxx" class="input" />
+          <input
+            v-model="form.github_token"
+            type="password"
+            placeholder="ghp_xxxxxxxxxxxx"
+            class="input"
+          >
         </div>
-        <button type="button" @click="saveGithubSettings" :disabled="savingGithub" class="btn-secondary btn-github-save">
+        <button
+          type="button"
+          :disabled="savingGithub"
+          class="btn-secondary btn-github-save"
+          @click="saveGithubSettings"
+        >
           {{ savingGithub ? 'Saving...' : 'Save GitHub Settings' }}
         </button>
       </div>
@@ -181,7 +329,6 @@
       @confirm="onConfirm"
       @cancel="onCancel"
     />
-
   </div>
 </template>
 

@@ -4,25 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('api', '0005_alter_dutyslip_status_companycarrate'),
+        ("api", "0005_alter_dutyslip_status_companycarrate"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='businesssettings',
-            name='github_repo',
+            model_name="businesssettings",
+            name="github_repo",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
-            model_name='businesssettings',
-            name='github_token',
+            model_name="businesssettings",
+            name="github_token",
             field=models.CharField(blank=True, max_length=255, null=True),
         ),
         migrations.AddField(
-            model_name='businesssettings',
-            name='github_username',
+            model_name="businesssettings",
+            name="github_username",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
     ]

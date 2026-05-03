@@ -5,36 +5,38 @@
     @click.self="cancel"
   >
     <div class="bg-gray-900 border border-gray-800 rounded-lg w-full max-w-sm">
-
       <!-- Header -->
       <div class="px-6 py-4 border-b border-gray-800">
-        <h3 class="text-sm font-mono font-bold text-white">{{ title }}</h3>
+        <h3 class="text-sm font-mono font-bold text-white">
+          {{ title }}
+        </h3>
       </div>
 
       <!-- Body -->
       <div class="px-6 py-4">
-        <p class="text-sm text-gray-400">{{ message }}</p>
+        <p class="text-sm text-gray-400">
+          {{ message }}
+        </p>
       </div>
 
       <!-- Actions -->
       <div class="px-6 py-4 border-t border-gray-800 flex justify-end gap-3">
         <button
-          @click="cancel"
           class="text-sm text-gray-400 hover:text-white px-4 py-2 transition-colors"
+          @click="cancel"
         >
           Cancel
         </button>
         <button
-          @click="confirm"
           class="text-sm font-bold px-5 py-2 rounded transition-colors"
           :class="destructive
             ? 'bg-red-600 hover:bg-red-500 text-white'
             : 'bg-amber-400 hover:bg-amber-300 text-gray-950'"
+          @click="confirm"
         >
           {{ confirmLabel }}
         </button>
       </div>
-
     </div>
   </div>
 </template>

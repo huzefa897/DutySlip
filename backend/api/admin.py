@@ -1,7 +1,9 @@
 from django.contrib import admin
 from .models import Company, Car, DutySlip, DutySlipEntry
 from .models import BusinessSettings
-from .models import Company, Car, DutySlip, DutySlipEntry, BusinessSettings, CompanyCarRate
+from .models import (
+    CompanyCarRate,
+)
 
 admin.site.register(Company)
 admin.site.register(Car)

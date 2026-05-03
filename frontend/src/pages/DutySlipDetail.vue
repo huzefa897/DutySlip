@@ -1,24 +1,36 @@
 <template>
   <div v-if="slip">
-
     <!-- ── SCREEN VIEW ─────────────────────────────────────────────── -->
     <div class="no-print">
-      <button @click="$router.back()"
-        class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1">
+      <button
+        class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+        @click="$router.back()"
+      >
         ← Back
       </button>
       <!-- Header -->
       <div class="flex items-start justify-between mb-8">
         <div>
-          <h1 class="text-xl font-mono font-bold text-white">{{ slip.party_name }}</h1>
+          <h1 class="text-xl font-mono font-bold text-white">
+            {{ slip.party_name }}
+          </h1>
 
           <div class="flex items-center gap-3 mt-2">
             <StatusBadge :status="slip.status" />
-            <select :value="slip.status" @change="updateStatus($event.target.value)"
-              class="bg-gray-800 border border-gray-700 text-gray-300 text-xs font-mono px-2 py-1 rounded focus:outline-none focus:border-amber-400">
-              <option value="draft">Draft</option>
-              <option value="finalised">Finalised</option>
-              <option value="paid">Paid</option>
+            <select
+              :value="slip.status"
+              class="bg-gray-800 border border-gray-700 text-gray-300 text-xs font-mono px-2 py-1 rounded focus:outline-none focus:border-amber-400"
+              @change="updateStatus($event.target.value)"
+            >
+              <option value="draft">
+                Draft
+              </option>
+              <option value="finalised">
+                Finalised
+              </option>
+              <option value="paid">
+                Paid
+              </option>
             </select>
           </div>
           <p class="text-gray-500 text-sm font-mono mt-1">
@@ -26,37 +38,50 @@
           </p>
         </div>
         <div class="flex items-center gap-3">
-          <a :href="`http://127.0.0.1:8000/api/dutyslips/${slip.id}/pdf/`"
-  target="_blank"
-  download
-  class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
->
-  ⬇ Download PDF
-</a>
-          <button
-            @click="printInvoice"
+          <a
+            :href="`http://127.0.0.1:8000/api/dutyslips/${slip.id}/pdf/`"
+            target="_blank"
+            download
             class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+          >
+            ⬇ Download PDF
+          </a>
+          <button
+            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+            @click="printInvoice"
           >
             🖨 Print Invoice
           </button>
-          <a :href="`${apiUrl}/dutyslips/${slip.id}/pdf/`" target="_blank" download
-            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono">
+          <a
+            :href="`${apiUrl}/dutyslips/${slip.id}/pdf/`"
+            target="_blank"
+            download
+            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+          >
             ⬇ Download PDF
           </a>
 
           <div class="flex items-center gap-3">
-            <button @click="deleteSlip"
-              class="bg-red-900/50 border border-red-800 text-red-400 text-sm px-4 py-2 rounded hover:bg-red-900 transition-colors font-mono">
+            <button
+              class="bg-red-900/50 border border-red-800 text-red-400 text-sm px-4 py-2 rounded hover:bg-red-900 transition-colors font-mono"
+              @click="deleteSlip"
+            >
               🗑 Delete
             </button>
-            <button @click="printInvoice"
-              class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono">
+            <button
+              class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+              @click="printInvoice"
+            >
               🖨 Print Invoice
             </button>
           </div>
           <div class="text-right">
-            <p class="text-xs text-gray-500 font-mono mb-1">Grand Total</p>
-            <p class="text-2xl font-mono font-bold text-amber-400">${{ slip.grand_total }}</p>
+            <p class="text-xs text-gray-500 font-mono mb-1">
+              Grand Total
+            </p>
+            <p class="text-2xl font-mono font-bold text-amber-400">
+              ${{ slip.grand_total }}
+            </p>
           </div>
         </div>
       </div>
@@ -64,140 +89,200 @@
       <!-- Assigned Entries Table -->
       <div class="mb-8">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-mono text-gray-400 uppercase tracking-wider">Entries</h2>
-          <button @click="showModal = true"
-            class="bg-amber-400 text-gray-950 text-xs font-bold px-3 py-1.5 rounded hover:bg-amber-300 transition-colors">
+          <h2 class="text-sm font-mono text-gray-400 uppercase tracking-wider">
+            Entries
+          </h2>
+          <button
+            class="bg-amber-400 text-gray-950 text-xs font-bold px-3 py-1.5 rounded hover:bg-amber-300 transition-colors"
+            @click="showModal = true"
+          >
             + Add Entry
           </button>
         </div>
 
-        <p v-if="slip.entries?.length === 0" class="text-gray-600 text-sm">
+        <p
+          v-if="slip.entries?.length === 0"
+          class="text-gray-600 text-sm"
+        >
           No entries yet — add one above.
         </p>
 
-        <div v-else class="overflow-x-auto">
-         <table class="invoice-table">
-  <thead>
-    <tr>
-      <th>Date</th>
-      <th>Type</th>
-      <th>Car</th>
-      <th>Start KMs</th>
-      <th>End KMs</th>
-      <th>Total KMs</th>
-      <th>Rate</th>
-      <th>KM Cost</th>
-      <th>Start Time</th>
-      <th>End Time</th>
-      <th>Extra Hrs</th>
-      <th>Extra Hrs Cost</th>
-      <th>Base Rate</th>
-      <th>Bhatta</th>
-      <th>Parking</th>
-      <th>Row Total</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr v-for="entry in slip.entries" :key="entry.id">
-      <td>{{ entry.date }}</td>
-      <td>{{ entry.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}</td>
-      <td>{{ entry.car_name }}</td>
-      <td>{{ entry.start_kms }}</td>
-      <td>{{ entry.end_kms }}</td>
-      <td>{{ entry.total_kms }}</td>
-      <!-- Rate column -->
-      <td>
-        <span v-if="entry.entry_type === 'outstation'">
-          {{ currencySymbol }}{{ entry.outstation_rate }}/km
-        </span>
-        <span v-else>—</span>
-      </td>
-      <!-- KM Cost -->
-      <td>
-        <span v-if="entry.entry_type === 'outstation'">
-          {{ currencySymbol }}{{ entry.extra_kms_amount }}
-        </span>
-        <span v-else>
-          {{ currencySymbol }}{{ entry.extra_kms_amount }}
-        </span>
-      </td>
-      <!-- Time columns — empty for outstation -->
-      <td>{{ entry.entry_type === 'outstation' ? '—' : entry.start_time }}</td>
-      <td>{{ entry.entry_type === 'outstation' ? '—' : entry.end_time }}</td>
-      <td>{{ entry.entry_type === 'outstation' ? '—' : entry.extra_hrs }}</td>
-      <td>{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${entry.extra_hrs_amount}` }}</td>
-      <!-- Base rate — not applicable for outstation -->
-      <td>{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${getBaseRate(entry.car)}` }}</td>
-      <td>{{ currencySymbol }}{{ entry.driver_bhatta }}</td>
-      <td>{{ currencySymbol }}{{ entry.parking }}</td>
-      <td>{{ currencySymbol }}{{ entry.row_total }}</td>
-    </tr>
-  </tbody>
-  <tfoot>
-    <tr>
-      <td colspan="15" class="grand-total-label">GRAND TOTAL</td>
-      <td class="grand-total-value">{{ currencySymbol }}{{ slip.grand_total }}</td>
-    </tr>
-  </tfoot>
-</table>
+        <div
+          v-else
+          class="overflow-x-auto"
+        >
+          <table class="invoice-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Car</th>
+                <th>Start KMs</th>
+                <th>End KMs</th>
+                <th>Total KMs</th>
+                <th>Rate</th>
+                <th>KM Cost</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Extra Hrs</th>
+                <th>Extra Hrs Cost</th>
+                <th>Base Rate</th>
+                <th>Bhatta</th>
+                <th>Parking</th>
+                <th>Row Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="entry in slip.entries"
+                :key="entry.id"
+              >
+                <td>{{ entry.date }}</td>
+                <td>{{ entry.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}</td>
+                <td>{{ entry.car_name }}</td>
+                <td>{{ entry.start_kms }}</td>
+                <td>{{ entry.end_kms }}</td>
+                <td>{{ entry.total_kms }}</td>
+                <!-- Rate column -->
+                <td>
+                  <span v-if="entry.entry_type === 'outstation'">
+                    {{ currencySymbol }}{{ entry.outstation_rate }}/km
+                  </span>
+                  <span v-else>—</span>
+                </td>
+                <!-- KM Cost -->
+                <td>
+                  <span v-if="entry.entry_type === 'outstation'">
+                    {{ currencySymbol }}{{ entry.extra_kms_amount }}
+                  </span>
+                  <span v-else>
+                    {{ currencySymbol }}{{ entry.extra_kms_amount }}
+                  </span>
+                </td>
+                <!-- Time columns — empty for outstation -->
+                <td>{{ entry.entry_type === 'outstation' ? '—' : entry.start_time }}</td>
+                <td>{{ entry.entry_type === 'outstation' ? '—' : entry.end_time }}</td>
+                <td>{{ entry.entry_type === 'outstation' ? '—' : entry.extra_hrs }}</td>
+                <td>{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${entry.extra_hrs_amount}` }}</td>
+                <!-- Base rate — not applicable for outstation -->
+                <td>{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${getBaseRate(entry.car)}` }}</td>
+                <td>{{ currencySymbol }}{{ entry.driver_bhatta }}</td>
+                <td>{{ currencySymbol }}{{ entry.parking }}</td>
+                <td>{{ currencySymbol }}{{ entry.row_total }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td
+                  colspan="15"
+                  class="grand-total-label"
+                >
+                  GRAND TOTAL
+                </td>
+                <td class="grand-total-value">
+                  {{ currencySymbol }}{{ slip.grand_total }}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
 
       <!-- Bulk Assign Unassigned Entries -->
-      <div class="border-t border-gray-800 pt-6" v-if="unassigned.length > 0">
+      <div
+        v-if="unassigned.length > 0"
+        class="border-t border-gray-800 pt-6"
+      >
         <div class="flex items-center justify-between mb-3">
           <h2 class="text-sm font-mono text-gray-400 uppercase tracking-wider">
             Unassigned Entries for {{ slip.party_name }}
           </h2>
-          <button @click="bulkAssign" :disabled="selected.length === 0"
-            class="bg-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-30">
+          <button
+            :disabled="selected.length === 0"
+            class="bg-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-30"
+            @click="bulkAssign"
+          >
             Assign Selected ({{ selected.length }})
           </button>
         </div>
         <div class="space-y-2">
-          <label v-for="entry in unassigned" :key="entry.id"
-            class="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded px-4 py-3 cursor-pointer hover:border-gray-600 transition-colors">
-            <input type="checkbox" :value="entry.id" v-model="selected" class="accent-amber-400" />
+          <label
+            v-for="entry in unassigned"
+            :key="entry.id"
+            class="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded px-4 py-3 cursor-pointer hover:border-gray-600 transition-colors"
+          >
+            <input
+              v-model="selected"
+              type="checkbox"
+              :value="entry.id"
+              class="accent-amber-400"
+            >
             <span class="font-mono text-sm text-gray-300">
               {{ entry.date }} · {{ entry.car_name }} · {{ currencySymbol }}{{ entry.row_total }}
             </span>
           </label>
         </div>
       </div>
-
     </div>
     <!-- ── END SCREEN VIEW ─────────────────────────────────────────── -->
 
 
     <!-- ── PRINT / INVOICE VIEW ───────────────────────────────────── -->
     <div class="print-only invoice">
-
       <!-- Invoice Header -->
       <!-- Invoice Header -->
       <!-- Letterhead -->
       <div class="letterhead">
         <div class="letterhead-left">
           <div class="letterhead-brand">
-            <img v-if="bizSettings?.logo" :src="`${mediaUrl}${bizSettings.logo}`" class="letterhead-logo" alt="Logo" />
-            <h1 class="letterhead-name">{{ bizSettings?.name }}</h1>
+            <img
+              v-if="bizSettings?.logo"
+              :src="`${mediaUrl}${bizSettings.logo}`"
+              class="letterhead-logo"
+              alt="Logo"
+            >
+            <h1 class="letterhead-name">
+              {{ bizSettings?.name }}
+            </h1>
           </div>
           <div class="letterhead-details">
-            <p class="letterhead-detail">{{ bizSettings?.address }}</p>
-            <p class="letterhead-detail">{{ bizSettings?.phone }} · {{ bizSettings?.email }}</p>
-            <p class="letterhead-detail">ABN: {{ bizSettings?.abn }}</p>
+            <p class="letterhead-detail">
+              {{ bizSettings?.address }}
+            </p>
+            <p class="letterhead-detail">
+              {{ bizSettings?.phone }} · {{ bizSettings?.email }}
+            </p>
+            <p class="letterhead-detail">
+              ABN: {{ bizSettings?.abn }}
+            </p>
           </div>
         </div>
         <div class="invoice-title-block">
-          <h2 class="invoice-title">INVOICE</h2>
-          <p class="invoice-meta">Date: {{ today }}</p>
-          <p class="invoice-meta">Ref: #{{ formatSlipId(slip.id) }}</p>
-          <p class="invoice-status" :class="statusPrintClass">{{ slip.status?.toUpperCase() }}</p>
+          <h2 class="invoice-title">
+            INVOICE
+          </h2>
+          <p class="invoice-meta">
+            Date: {{ today }}
+          </p>
+          <p class="invoice-meta">
+            Ref: #{{ formatSlipId(slip.id) }}
+          </p>
+          <p
+            class="invoice-status"
+            :class="statusPrintClass"
+          >
+            {{ slip.status?.toUpperCase() }}
+          </p>
         </div>
       </div>
       <!-- Party Info -->
       <div class="invoice-party">
-        <p class="invoice-label">Billed To</p>
-        <p class="invoice-party-name">{{ slip.party_name }}</p>
+        <p class="invoice-label">
+          Billed To
+        </p>
+        <p class="invoice-party-name">
+          {{ slip.party_name }}
+        </p>
       </div>
 
       <!-- Entries Table -->
@@ -222,7 +307,10 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="entry in slip.entries" :key="entry.id">
+          <tr
+            v-for="entry in slip.entries"
+            :key="entry.id"
+          >
             <td>{{ entry.date }}</td>
             <td>{{ entry.car_name }}</td>
             <td>{{ entry.start_kms }}</td>
@@ -245,8 +333,10 @@
             <td>{{ currencySymbol }}{{ entry.row_total }}</td>
             <td class="py-3 pr-4 text-gray-300">
               {{ entry.car_name }}
-              <span v-if="entry.entry_type === 'outstation'"
-                class="ml-1 text-xs bg-blue-900 text-blue-300 px-1.5 py-0.5 rounded font-mono">
+              <span
+                v-if="entry.entry_type === 'outstation'"
+                class="ml-1 text-xs bg-blue-900 text-blue-300 px-1.5 py-0.5 rounded font-mono"
+              >
                 OS
               </span>
             </td>
@@ -254,8 +344,15 @@
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="14" class="grand-total-label">GRAND TOTAL</td>
-            <td class="grand-total-value">{{ currencySymbol }}{{ slip.grand_total }}</td>
+            <td
+              colspan="14"
+              class="grand-total-label"
+            >
+              GRAND TOTAL
+            </td>
+            <td class="grand-total-value">
+              {{ currencySymbol }}{{ slip.grand_total }}
+            </td>
           </tr>
         </tfoot>
       </table>
@@ -264,20 +361,37 @@
       <div class="invoice-footer">
         <p>Thank you for your business.</p>
       </div>
-
     </div>
     <!-- ── END PRINT VIEW ─────────────────────────────────────────── -->
-
   </div>
 
-  <p v-else class="text-gray-500 text-sm">Loading...</p>
+  <p
+    v-else
+    class="text-gray-500 text-sm"
+  >
+    Loading...
+  </p>
 
   <!-- Modal -->
-  <EntryFormModal v-if="showModal" :party-name="slip?.party_name" :company-id="slip?.company" :duty-slip-id="slip?.id"
-    :entry="editingEntry" @close="showModal = false; editingEntry = null" @saved="onEntrySaved" />
+  <EntryFormModal
+    v-if="showModal"
+    :party-name="slip?.party_name"
+    :company-id="slip?.company"
+    :duty-slip-id="slip?.id"
+    :entry="editingEntry"
+    @close="showModal = false; editingEntry = null"
+    @saved="onEntrySaved"
+  />
 
-  <ConfirmDialog :visible="confirmVisible" :title="confirmTitle" :message="confirmMessage" :confirm-label="confirmLabel"
-    :destructive="destructive" @confirm="onConfirm" @cancel="onCancel" />
+  <ConfirmDialog
+    :visible="confirmVisible"
+    :title="confirmTitle"
+    :message="confirmMessage"
+    :confirm-label="confirmLabel"
+    :destructive="destructive"
+    @confirm="onConfirm"
+    @cancel="onCancel"
+  />
 </template>
 
 <script setup>

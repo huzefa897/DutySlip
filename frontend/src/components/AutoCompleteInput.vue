@@ -6,6 +6,9 @@
       :required="required"
       :readonly="readonly"
       :placeholder="placeholder"
+      class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400 read-only:opacity-60"
+      :class="inputClass"
+      autocomplete="off"
       @input="onInput"
       @focus="onFocus"
       @blur="onBlur"
@@ -13,10 +16,7 @@
       @keydown.up.prevent="moveUp"
       @keydown.enter.prevent="selectHighlighted"
       @keydown.escape="close"
-      class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400 read-only:opacity-60"
-      :class="inputClass"
-      autocomplete="off"
-    />
+    >
 
     <!-- Suggestions dropdown -->
     <ul
@@ -26,9 +26,9 @@
       <li
         v-for="(suggestion, index) in filtered"
         :key="suggestion"
-        @mousedown.prevent="select(suggestion)"
         class="px-3 py-2 text-sm text-gray-300 cursor-pointer transition-colors"
         :class="index === highlighted ? 'bg-amber-400/20 text-white' : 'hover:bg-gray-700'"
+        @mousedown.prevent="select(suggestion)"
       >
         {{ suggestion }}
       </li>
