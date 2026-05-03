@@ -29,8 +29,11 @@ jobs:
           pip install -r requirements.txt
           pip install pre-commit pytest
 
-      - name: Run pre-commit
-        run: pre-commit run ruff ruff-format --all-files
+      - name: Run backend pre-commit hooks
+        working-directory: backend
+        run: |
+            pre-commit run ruff --all-files
+            pre-commit run ruff-format --all-files
 
       - name: Run backend tests
         working-directory: backend
