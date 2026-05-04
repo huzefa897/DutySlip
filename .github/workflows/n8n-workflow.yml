@@ -32,10 +32,12 @@ jobs:
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
           TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+          REPOSITORY: ${{ github.repository }}
           FILES: ${{ steps.files.outputs.files }}
         run: |
           jq -n \
             --arg action "pr_review_summary" \
+            --arg repository "$REPOSITORY" \
             --arg title "$PR_TITLE" \
             --arg body "$PR_BODY" \
             --arg url "$PR_URL" \
@@ -46,6 +48,9 @@ jobs:
             --argjson files "$FILES" \
             '{
               action: $action,
+              repository: {
+                full_name: $repository
+              },
               pr: {
                 title: $title,
                 body: $body,
@@ -72,6 +77,6 @@ jobs:
           fi
 
           curl --fail --show-error -v \
-            -X POST "$N8N_WEBHOOK_URL" \
+            "$N8N_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             --data @payload.json
