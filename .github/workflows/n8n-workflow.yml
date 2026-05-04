@@ -1,0 +1,82 @@
+name: Send PR data to n8n
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+jobs:
+  send-pr-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Collect changed files
+        id: files
+        run: |
+          git fetch origin ${{ github.base_ref }}
+
+          FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | jq -R -s -c 'split("\n")[:-1]')
+
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+
+      - name: Build PR payload
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+          REPOSITORY: ${{ github.repository }}
+          FILES: ${{ steps.files.outputs.files }}
+        run: |
+          jq -n \
+            --arg action "pr_review_summary" \
+            --arg repository "$REPOSITORY" \
+            --arg title "$PR_TITLE" \
+            --arg body "$PR_BODY" \
+            --arg url "$PR_URL" \
+            --arg number "$PR_NUMBER" \
+            --arg author "$PR_AUTHOR" \
+            --arg source_branch "$SOURCE_BRANCH" \
+            --arg target_branch "$TARGET_BRANCH" \
+            --argjson files "$FILES" \
+            '{
+              action: $action,
+              repository: {
+                full_name: $repository
+              },
+              pr: {
+                title: $title,
+                body: $body,
+                url: $url,
+                number: ($number | tonumber),
+                author: $author,
+                source_branch: $source_branch,
+                target_branch: $target_branch
+              },
+              files: $files
+            }' > payload.json
+
+      - name: Debug payload
+        run: |
+          cat payload.json
+
+      - name: Send PR data to n8n
+        env:
+          N8N_WEBHOOK_URL: ${{ secrets.N8N_WEBHOOK_URL }}
+        run: |
+          if [ -z "$N8N_WEBHOOK_URL" ]; then
+            echo "N8N_WEBHOOK_URL is empty"
+            exit 1
+          fi
+
+          curl --fail --show-error -v \
+            "$N8N_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            --data @payload.json
