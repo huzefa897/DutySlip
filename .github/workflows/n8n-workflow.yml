@@ -71,7 +71,7 @@ jobs:
             exit 1
           fi
 
-          curl --fail --show-error --silent \
+          curl --fail --show-error -v \
             -X POST "$N8N_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             --data @payload.json
