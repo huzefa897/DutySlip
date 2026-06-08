@@ -253,6 +253,12 @@
     gap: 1.5rem;
   }
 
+  .no-print {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
   .page-header {
     display: flex;
     align-items: flex-start;
