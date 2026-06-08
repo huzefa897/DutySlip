@@ -82,19 +82,11 @@
                 {{ currencySymbol }}{{ car.outstation_rate }}/km
               </td>
               <td class="data-table__actions">
-                <div class="data-table__actions-group">
-                  <button
-                    class="clear-filters"
-                    @click="openEdit(car)"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    class="btn-delete"
-                    @click="deleteCar(car)"
-                  >
-                    Delete
-                  </button>
+                <div class="data-table__actions-group data-table__actions-group--compact">
+                  <RowActionMenu
+                    @edit="openEdit(car)"
+                    @delete="deleteCar(car)"
+                  />
                 </div>
               </td>
             </tr>
@@ -228,6 +220,7 @@ import { currencySymbol } from '../store/currency'
 import { notify } from '../store/notification'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { useConfirm } from '../composables/useConfirm'
+import RowActionMenu from '../components/RowActionMenu.vue'
 
 const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
   confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()

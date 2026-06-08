@@ -94,11 +94,18 @@
 
               <div class="field">
                 <label class="label">Entry Type</label>
+                <p
+                  v-if="lockedEntryType"
+                  class="upload-hint mb-2"
+                >
+                  This invoice only accepts {{ lockedEntryType === 'outstation' ? 'outstation' : 'regular' }} trip types.
+                </p>
                 <div class="toggle-group">
                   <button
                     type="button"
                     class="toggle-btn"
                     :class="{ 'toggle-btn--regular': form.entry_type === 'regular' }"
+                    :disabled="!!lockedEntryType"
                     @click="form.entry_type = 'regular'"
                   >
                     Regular
@@ -107,6 +114,7 @@
                     type="button"
                     class="toggle-btn"
                     :class="{ 'toggle-btn--outstation': form.entry_type === 'outstation' }"
+                    :disabled="!!lockedEntryType"
                     @click="form.entry_type = 'outstation'"
                   >
                     Outstation
@@ -326,6 +334,7 @@ const props = defineProps({
     partyName: String,
     companyId: Number,
     dutySlipId: Number,
+    lockedEntryType: String,
     entry: Object,
 })
 
@@ -351,7 +360,7 @@ const form = ref({
     end_time: props.entry?.end_time || '',
     driver_bhatta: props.entry?.driver_bhatta || '0',
     parking: props.entry?.parking || '0',
-    entry_type: props.entry?.entry_type || 'regular',
+    entry_type: props.lockedEntryType || props.entry?.entry_type || 'regular',
     notes: props.entry?.notes || '',
 })
 
@@ -369,6 +378,16 @@ watch(
             rateOverride.value = null
         }
     }
+)
+
+watch(
+    () => props.lockedEntryType,
+    (lockedType) => {
+        if (lockedType) {
+            form.value.entry_type = lockedType
+        }
+    },
+    { immediate: true }
 )
 const partyNames = ref([])
 
@@ -409,6 +428,9 @@ async function submit() {
     submitting.value = true
     error.value = ''
     try {
+        if (props.lockedEntryType) {
+            form.value.entry_type = props.lockedEntryType
+        }
         let res
         if (props.entry) {
             res = await api.put(`/entries/${props.entry.id}/`, form.value)

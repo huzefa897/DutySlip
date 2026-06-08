@@ -2,6 +2,7 @@
   <div
     ref="triggerRef"
     class="row-menu-trigger"
+    @click.stop
   >
     <button
       type="button"
@@ -34,6 +35,14 @@
             Edit
           </button>
           <button
+            v-if="showPrint"
+            type="button"
+            class="row-menu__item"
+            @click="emitAction('print')"
+          >
+            Print / PDF
+          </button>
+          <button
             type="button"
             class="row-menu__item row-menu__item--danger"
             @click="emitAction('delete')"
@@ -47,9 +56,10 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
-const emit = defineEmits(['edit', 'delete'])
+defineProps({ showPrint: { type: Boolean, default: false } })
+const emit = defineEmits(['edit', 'delete', 'print'])
 
 const open = ref(false)
 const triggerRef = ref(null)
@@ -79,8 +89,9 @@ function toggleMenu() {
   open.value = !open.value
 }
 
-function emitAction(action) {
+async function emitAction(action) {
   closeMenu()
+  await nextTick()
   emit(action)
 }
 

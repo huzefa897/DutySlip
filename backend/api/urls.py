@@ -17,6 +17,7 @@ urlpatterns = [
     path("cars/<int:pk>/", views.car_detail),
     # Entries
     path("entries/", views.entry_list),
+    path("entries/excel/", views.download_entries_excel),
     path("entries/<int:pk>/", views.entry_detail),
     # DutySlips
     path("dutyslips/", views.dutyslip_list),
@@ -28,7 +29,10 @@ urlpatterns = [
         "dutyslips/<int:pk>/payment-status/",
         views.update_dutyslip_payment_status,
     ),
+    path("dutyslips/bulk-excel/", views.bulk_export_excel),
+    path("dutyslips/bulk-pdf/", views.bulk_download_invoice_pdf),
     path("dutyslips/<int:pk>/pdf/", views.download_invoice_pdf),
+    path("dutyslips/<int:pk>/excel/", views.download_invoice_excel),
     # Business Settings
     path("settings/", views.business_settings),
     # Backup and Restore Settings

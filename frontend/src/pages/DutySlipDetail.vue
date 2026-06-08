@@ -58,6 +58,14 @@
             {{ downloadingPdf ? 'Preparing PDF...' : 'Download PDF' }}
           </button>
           <button
+            type="button"
+            class="btn-secondary"
+            :disabled="downloadingExcel"
+            @click="downloadInvoiceExcel"
+          >
+            {{ downloadingExcel ? 'Preparing Excel...' : 'Export Excel' }}
+          </button>
+          <button
             class="btn-secondary"
             @click="printInvoice"
           >
@@ -154,6 +162,9 @@
             Assign Selected ({{ selected.length }})
           </button>
         </div>
+        <p class="upload-hint mb-3">
+          Only {{ slip.slip_type }} entries are shown here so this invoice stays type-specific.
+        </p>
         <div class="selection-list">
           <label
             v-for="entry in unassigned"
@@ -184,8 +195,7 @@
         <div class="letterhead-left">
           <div class="letterhead-brand">
             <img
-              v-if="bizSettings?.logo"
-              :src="`${mediaUrl}${bizSettings.logo}`"
+              :src="bizSettings?.logo ? `${mediaUrl}${bizSettings.logo}` : defaultLogoPath"
               class="letterhead-logo"
               alt="Logo"
             >
@@ -244,21 +254,15 @@
         <thead>
           <tr>
             <th>Date</th>
-            <th>Type</th>
-            <th>Car</th>
-            <th>Start KMs</th>
-            <th>End KMs</th>
+            <th>Trip Type</th>
+            <th>Vehicle</th>
+            <th>Total Hrs</th>
+            <th>Extra Hrs</th>
             <th>Total KMs</th>
             <th>Extra KMs</th>
-            <th>Extra KMs ({{ currencySymbol }})</th>
-            <th>Start Time</th>
-            <th>End Time</th>
-            <th>Extra Hrs</th>
-            <th>Extra Hrs ({{ currencySymbol }})</th>
-            <th>Base Rate</th>
             <th>Bhatta</th>
             <th>Parking</th>
-            <th>Row Total</th>
+            <th>Total</th>
           </tr>
         </thead>
         <tbody>
@@ -267,23 +271,12 @@
             :key="entry.id"
           >
             <td>{{ entry.date }}</td>
-            <td>{{ entry.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}</td>
+            <td>{{ formatTripType(entry) }}</td>
             <td>{{ entry.car_name }}</td>
-            <td>{{ entry.start_kms }}</td>
-            <td>{{ entry.end_kms }}</td>
-            <td>{{ entry.total_kms }}</td>
-            <td class="py-3 pr-4 font-mono text-gray-300">
-              <span v-if="entry.entry_type === 'outstation'">
-                {{ currencySymbol }}{{ entry.outstation_rate }}/km
-              </span>
-              <span v-else>{{ entry.extra_kms }}</span>
-            </td>
-            <td>{{ currencySymbol }}{{ entry.extra_kms_amount }}</td>
-            <td>{{ entry.start_time }}</td>
-            <td>{{ entry.end_time }}</td>
+            <td>{{ formatTotalHrs(entry) }}</td>
             <td>{{ entry.extra_hrs }}</td>
-            <td>{{ currencySymbol }}{{ entry.extra_hrs_amount }}</td>
-            <td>{{ currencySymbol }}{{ getBaseRate(entry.car) }}</td>
+            <td>{{ entry.total_kms }}</td>
+            <td>{{ entry.extra_kms }}</td>
             <td>{{ currencySymbol }}{{ entry.driver_bhatta }}</td>
             <td>{{ currencySymbol }}{{ entry.parking }}</td>
             <td>{{ currencySymbol }}{{ entry.row_total }}</td>
@@ -292,7 +285,7 @@
         <tfoot>
           <tr>
             <td
-              colspan="15"
+              colspan="9"
               class="grand-total-label"
             >
               GRAND TOTAL
@@ -325,6 +318,7 @@
     :party-name="slip?.party_name"
     :company-id="slip?.company"
     :duty-slip-id="slip?.id"
+    :locked-entry-type="slip?.slip_type"
     :entry="editingEntry"
     @close="showModal = false; editingEntry = null"
     @saved="onEntrySaved"
@@ -393,6 +387,7 @@ const paymentStatusPrintClass = computed(() => {
 })
 const mediaUrl = import.meta.env.VITE_MEDIA_URL || ''
 const apiUrl = import.meta.env.VITE_API_URL || '/api'
+const defaultLogoPath = '/invoicely-mark.svg'
 const editingEntry = ref(null)
 const route = useRoute()
 const slip = ref(null)
@@ -403,6 +398,7 @@ const cars = ref([])
 const companyRates = ref([])
 const bizSettings = ref(null)
 const downloadingPdf = ref(false)
+const downloadingExcel = ref(false)
 
 const today = new Date().toLocaleDateString('en-AU', {
   day: '2-digit', month: 'long', year: 'numeric'
@@ -437,6 +433,22 @@ function getRateLabel(entry) {
   return `${resolvedCurrencySymbol.value}${getExtraKmRate(entry.car)}/km`
 }
 
+function formatTotalHrs(entry) {
+  if (!entry.start_time || !entry.end_time) return '—'
+
+  const [startHours, startMinutes = '0', startSeconds = '0'] = String(entry.start_time).split(':')
+  const [endHours, endMinutes = '0', endSeconds = '0'] = String(entry.end_time).split(':')
+  const start = new Date(0, 0, 0, Number(startHours), Number(startMinutes), Number(startSeconds))
+  const end = new Date(0, 0, 0, Number(endHours), Number(endMinutes), Number(endSeconds))
+  if (end < start) end.setDate(end.getDate() + 1)
+  const totalHours = (end - start) / 36e5
+  return Number.isInteger(totalHours) ? String(totalHours) : totalHours.toFixed(2)
+}
+
+function formatTripType(entry) {
+  return entry.entry_type === 'outstation' ? 'Outstation Trip' : 'Regular Trip'
+}
+
 function openEntryEditor(entry) {
   editingEntry.value = entry
   showModal.value = true
@@ -453,22 +465,16 @@ function escapeHtml(value) {
 
 function buildInvoiceHtml() {
   const symbol = resolvedCurrencySymbol.value
-  const logoUrl = bizSettings.value?.logo ? `${mediaUrl}${bizSettings.value.logo}` : ''
+  const logoUrl = bizSettings.value?.logo ? `${mediaUrl}${bizSettings.value.logo}` : defaultLogoPath
   const rows = (slip.value?.entries || []).map(entry => `
     <tr>
       <td>${escapeHtml(entry.date)}</td>
-      <td>${escapeHtml(entry.entry_type === 'outstation' ? 'Outstation' : 'Regular')}</td>
+      <td>${escapeHtml(formatTripType(entry))}</td>
       <td>${escapeHtml(entry.car_name)}</td>
-      <td>${escapeHtml(entry.start_kms)}</td>
-      <td>${escapeHtml(entry.end_kms)}</td>
+      <td>${escapeHtml(formatTotalHrs(entry))}</td>
+      <td>${escapeHtml(entry.extra_hrs)}</td>
       <td>${escapeHtml(entry.total_kms)}</td>
-      <td>${escapeHtml(entry.entry_type === 'outstation' ? `${symbol}${getOutstationRate(entry.car)}/km` : entry.extra_kms)}</td>
-      <td>${escapeHtml(`${symbol}${entry.extra_kms_amount}`)}</td>
-      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : entry.start_time)}</td>
-      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : entry.end_time)}</td>
-      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : entry.extra_hrs)}</td>
-      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : `${symbol}${entry.extra_hrs_amount}`)}</td>
-      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : `${symbol}${getBaseRate(entry.car)}`)}</td>
+      <td>${escapeHtml(entry.extra_kms)}</td>
       <td>${escapeHtml(`${symbol}${entry.driver_bhatta}`)}</td>
       <td>${escapeHtml(`${symbol}${entry.parking}`)}</td>
       <td>${escapeHtml(`${symbol}${entry.row_total}`)}</td>
@@ -500,6 +506,18 @@ function buildInvoiceHtml() {
         .grand-total-label { text-align: right; font-weight: 700; font-size: 12px; letter-spacing: 1px; padding-right: 12px; border-top: 2px solid #111; padding-top: 10px; }
         .grand-total-value { font-weight: 700; font-size: 14px; border-top: 2px solid #111; padding-top: 10px; }
         .invoice-footer { text-align: center; font-size: 11px; color: #888; border-top: 1px solid #ddd; padding-top: 16px; margin-top: 16px; }
+        .pdf-watermark {
+          position: fixed;
+          left: 0;
+          right: 0;
+          bottom: 8px;
+          text-align: center;
+          font-size: 8px;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: rgba(17, 17, 17, 0.38);
+          pointer-events: none;
+        }
         @page { size: A4 landscape; margin: 14mm; }
       </style>
     </head>
@@ -530,32 +548,27 @@ function buildInvoiceHtml() {
         <thead>
           <tr>
             <th>Date</th>
-            <th>Type</th>
-            <th>Car</th>
-            <th>Start KMs</th>
-            <th>End KMs</th>
+            <th>Trip Type</th>
+            <th>Vehicle</th>
+            <th>Total Hrs</th>
+            <th>Extra Hrs</th>
             <th>Total KMs</th>
             <th>Extra KMs</th>
-            <th>Extra KMs (${escapeHtml(symbol)})</th>
-            <th>Start Time</th>
-            <th>End Time</th>
-            <th>Extra Hrs</th>
-            <th>Extra Hrs (${escapeHtml(symbol)})</th>
-            <th>Base Rate</th>
             <th>Bhatta</th>
             <th>Parking</th>
-            <th>Row Total</th>
+            <th>Total</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
         <tfoot>
           <tr>
-            <td colspan="15" class="grand-total-label">GRAND TOTAL</td>
+            <td colspan="9" class="grand-total-label">GRAND TOTAL</td>
             <td class="grand-total-value">${escapeHtml(`${symbol}${slip.value.grand_total}`)}</td>
           </tr>
         </tfoot>
       </table>
       <div class="invoice-footer"><p>Thank you for your business.</p></div>
+      <div class="pdf-watermark">Created with Invoicely</div>
     </body>
   </html>`
 }
@@ -614,6 +627,26 @@ async function downloadInvoicePdf() {
     downloadingPdf.value = false
   }
 }
+async function downloadInvoiceExcel() {
+  downloadingExcel.value = true
+  try {
+    const response = await fetch(`${apiUrl}/dutyslips/${slip.value.id}/excel/`)
+    if (!response.ok) throw new Error('Failed to export Excel')
+    const blob = await response.blob()
+    const blobUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = `invoice-${formatSlipId(slip.value.id)}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(blobUrl)
+  } catch {
+    notify('Failed to export Excel.', 'error')
+  } finally {
+    downloadingExcel.value = false
+  }
+}
 async function updateStatus(newStatus) {
   await api.patch(`/dutyslips/${route.params.id}/status/`, { status: newStatus })
   await fetchSlip()
@@ -640,7 +673,7 @@ async function fetchSlip() {
 async function fetchUnassigned() {
   const res = await api.get('/entries/')
   unassigned.value = res.data.filter(
-    e => !e.duty_slip && e.party_name === slip.value.party_name
+    e => !e.duty_slip && e.party_name === slip.value.party_name && e.entry_type === slip.value.slip_type
   )
 }
 

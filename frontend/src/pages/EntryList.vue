@@ -1,5 +1,8 @@
 <template>
-  <div class="page">
+  <div
+    class="page"
+    :class="{ 'page--selection-active': selectedEntryIds.length > 0 }"
+  >
     <div class="no-print">
       <div class="page-header">
         <div class="page-header__content">
@@ -19,6 +22,14 @@
             @click="printEntries"
           >
             Print {{ selectedEntryIds.length ? `Selected (${selectedEntryIds.length})` : 'Entries' }}
+          </button>
+          <button
+            type="button"
+            class="btn-secondary"
+            :disabled="downloadingExcel"
+            @click="downloadEntriesExcel"
+          >
+            {{ downloadingExcel ? 'Preparing Excel...' : 'Export Excel' }}
           </button>
           <router-link
             to="/entries/create"
@@ -132,11 +143,15 @@
                 <th>
                   <input
                     type="checkbox"
-                    class="accent-[var(--accent-blue)]"
+                    class="sr-only"
                     :checked="allVisibleSelected"
                     :disabled="paginatedEntries.length === 0"
                     @change="toggleVisibleEntries($event.target.checked)"
                   >
+                  <span
+                    class="slip-checkbox"
+                    :class="{ 'slip-checkbox--checked': allVisibleSelected }"
+                  />
                 </th>
                 <th>Date</th>
                 <th>Party</th>
@@ -155,14 +170,22 @@
               <tr
                 v-for="entry in paginatedEntries"
                 :key="entry.id"
+                class="entry-row"
+                :class="{ 'entry-row--selected': selectedEntryIds.includes(entry.id) }"
               >
                 <td>
-                  <input
-                    v-model="selectedEntryIds"
-                    type="checkbox"
-                    class="accent-[var(--accent-blue)]"
-                    :value="entry.id"
-                  >
+                  <label class="entry-select">
+                    <input
+                      v-model="selectedEntryIds"
+                      type="checkbox"
+                      class="sr-only"
+                      :value="entry.id"
+                    >
+                    <span
+                      class="slip-checkbox"
+                      :class="{ 'slip-checkbox--checked': selectedEntryIds.includes(entry.id) }"
+                    />
+                  </label>
                 </td>
                 <td class="data-table__numeric data-table__muted">
                   {{ entry.date }}
@@ -198,19 +221,11 @@
                   >unassigned</span>
                 </td>
                 <td class="data-table__actions">
-                  <div class="data-table__actions-group">
-                    <button
-                      class="clear-filters"
-                      @click="editingEntry = entry; showModal = true"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      class="btn-delete"
-                      @click="deleteEntry(entry.id)"
-                    >
-                      Delete
-                    </button>
+                  <div class="data-table__actions-group data-table__actions-group--compact">
+                    <RowActionMenu
+                      @edit="editingEntry = entry; showModal = true"
+                      @delete="deleteEntry(entry.id)"
+                    />
                   </div>
                 </td>
               </tr>
@@ -252,6 +267,37 @@
           </button>
         </div>
       </section>
+    </div>
+
+    <div
+      v-if="selectedEntryIds.length > 0"
+      class="selection-bar"
+    >
+      <span class="selection-bar__count">
+        {{ selectedEntryIds.length }} selected
+      </span>
+      <div class="selection-bar__actions">
+        <button
+          class="btn-secondary"
+          @click="clearSelection"
+        >
+          Clear selection
+        </button>
+        <button
+          class="btn-secondary"
+          :disabled="downloadingExcel"
+          @click="downloadEntriesExcel"
+        >
+          {{ downloadingExcel ? 'Preparing Excel...' : 'Export Excel' }}
+        </button>
+        <button
+          class="btn-secondary"
+          :disabled="entriesToPrint.length === 0"
+          @click="printEntries"
+        >
+          Print Selected
+        </button>
+      </div>
     </div>
 
     <div class="print-only entries-print">
@@ -353,6 +399,7 @@ import EntryFormModal from '../components/EntryFormModal.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { useConfirm } from '../composables/useConfirm'
 import { usePagination } from '../composables/usePagination'
+import RowActionMenu from '../components/RowActionMenu.vue'
 
 
 const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
@@ -365,6 +412,7 @@ const loading = ref(true)
 const showModal = ref(false)
 const editingEntry = ref(null)
 const selectedEntryIds = ref([])
+const downloadingExcel = ref(false)
 
 const filters = ref({
   party_name: '',
@@ -443,8 +491,197 @@ function formatEntryType(type) {
   return type === 'outstation' ? 'Outstation' : 'Regular'
 }
 
+function escapeHtml(value) {
+  return String(value ?? '—')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
+function buildPrintHtml() {
+  const rows = entriesToPrint.value.map((entry) => `
+    <tr>
+      <td>${escapeHtml(entry.date)}</td>
+      <td>${escapeHtml(formatEntryType(entry.entry_type))}</td>
+      <td>${escapeHtml(entry.party_name)}</td>
+      <td>${escapeHtml(entry.company_name)}</td>
+      <td>${escapeHtml(entry.car_name)}</td>
+      <td>${escapeHtml(entry.total_kms)}</td>
+      <td>${escapeHtml(entry.extra_hrs)}</td>
+      <td>${escapeHtml(`${currencySymbol.value}${entry.driver_bhatta}`)}</td>
+      <td>${escapeHtml(`${currencySymbol.value}${entry.parking}`)}</td>
+      <td>${escapeHtml(entry.duty_slip ? `INV-${formatSlipId(entry.duty_slip)}` : 'Unassigned')}</td>
+      <td>${escapeHtml(`${currencySymbol.value}${entry.row_total}`)}</td>
+    </tr>
+  `).join('')
+
+  return `<!doctype html>
+  <html>
+    <head>
+      <meta charset="utf-8">
+      <title>${selectedEntryIds.value.length ? 'Selected Entries Report' : 'Entries Report'}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          color: #111;
+          margin: 0;
+          padding: 32px;
+          background: #fff;
+        }
+        .print-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          border-bottom: 2px solid #111;
+          padding-bottom: 14px;
+          margin-bottom: 14px;
+        }
+        .print-header h1 {
+          font-size: 24px;
+          letter-spacing: 1px;
+          margin: 0 0 4px;
+          text-transform: uppercase;
+        }
+        .print-header p,
+        .print-summary p,
+        .print-filters {
+          color: #555;
+          font-size: 11px;
+          margin: 0;
+        }
+        .print-summary { text-align: right; }
+        .print-filters {
+          border-bottom: 1px solid #ddd;
+          margin-bottom: 14px;
+          padding-bottom: 10px;
+        }
+        .print-table {
+          border-collapse: collapse;
+          font-size: 9px;
+          width: 100%;
+        }
+        .print-table th {
+          background: #111;
+          color: #fff;
+          font-weight: 600;
+          padding: 7px 5px;
+          text-align: left;
+          white-space: nowrap;
+        }
+        .print-table td {
+          border-bottom: 1px solid #ddd;
+          padding: 6px 5px;
+          white-space: nowrap;
+        }
+        .print-table tbody tr:nth-child(even) td {
+          background: #f7f7f7;
+        }
+        .print-total-label,
+        .print-total-value {
+          border-top: 2px solid #111;
+          font-weight: 700;
+          padding-top: 9px;
+        }
+        .print-total-label {
+          text-align: right;
+        }
+        @page {
+          size: A4 landscape;
+          margin: 14mm;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <div>
+          <h1>${escapeHtml(selectedEntryIds.value.length ? 'Selected Entries Report' : 'Entries Report')}</h1>
+          <p>${escapeHtml(printDate.value)}</p>
+        </div>
+        <div class="print-summary">
+          <p>${escapeHtml(`${entriesToPrint.value.length} entries`)}</p>
+          <p>Total: ${escapeHtml(`${currencySymbol.value}${entriesToPrintTotal.value}`)}</p>
+        </div>
+      </div>
+      ${printFilterSummary.value ? `<div class="print-filters">${escapeHtml(printFilterSummary.value)}</div>` : ''}
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Party</th>
+            <th>Company</th>
+            <th>Car</th>
+            <th>Total KMs</th>
+            <th>Extra Hrs</th>
+            <th>Bhatta</th>
+            <th>Parking</th>
+            <th>Duty Slip</th>
+            <th>Row Total</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="10" class="print-total-label">GRAND TOTAL</td>
+            <td class="print-total-value">${escapeHtml(`${currencySymbol.value}${entriesToPrintTotal.value}`)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </body>
+  </html>`
+}
+
 function printEntries() {
-  window.print()
+  const printWindow = window.open('', '_blank', 'width=1200,height=900')
+  if (!printWindow) {
+    notify('Popup blocked. Allow popups to print the entries report.', 'error')
+    return
+  }
+
+  printWindow.document.open()
+  printWindow.document.write(buildPrintHtml())
+  printWindow.document.close()
+  printWindow.focus()
+  printWindow.onload = () => {
+    printWindow.print()
+  }
+}
+
+async function downloadEntriesExcel() {
+  downloadingExcel.value = true
+  try {
+    const params = {}
+    if (selectedEntryIds.value.length > 0) {
+      params.ids = selectedEntryIds.value.join(',')
+    } else {
+      if (filters.value.party_name) params.party_name = filters.value.party_name
+      if (filters.value.company) params.company = filters.value.company
+      if (filters.value.car) params.car = filters.value.car
+      if (filters.value.date_from) params.date_from = filters.value.date_from
+      if (filters.value.date_to) params.date_to = filters.value.date_to
+    }
+
+    const response = await api.get('/entries/excel/', {
+      responseType: 'blob',
+      params,
+    })
+    const blobUrl = window.URL.createObjectURL(response.data)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    const suffix = selectedEntryIds.value.length > 0 ? 'selected' : 'filtered'
+    link.download = `entries-export-${suffix}-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(blobUrl)
+    notify('Entries Excel exported.')
+  } catch {
+    notify('Failed to export entries Excel.', 'error')
+  } finally {
+    downloadingExcel.value = false
+  }
 }
 
 function clearSelection() {
