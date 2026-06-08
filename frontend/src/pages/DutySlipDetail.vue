@@ -1,25 +1,29 @@
 <template>
-  <div v-if="slip">
-    <!-- ── SCREEN VIEW ─────────────────────────────────────────────── -->
-    <div class="no-print">
+  <div
+    v-if="slip"
+    class="page"
+  >
+    <div class="no-print page">
       <button
-        class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+        class="back-btn"
         @click="$router.back()"
       >
         ← Back
       </button>
-      <!-- Header -->
-      <div class="flex items-start justify-between mb-8">
-        <div>
-          <h1 class="text-xl font-mono font-bold text-white">
+      <div class="page-header">
+        <div class="page-header__content">
+          <span class="page-header__eyebrow">Invoice {{ formatSlipId(slip.id) }}</span>
+          <h1 class="page-title">
             {{ slip.party_name }}
           </h1>
-
-          <div class="flex items-center gap-3 mt-2">
+          <p class="page-header__subtitle">
+            {{ slip.company_name }} · Created {{ slip.created_at?.slice(0, 10) }}
+          </p>
+          <div class="slip-meta-row">
             <StatusBadge :status="slip.status" />
             <select
               :value="slip.status"
-              class="bg-gray-800 border border-gray-700 text-gray-300 text-xs font-mono px-2 py-1 rounded focus:outline-none focus:border-amber-400"
+              class="field-control px-3 py-2 text-xs"
               @change="updateStatus($event.target.value)"
             >
               <option value="draft">
@@ -32,7 +36,7 @@
             <PaymentStatusBadge :status="slip.payment_status" />
             <select
               :value="slip.payment_status"
-              class="bg-gray-800 border border-gray-700 text-gray-300 text-xs font-mono px-2 py-1 rounded focus:outline-none focus:border-amber-400"
+              class="field-control px-3 py-2 text-xs"
               @change="updatePaymentStatus($event.target.value)"
             >
               <option value="unpaid">
@@ -43,50 +47,72 @@
               </option>
             </select>
           </div>
-          <p class="text-gray-500 text-sm font-mono mt-1">
-            {{ slip.company_name }} · Created {{ slip.created_at?.slice(0, 10) }}
-          </p>
         </div>
-        <div class="flex items-center gap-3">
-          <a
-            :href="`${apiUrl}/dutyslips/${slip.id}/pdf/`"
-            target="_blank"
-            download
-            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
-          >
-            ⬇ Download PDF
-          </a>
+        <div class="quick-actions-row">
           <button
-            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+            type="button"
+            class="btn-secondary"
+            :disabled="downloadingPdf"
+            @click="downloadInvoicePdf"
+          >
+            {{ downloadingPdf ? 'Preparing PDF...' : 'Download PDF' }}
+          </button>
+          <button
+            class="btn-secondary"
             @click="printInvoice"
           >
-            🖨 Print Invoice
+            Print Invoice
           </button>
           <button
-            class="bg-red-900/50 border border-red-800 text-red-400 text-sm px-4 py-2 rounded hover:bg-red-900 transition-colors font-mono"
+            v-if="slip.payment_status !== 'paid'"
+            class="btn-primary"
+            @click="updatePaymentStatus('paid')"
+          >
+            Mark Paid
+          </button>
+          <button
+            class="btn-danger"
             @click="deleteSlip"
           >
-            🗑 Delete
+            Delete
           </button>
-          <div class="text-right">
-            <p class="text-xs text-gray-500 font-mono mb-1">
-              Grand Total
-            </p>
-            <p class="text-2xl font-mono font-bold text-amber-400">
-              {{ currencySymbol }}{{ slip.grand_total }}
-            </p>
-          </div>
         </div>
       </div>
 
-      <!-- Assigned Entries Table -->
-      <div class="mb-8">
+      <div class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-card__label">
+            Total
+          </p>
+          <p class="summary-card__value summary-card__value--accent">
+            {{ currencySymbol }}{{ slip.grand_total }}
+          </p>
+        </div>
+        <div class="summary-card">
+          <p class="summary-card__label">
+            Status
+          </p>
+          <div class="mt-3">
+            <StatusBadge :status="slip.status" />
+          </div>
+        </div>
+        <div class="summary-card">
+          <p class="summary-card__label">
+            Created Date
+          </p>
+          <p class="summary-card__value">
+            {{ slip.created_at?.slice(0, 10) }}
+          </p>
+        </div>
+      </div>
+
+      <section class="page">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-mono text-gray-400 uppercase tracking-wider">
-            Entries
+          <h2 class="section-label">
+            Invoice Items
           </h2>
           <button
-            class="bg-amber-400 text-gray-950 text-xs font-bold px-3 py-1.5 rounded hover:bg-amber-300 transition-colors"
+            class="btn-primary"
             @click="showModal = true"
           >
             + Add Entry
@@ -95,129 +121,58 @@
 
         <p
           v-if="slip.entries?.length === 0"
-          class="text-gray-600 text-sm"
+          class="empty-text"
         >
           No entries yet — add one above.
         </p>
 
-        <div
+        <InvoiceItemsTable
           v-else
-          class="overflow-x-auto"
-        >
-          <table class="invoice-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Car</th>
-                <th>Start KMs</th>
-                <th>End KMs</th>
-                <th>Total KMs</th>
-                <th>Rate</th>
-                <th>KM Cost</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Extra Hrs</th>
-                <th>Extra Hrs Cost</th>
-                <th>Base Rate</th>
-                <th>Bhatta</th>
-                <th>Parking</th>
-                <th>Row Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="entry in slip.entries"
-                :key="entry.id"
-              >
-                <td>{{ entry.date }}</td>
-                <td>{{ entry.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}</td>
-                <td>{{ entry.car_name }}</td>
-                <td>{{ entry.start_kms }}</td>
-                <td>{{ entry.end_kms }}</td>
-                <td>{{ entry.total_kms }}</td>
-                <!-- Rate column -->
-                <td>
-                  <span v-if="entry.entry_type === 'outstation'">
-                    {{ currencySymbol }}{{ entry.outstation_rate }}/km
-                  </span>
-                  <span v-else>—</span>
-                </td>
-                <!-- KM Cost -->
-                <td>
-                  <span v-if="entry.entry_type === 'outstation'">
-                    {{ currencySymbol }}{{ entry.extra_kms_amount }}
-                  </span>
-                  <span v-else>
-                    {{ currencySymbol }}{{ entry.extra_kms_amount }}
-                  </span>
-                </td>
-                <!-- Time columns — empty for outstation -->
-                <td>{{ entry.entry_type === 'outstation' ? '—' : entry.start_time }}</td>
-                <td>{{ entry.entry_type === 'outstation' ? '—' : entry.end_time }}</td>
-                <td>{{ entry.entry_type === 'outstation' ? '—' : entry.extra_hrs }}</td>
-                <td>{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${entry.extra_hrs_amount}` }}</td>
-                <!-- Base rate — not applicable for outstation -->
-                <td>{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${getBaseRate(entry.car)}` }}</td>
-                <td>{{ currencySymbol }}{{ entry.driver_bhatta }}</td>
-                <td>{{ currencySymbol }}{{ entry.parking }}</td>
-                <td>{{ currencySymbol }}{{ entry.row_total }}</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr>
-                <td
-                  colspan="15"
-                  class="grand-total-label"
-                >
-                  GRAND TOTAL
-                </td>
-                <td class="grand-total-value">
-                  {{ currencySymbol }}{{ slip.grand_total }}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
+          :entries="slip.entries"
+          :grand-total="slip.grand_total"
+          :currency-symbol="currencySymbol"
+          :get-base-rate="getBaseRate"
+          :get-rate-label="getRateLabel"
+          @edit="openEntryEditor"
+          @delete="deleteEntry"
+        />
+      </section>
 
-      <!-- Bulk Assign Unassigned Entries -->
-      <div
+      <section
         v-if="unassigned.length > 0"
-        class="border-t border-gray-800 pt-6"
+        class="section-card"
       >
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-mono text-gray-400 uppercase tracking-wider">
+          <h2 class="section-label">
             Unassigned Entries for {{ slip.party_name }}
           </h2>
           <button
             :disabled="selected.length === 0"
-            class="bg-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-30"
+            class="btn-secondary"
             @click="bulkAssign"
           >
             Assign Selected ({{ selected.length }})
           </button>
         </div>
-        <div class="space-y-2">
+        <div class="selection-list">
           <label
             v-for="entry in unassigned"
             :key="entry.id"
-            class="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded px-4 py-3 cursor-pointer hover:border-gray-600 transition-colors"
+            class="selection-item"
           >
             <input
               v-model="selected"
               type="checkbox"
               :value="entry.id"
-              class="accent-amber-400"
+              class="accent-[var(--accent-blue)]"
             >
-            <span class="font-mono text-sm text-gray-300">
+            <span class="data-table__muted">
               {{ entry.date }} · {{ entry.car_name }} · {{ currencySymbol }}{{ entry.row_total }}
             </span>
           </label>
         </div>
-      </div>
+      </section>
     </div>
-    <!-- ── END SCREEN VIEW ─────────────────────────────────────────── -->
 
 
     <!-- ── PRINT / INVOICE VIEW ───────────────────────────────────── -->
@@ -391,6 +346,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api'
 import EntryFormModal from '../components/EntryFormModal.vue'
+import InvoiceItemsTable from '../components/InvoiceItemsTable.vue'
 import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
@@ -444,19 +400,219 @@ const unassigned = ref([])
 const selected = ref([])
 const showModal = ref(false)
 const cars = ref([])
+const companyRates = ref([])
 const bizSettings = ref(null)
+const downloadingPdf = ref(false)
 
 const today = new Date().toLocaleDateString('en-AU', {
   day: '2-digit', month: 'long', year: 'numeric'
 })
+const resolvedCurrencySymbol = computed(() => currencySymbol.value)
 
 function getBaseRate(carId) {
   const car = cars.value.find(c => c.id === carId)
+  const override = companyRates.value.find(rate => String(rate.car) === String(carId))
+  if (override?.base_rate != null && override.base_rate !== '') return override.base_rate
   return car ? car.base_rate : '—'
 }
 
+function getExtraKmRate(carId) {
+  const car = cars.value.find(c => c.id === carId)
+  const override = companyRates.value.find(rate => String(rate.car) === String(carId))
+  if (override?.extra_km_rate != null && override.extra_km_rate !== '') return override.extra_km_rate
+  return car ? car.extra_km_rate : '—'
+}
+
+function getOutstationRate(carId) {
+  const car = cars.value.find(c => c.id === carId)
+  const override = companyRates.value.find(rate => String(rate.car) === String(carId))
+  if (override?.outstation_rate != null && override.outstation_rate !== '') return override.outstation_rate
+  return car ? car.outstation_rate : '—'
+}
+
+function getRateLabel(entry) {
+  if (entry.entry_type === 'outstation') {
+    return `${resolvedCurrencySymbol.value}${getOutstationRate(entry.car)}/km`
+  }
+  return `${resolvedCurrencySymbol.value}${getExtraKmRate(entry.car)}/km`
+}
+
+function openEntryEditor(entry) {
+  editingEntry.value = entry
+  showModal.value = true
+}
+
+function escapeHtml(value) {
+  return String(value ?? '—')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
+function buildInvoiceHtml() {
+  const symbol = resolvedCurrencySymbol.value
+  const logoUrl = bizSettings.value?.logo ? `${mediaUrl}${bizSettings.value.logo}` : ''
+  const rows = (slip.value?.entries || []).map(entry => `
+    <tr>
+      <td>${escapeHtml(entry.date)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? 'Outstation' : 'Regular')}</td>
+      <td>${escapeHtml(entry.car_name)}</td>
+      <td>${escapeHtml(entry.start_kms)}</td>
+      <td>${escapeHtml(entry.end_kms)}</td>
+      <td>${escapeHtml(entry.total_kms)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? `${symbol}${getOutstationRate(entry.car)}/km` : entry.extra_kms)}</td>
+      <td>${escapeHtml(`${symbol}${entry.extra_kms_amount}`)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : entry.start_time)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : entry.end_time)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : entry.extra_hrs)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : `${symbol}${entry.extra_hrs_amount}`)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : `${symbol}${getBaseRate(entry.car)}`)}</td>
+      <td>${escapeHtml(`${symbol}${entry.driver_bhatta}`)}</td>
+      <td>${escapeHtml(`${symbol}${entry.parking}`)}</td>
+      <td>${escapeHtml(`${symbol}${entry.row_total}`)}</td>
+    </tr>
+  `).join('')
+
+  return `<!doctype html>
+  <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Invoice ${escapeHtml(formatSlipId(slip.value.id))}</title>
+      <style>
+        body { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111; margin: 0; padding: 32px; background: #fff; }
+        .letterhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 2px solid #111; }
+        .letterhead-brand { display: flex; align-items: center; gap: 12px; }
+        .letterhead-logo { max-height: 52px; max-width: 52px; object-fit: contain; }
+        .letterhead-name { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .letterhead-detail, .invoice-meta { margin: 2px 0; font-size: 11px; color: #555; }
+        .invoice-title-block { text-align: right; }
+        .invoice-title { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 4px; }
+        .invoice-status { margin-top: 6px; font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
+        .invoice-party { margin-bottom: 24px; }
+        .invoice-label { margin: 0 0 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888; }
+        .invoice-party-name { margin: 0; font-size: 16px; font-weight: 700; }
+        .invoice-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .invoice-table th { background: #111; color: #fff; padding: 8px 6px; text-align: left; font-weight: 500; white-space: nowrap; }
+        .invoice-table td { padding: 7px 6px; border-bottom: 1px solid #ddd; white-space: nowrap; }
+        .invoice-table tbody tr:nth-child(even) td { background: #f9f9f9; }
+        .grand-total-label { text-align: right; font-weight: 700; font-size: 12px; letter-spacing: 1px; padding-right: 12px; border-top: 2px solid #111; padding-top: 10px; }
+        .grand-total-value { font-weight: 700; font-size: 14px; border-top: 2px solid #111; padding-top: 10px; }
+        .invoice-footer { text-align: center; font-size: 11px; color: #888; border-top: 1px solid #ddd; padding-top: 16px; margin-top: 16px; }
+        @page { size: A4 landscape; margin: 14mm; }
+      </style>
+    </head>
+    <body>
+      <div class="letterhead">
+        <div>
+          <div class="letterhead-brand">
+            ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" class="letterhead-logo" alt="Logo">` : ''}
+            <h1 class="letterhead-name">${escapeHtml(bizSettings.value?.name || '')}</h1>
+          </div>
+          <p class="letterhead-detail">${escapeHtml(bizSettings.value?.address || '')}</p>
+          <p class="letterhead-detail">${escapeHtml(bizSettings.value?.phone || '')} ${bizSettings.value?.email ? `· ${escapeHtml(bizSettings.value.email)}` : ''}</p>
+          <p class="letterhead-detail">ABN: ${escapeHtml(bizSettings.value?.abn || '')}</p>
+        </div>
+        <div class="invoice-title-block">
+          <h2 class="invoice-title">INVOICE</h2>
+          <p class="invoice-meta">Date: ${escapeHtml(today)}</p>
+          <p class="invoice-meta">Ref: #${escapeHtml(formatSlipId(slip.value.id))}</p>
+          <p class="invoice-status">${escapeHtml(slip.value.status?.toUpperCase())}</p>
+          <p class="invoice-status">PAYMENT: ${escapeHtml(slip.value.payment_status?.toUpperCase())}</p>
+        </div>
+      </div>
+      <div class="invoice-party">
+        <p class="invoice-label">Billed To</p>
+        <p class="invoice-party-name">${escapeHtml(slip.value.party_name)}</p>
+      </div>
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Car</th>
+            <th>Start KMs</th>
+            <th>End KMs</th>
+            <th>Total KMs</th>
+            <th>Extra KMs</th>
+            <th>Extra KMs (${escapeHtml(symbol)})</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Extra Hrs</th>
+            <th>Extra Hrs (${escapeHtml(symbol)})</th>
+            <th>Base Rate</th>
+            <th>Bhatta</th>
+            <th>Parking</th>
+            <th>Row Total</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="15" class="grand-total-label">GRAND TOTAL</td>
+            <td class="grand-total-value">${escapeHtml(`${symbol}${slip.value.grand_total}`)}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="invoice-footer"><p>Thank you for your business.</p></div>
+    </body>
+  </html>`
+}
+
+async function deleteEntry(id) {
+  const ok = await ask({
+    title: 'Delete Entry',
+    message: 'Are you sure you want to delete this entry? This cannot be undone.',
+    confirmLabel: 'Delete',
+  })
+  if (!ok) return
+
+  try {
+    await api.delete(`/entries/${id}/`)
+    await fetchSlip()
+    await fetchUnassigned()
+    notify('Entry deleted.')
+  } catch {
+    notify('Failed to delete entry.', 'error')
+  }
+}
+
 function printInvoice() {
-  window.print()
+  const printWindow = window.open('', '_blank', 'width=1200,height=900')
+  if (!printWindow) {
+    notify('Popup blocked. Allow popups to print the invoice.', 'error')
+    return
+  }
+
+  printWindow.document.open()
+  printWindow.document.write(buildInvoiceHtml())
+  printWindow.document.close()
+  printWindow.focus()
+  printWindow.onload = () => {
+    printWindow.print()
+  }
+}
+
+async function downloadInvoicePdf() {
+  downloadingPdf.value = true
+  try {
+    const response = await fetch(`${apiUrl}/dutyslips/${slip.value.id}/pdf/`)
+    if (!response.ok) throw new Error('Failed to download PDF')
+    const blob = await response.blob()
+    const blobUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = `invoice-${formatSlipId(slip.value.id)}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(blobUrl)
+  } catch {
+    notify('Failed to download PDF.', 'error')
+  } finally {
+    downloadingPdf.value = false
+  }
 }
 async function updateStatus(newStatus) {
   await api.patch(`/dutyslips/${route.params.id}/status/`, { status: newStatus })
@@ -473,6 +629,12 @@ async function updatePaymentStatus(newStatus) {
 async function fetchSlip() {
   const res = await api.get(`/dutyslips/${route.params.id}/`)
   slip.value = res.data
+  if (slip.value?.company) {
+    const ratesRes = await api.get(`/companies/${slip.value.company}/rates/`)
+    companyRates.value = ratesRes.data
+  } else {
+    companyRates.value = []
+  }
 }
 
 async function fetchUnassigned() {
