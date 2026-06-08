@@ -49,14 +49,14 @@
           </div>
         </div>
         <div class="quick-actions-row">
-          <a
-            :href="`${apiUrl}/dutyslips/${slip.id}/pdf/`"
-            target="_blank"
-            download
+          <button
+            type="button"
             class="btn-secondary"
+            :disabled="downloadingPdf"
+            @click="downloadInvoicePdf"
           >
-            Download PDF
-          </a>
+            {{ downloadingPdf ? 'Preparing PDF...' : 'Download PDF' }}
+          </button>
           <button
             class="btn-secondary"
             @click="printInvoice"
@@ -126,104 +126,16 @@
           No entries yet — add one above.
         </p>
 
-        <section
+        <InvoiceItemsTable
           v-else
-          class="table-card"
-        >
-          <div class="table-shell">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Car</th>
-                  <th>Start KMs</th>
-                  <th>End KMs</th>
-                  <th>Total KMs</th>
-                  <th>Rate</th>
-                  <th>KM Cost</th>
-                  <th>Start Time</th>
-                  <th>End Time</th>
-                  <th>Extra Hrs</th>
-                  <th>Extra Hrs Cost</th>
-                  <th>Base Rate</th>
-                  <th>Bhatta</th>
-                  <th>Parking</th>
-                  <th>Row Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="entry in slip.entries"
-                  :key="entry.id"
-                >
-                  <td class="data-table__numeric data-table__muted">
-                    {{ entry.date }}
-                  </td>
-                  <td>{{ entry.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}</td>
-                  <td class="data-table__muted">
-                    {{ entry.car_name }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ entry.start_kms }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ entry.end_kms }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ entry.total_kms }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    <span v-if="entry.entry_type === 'outstation'">
-                      {{ currencySymbol }}{{ entry.outstation_rate }}/km
-                    </span>
-                    <span v-else>—</span>
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ currencySymbol }}{{ entry.extra_kms_amount }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ entry.entry_type === 'outstation' ? '—' : entry.start_time }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ entry.entry_type === 'outstation' ? '—' : entry.end_time }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ entry.entry_type === 'outstation' ? '—' : entry.extra_hrs }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${entry.extra_hrs_amount}` }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${getBaseRate(entry.car)}` }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ currencySymbol }}{{ entry.driver_bhatta }}
-                  </td>
-                  <td class="data-table__numeric data-table__muted">
-                    {{ currencySymbol }}{{ entry.parking }}
-                  </td>
-                  <td class="data-table__numeric data-table__accent">
-                    {{ currencySymbol }}{{ entry.row_total }}
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td
-                    colspan="15"
-                    class="data-table__actions"
-                  >
-                    GRAND TOTAL
-                  </td>
-                  <td class="data-table__numeric data-table__accent">
-                    {{ currencySymbol }}{{ slip.grand_total }}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </section>
+          :entries="slip.entries"
+          :grand-total="slip.grand_total"
+          :currency-symbol="currencySymbol"
+          :get-base-rate="getBaseRate"
+          :get-rate-label="getRateLabel"
+          @edit="openEntryEditor"
+          @delete="deleteEntry"
+        />
       </section>
 
       <section
@@ -434,6 +346,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api'
 import EntryFormModal from '../components/EntryFormModal.vue'
+import InvoiceItemsTable from '../components/InvoiceItemsTable.vue'
 import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
@@ -487,19 +400,219 @@ const unassigned = ref([])
 const selected = ref([])
 const showModal = ref(false)
 const cars = ref([])
+const companyRates = ref([])
 const bizSettings = ref(null)
+const downloadingPdf = ref(false)
 
 const today = new Date().toLocaleDateString('en-AU', {
   day: '2-digit', month: 'long', year: 'numeric'
 })
+const resolvedCurrencySymbol = computed(() => currencySymbol.value)
 
 function getBaseRate(carId) {
   const car = cars.value.find(c => c.id === carId)
+  const override = companyRates.value.find(rate => String(rate.car) === String(carId))
+  if (override?.base_rate != null && override.base_rate !== '') return override.base_rate
   return car ? car.base_rate : '—'
 }
 
+function getExtraKmRate(carId) {
+  const car = cars.value.find(c => c.id === carId)
+  const override = companyRates.value.find(rate => String(rate.car) === String(carId))
+  if (override?.extra_km_rate != null && override.extra_km_rate !== '') return override.extra_km_rate
+  return car ? car.extra_km_rate : '—'
+}
+
+function getOutstationRate(carId) {
+  const car = cars.value.find(c => c.id === carId)
+  const override = companyRates.value.find(rate => String(rate.car) === String(carId))
+  if (override?.outstation_rate != null && override.outstation_rate !== '') return override.outstation_rate
+  return car ? car.outstation_rate : '—'
+}
+
+function getRateLabel(entry) {
+  if (entry.entry_type === 'outstation') {
+    return `${resolvedCurrencySymbol.value}${getOutstationRate(entry.car)}/km`
+  }
+  return `${resolvedCurrencySymbol.value}${getExtraKmRate(entry.car)}/km`
+}
+
+function openEntryEditor(entry) {
+  editingEntry.value = entry
+  showModal.value = true
+}
+
+function escapeHtml(value) {
+  return String(value ?? '—')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
+function buildInvoiceHtml() {
+  const symbol = resolvedCurrencySymbol.value
+  const logoUrl = bizSettings.value?.logo ? `${mediaUrl}${bizSettings.value.logo}` : ''
+  const rows = (slip.value?.entries || []).map(entry => `
+    <tr>
+      <td>${escapeHtml(entry.date)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? 'Outstation' : 'Regular')}</td>
+      <td>${escapeHtml(entry.car_name)}</td>
+      <td>${escapeHtml(entry.start_kms)}</td>
+      <td>${escapeHtml(entry.end_kms)}</td>
+      <td>${escapeHtml(entry.total_kms)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? `${symbol}${getOutstationRate(entry.car)}/km` : entry.extra_kms)}</td>
+      <td>${escapeHtml(`${symbol}${entry.extra_kms_amount}`)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : entry.start_time)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : entry.end_time)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : entry.extra_hrs)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : `${symbol}${entry.extra_hrs_amount}`)}</td>
+      <td>${escapeHtml(entry.entry_type === 'outstation' ? '—' : `${symbol}${getBaseRate(entry.car)}`)}</td>
+      <td>${escapeHtml(`${symbol}${entry.driver_bhatta}`)}</td>
+      <td>${escapeHtml(`${symbol}${entry.parking}`)}</td>
+      <td>${escapeHtml(`${symbol}${entry.row_total}`)}</td>
+    </tr>
+  `).join('')
+
+  return `<!doctype html>
+  <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Invoice ${escapeHtml(formatSlipId(slip.value.id))}</title>
+      <style>
+        body { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #111; margin: 0; padding: 32px; background: #fff; }
+        .letterhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 28px; padding-bottom: 18px; border-bottom: 2px solid #111; }
+        .letterhead-brand { display: flex; align-items: center; gap: 12px; }
+        .letterhead-logo { max-height: 52px; max-width: 52px; object-fit: contain; }
+        .letterhead-name { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .letterhead-detail, .invoice-meta { margin: 2px 0; font-size: 11px; color: #555; }
+        .invoice-title-block { text-align: right; }
+        .invoice-title { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 4px; }
+        .invoice-status { margin-top: 6px; font-size: 11px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
+        .invoice-party { margin-bottom: 24px; }
+        .invoice-label { margin: 0 0 4px; font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #888; }
+        .invoice-party-name { margin: 0; font-size: 16px; font-weight: 700; }
+        .invoice-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .invoice-table th { background: #111; color: #fff; padding: 8px 6px; text-align: left; font-weight: 500; white-space: nowrap; }
+        .invoice-table td { padding: 7px 6px; border-bottom: 1px solid #ddd; white-space: nowrap; }
+        .invoice-table tbody tr:nth-child(even) td { background: #f9f9f9; }
+        .grand-total-label { text-align: right; font-weight: 700; font-size: 12px; letter-spacing: 1px; padding-right: 12px; border-top: 2px solid #111; padding-top: 10px; }
+        .grand-total-value { font-weight: 700; font-size: 14px; border-top: 2px solid #111; padding-top: 10px; }
+        .invoice-footer { text-align: center; font-size: 11px; color: #888; border-top: 1px solid #ddd; padding-top: 16px; margin-top: 16px; }
+        @page { size: A4 landscape; margin: 14mm; }
+      </style>
+    </head>
+    <body>
+      <div class="letterhead">
+        <div>
+          <div class="letterhead-brand">
+            ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" class="letterhead-logo" alt="Logo">` : ''}
+            <h1 class="letterhead-name">${escapeHtml(bizSettings.value?.name || '')}</h1>
+          </div>
+          <p class="letterhead-detail">${escapeHtml(bizSettings.value?.address || '')}</p>
+          <p class="letterhead-detail">${escapeHtml(bizSettings.value?.phone || '')} ${bizSettings.value?.email ? `· ${escapeHtml(bizSettings.value.email)}` : ''}</p>
+          <p class="letterhead-detail">ABN: ${escapeHtml(bizSettings.value?.abn || '')}</p>
+        </div>
+        <div class="invoice-title-block">
+          <h2 class="invoice-title">INVOICE</h2>
+          <p class="invoice-meta">Date: ${escapeHtml(today)}</p>
+          <p class="invoice-meta">Ref: #${escapeHtml(formatSlipId(slip.value.id))}</p>
+          <p class="invoice-status">${escapeHtml(slip.value.status?.toUpperCase())}</p>
+          <p class="invoice-status">PAYMENT: ${escapeHtml(slip.value.payment_status?.toUpperCase())}</p>
+        </div>
+      </div>
+      <div class="invoice-party">
+        <p class="invoice-label">Billed To</p>
+        <p class="invoice-party-name">${escapeHtml(slip.value.party_name)}</p>
+      </div>
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Car</th>
+            <th>Start KMs</th>
+            <th>End KMs</th>
+            <th>Total KMs</th>
+            <th>Extra KMs</th>
+            <th>Extra KMs (${escapeHtml(symbol)})</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Extra Hrs</th>
+            <th>Extra Hrs (${escapeHtml(symbol)})</th>
+            <th>Base Rate</th>
+            <th>Bhatta</th>
+            <th>Parking</th>
+            <th>Row Total</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="15" class="grand-total-label">GRAND TOTAL</td>
+            <td class="grand-total-value">${escapeHtml(`${symbol}${slip.value.grand_total}`)}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <div class="invoice-footer"><p>Thank you for your business.</p></div>
+    </body>
+  </html>`
+}
+
+async function deleteEntry(id) {
+  const ok = await ask({
+    title: 'Delete Entry',
+    message: 'Are you sure you want to delete this entry? This cannot be undone.',
+    confirmLabel: 'Delete',
+  })
+  if (!ok) return
+
+  try {
+    await api.delete(`/entries/${id}/`)
+    await fetchSlip()
+    await fetchUnassigned()
+    notify('Entry deleted.')
+  } catch {
+    notify('Failed to delete entry.', 'error')
+  }
+}
+
 function printInvoice() {
-  window.print()
+  const printWindow = window.open('', '_blank', 'width=1200,height=900')
+  if (!printWindow) {
+    notify('Popup blocked. Allow popups to print the invoice.', 'error')
+    return
+  }
+
+  printWindow.document.open()
+  printWindow.document.write(buildInvoiceHtml())
+  printWindow.document.close()
+  printWindow.focus()
+  printWindow.onload = () => {
+    printWindow.print()
+  }
+}
+
+async function downloadInvoicePdf() {
+  downloadingPdf.value = true
+  try {
+    const response = await fetch(`${apiUrl}/dutyslips/${slip.value.id}/pdf/`)
+    if (!response.ok) throw new Error('Failed to download PDF')
+    const blob = await response.blob()
+    const blobUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = `invoice-${formatSlipId(slip.value.id)}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(blobUrl)
+  } catch {
+    notify('Failed to download PDF.', 'error')
+  } finally {
+    downloadingPdf.value = false
+  }
 }
 async function updateStatus(newStatus) {
   await api.patch(`/dutyslips/${route.params.id}/status/`, { status: newStatus })
@@ -516,6 +629,12 @@ async function updatePaymentStatus(newStatus) {
 async function fetchSlip() {
   const res = await api.get(`/dutyslips/${route.params.id}/`)
   slip.value = res.data
+  if (slip.value?.company) {
+    const ratesRes = await api.get(`/companies/${slip.value.company}/rates/`)
+    companyRates.value = ratesRes.data
+  } else {
+    companyRates.value = []
+  }
 }
 
 async function fetchUnassigned() {

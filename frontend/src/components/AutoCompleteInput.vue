@@ -1,5 +1,5 @@
 <template>
-  <div class="relative">
+  <div class="autocomplete-field">
     <input
       v-model="inputValue"
       type="text"
@@ -21,12 +21,12 @@
     <!-- Suggestions dropdown -->
     <ul
       v-if="showSuggestions && filtered.length > 0"
-      class="absolute z-50 w-full mt-2 overflow-y-auto rounded-[14px] border border-[var(--border-subtle)] bg-[var(--surface-solid-strong)] shadow-[var(--shadow-glass)] max-h-48"
+      class="autocomplete-menu"
     >
       <li
         v-for="(suggestion, index) in filtered"
         :key="suggestion"
-        class="cursor-pointer px-3 py-2 text-sm text-[var(--text-secondary)] transition-colors"
+        class="autocomplete-menu__item"
         :class="index === highlighted ? 'bg-white/8 text-white' : 'hover:bg-white/5'"
         @mousedown.prevent="select(suggestion)"
       >
@@ -37,7 +37,7 @@
     <!-- No suggestions hint -->
     <p
       v-if="showSuggestions && inputValue && filtered.length === 0 && suggestions.length > 0"
-      class="absolute z-50 w-full mt-2 rounded-[14px] border border-[var(--border-subtle)] bg-[var(--surface-solid-strong)] px-3 py-2 text-xs text-[var(--text-muted)]"
+      class="autocomplete-empty"
     >
       No matches — new party name will be created
     </p>
@@ -59,6 +59,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const inputValue = ref(props.modelValue || '')
+const isFocused = ref(false)
 const showSuggestions = ref(false)
 const highlighted = ref(-1)
 
@@ -71,6 +72,15 @@ watch(() => props.modelValue, val => {
 watch(inputValue, val => {
   emit('update:modelValue', val)
 })
+
+watch(
+  () => props.suggestions,
+  (suggestions) => {
+    if (!isFocused.value || props.readonly) return
+    showSuggestions.value = suggestions.length > 0
+    highlighted.value = -1
+  }
+)
 
 const filtered = computed(() => {
   if (!inputValue.value) return props.suggestions
@@ -85,10 +95,12 @@ function onInput() {
 }
 
 function onFocus() {
+  isFocused.value = true
   if (props.suggestions.length > 0) showSuggestions.value = true
 }
 
 function onBlur() {
+  isFocused.value = false
   setTimeout(() => {
     showSuggestions.value = false
     highlighted.value = -1

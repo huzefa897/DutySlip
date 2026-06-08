@@ -7,7 +7,7 @@
       ← Back
     </button>
     <h1 class="title">
-      New Duty Slip
+      New Invoice
     </h1>
 
     <form
