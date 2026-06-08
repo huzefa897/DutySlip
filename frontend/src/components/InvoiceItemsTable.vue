@@ -51,6 +51,7 @@
                     >⌄</span>
                   </button>
                   <RowActionMenu
+                    v-if="isAdmin"
                     @edit="$emit('edit', trip)"
                     @delete="$emit('delete', trip.id)"
                   />
@@ -159,6 +160,7 @@
 <script setup>
 import { ref } from 'vue'
 import RowActionMenu from './RowActionMenu.vue'
+import { isAdmin } from '../store/auth'
 
 defineProps({
   trips: { type: Array, default: () => [] },

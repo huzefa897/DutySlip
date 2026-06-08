@@ -200,12 +200,24 @@
     box-shadow: var(--shadow-floating);
   }
 
+  .floating-nav__items {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+  }
+
   .floating-nav__item {
     flex: 1 1 0;
     min-width: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  .floating-nav__item--logout {
+    flex: 0 0 auto;
   }
 
   .floating-nav__link {
@@ -220,6 +232,11 @@
     font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.01em;
+  }
+
+  .floating-nav__link--logout {
+    width: auto;
+    padding-inline: 0.95rem;
   }
 
   .floating-nav__link:hover {
@@ -1529,6 +1546,10 @@
   .floating-nav__link {
     gap: 0.35rem;
     padding-inline: 0.65rem;
+  }
+
+  .floating-nav__link--logout {
+    padding-inline: 0.75rem;
   }
 
   .floating-nav__label {

@@ -7,6 +7,8 @@ from .models import (
     BusinessSettings,
     CompanyCarRate,
     Party,
+    UserProfile,
+    InvitationToken,
 )
 
 admin.site.register(Company)
@@ -16,3 +18,5 @@ admin.site.register(DutySlip)
 admin.site.register(BusinessSettings)
 admin.site.register(CompanyCarRate)
 admin.site.register(Party)
+admin.site.register(UserProfile)
+admin.site.register(InvitationToken)

@@ -32,6 +32,7 @@
             {{ downloadingExcel ? 'Preparing Excel...' : 'Export Excel' }}
           </button>
           <router-link
+            v-if="isAdmin"
             to="/duty-slips/create"
             class="btn-primary"
           >
@@ -40,7 +41,34 @@
         </div>
       </div>
 
-      <section class="section-card">
+      <div
+        v-if="isClient && !activeCompany"
+        class="empty-state-container py-20"
+      >
+        <div class="empty-state text-center max-w-sm mx-auto">
+          <div class="empty-state__icon w-16 h-16 mx-auto mb-6 opacity-20">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M4 21V7l8-4 8 4v14M9 21V11h6v10" />
+            </svg>
+          </div>
+          <h2 class="text-xl font-semibold mb-3">
+            Select a Company
+          </h2>
+          <p class="text-sm opacity-50 leading-relaxed">
+            Please select a company from the header to view its duty slips.
+          </p>
+        </div>
+      </div>
+
+      <section
+        v-else
+        class="section-card"
+      >
         <div class="filters-grid">
           <input
             v-model="filters.party_name"
@@ -49,6 +77,7 @@
             class="input"
           >
           <select
+            v-if="isAdmin"
             v-model="filters.company"
             class="input"
           >
@@ -161,7 +190,10 @@
                 <th>Extra Hrs</th>
                 <th>Row Total</th>
                 <th>Invoice</th>
-                <th class="data-table__actions">
+                <th
+                  v-if="isAdmin"
+                  class="data-table__actions"
+                >
                   Actions
                 </th>
               </tr>
@@ -220,7 +252,10 @@
                     class="status-badge status-badge--draft"
                   >unassigned</span>
                 </td>
-                <td class="data-table__actions">
+                <td
+                  v-if="isAdmin"
+                  class="data-table__actions"
+                >
                   <div class="data-table__actions-group data-table__actions-group--compact">
                     <RowActionMenu
                       @edit="editingTrip = trip; showModal = true"
@@ -400,6 +435,7 @@ import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { useConfirm } from '../composables/useConfirm'
 import { usePagination } from '../composables/usePagination'
 import RowActionMenu from '../components/RowActionMenu.vue'
+import { isAdmin, isClient, activeCompany } from '../store/auth'
 
 
 const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
@@ -661,6 +697,7 @@ async function downloadTripsExcel() {
       if (filters.value.car) params.car = filters.value.car
       if (filters.value.date_from) params.date_from = filters.value.date_from
       if (filters.value.date_to) params.date_to = filters.value.date_to
+      if (activeCompany.value) params.company = activeCompany.value.id
     }
 
     const response = await api.get('/trips/excel/', {
@@ -714,11 +751,18 @@ const {
 } = usePagination(filteredTrips)
 
 async function fetchTrips() {
+  if (isClient.value && !activeCompany.value) {
+    loading.value = false
+    return
+  }
+
+  const params = activeCompany.value ? { company: activeCompany.value.id } : {}
+
   try {
     const [tripsRes, carsRes, companiesRes] = await Promise.all([
-      api.get('/trips/'),
+      api.get('/trips/', { params }),
       api.get('/cars/'),
-      api.get('/companies/'),
+      isAdmin.value ? api.get('/companies/') : Promise.resolve({ data: [] }),
     ])
     trips.value = tripsRes.data
     selectedTripIds.value = selectedTripIds.value.filter(id =>

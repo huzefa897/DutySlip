@@ -22,6 +22,7 @@
           <div class="slip-meta-row">
             <StatusBadge :status="invoice.status" />
             <select
+              v-if="isAdmin"
               :value="invoice.status"
               class="field-control px-3 py-2 text-xs"
               @change="updateStatus($event.target.value)"
@@ -35,6 +36,7 @@
             </select>
             <PaymentStatusBadge :status="invoice.payment_status" />
             <select
+              v-if="isAdmin"
               :value="invoice.payment_status"
               class="field-control px-3 py-2 text-xs"
               @change="updatePaymentStatus($event.target.value)"
@@ -72,13 +74,14 @@
             Print Invoice
           </button>
           <button
-            v-if="invoice.payment_status !== 'paid'"
+            v-if="isAdmin && invoice.payment_status !== 'paid'"
             class="btn-primary"
             @click="updatePaymentStatus('paid')"
           >
             Mark Paid
           </button>
           <button
+            v-if="isAdmin"
             class="btn-danger"
             @click="deleteInvoice"
           >
@@ -120,6 +123,7 @@
             Invoice Items
           </h2>
           <button
+            v-if="isAdmin"
             class="btn-primary"
             @click="showModal = true"
           >
@@ -147,7 +151,7 @@
       </section>
 
       <section
-        v-if="unassigned.length > 0"
+        v-if="isAdmin && unassigned.length > 0"
         class="section-card"
       >
         <div class="flex items-center justify-between mb-3">
@@ -343,6 +347,7 @@ import PaymentStatusBadge from '../components/PaymentStatusBadge.vue'
 import { useRouter } from 'vue-router'
 import { useConfirm } from '../composables/useConfirm'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import { isAdmin } from '../store/auth'
 
 const router = useRouter()
 
