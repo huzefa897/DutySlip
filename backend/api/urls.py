@@ -15,24 +15,22 @@ urlpatterns = [
     # Cars
     path("cars/", views.car_list),
     path("cars/<int:pk>/", views.car_detail),
-    # Entries
-    path("entries/", views.entry_list),
-    path("entries/excel/", views.download_entries_excel),
-    path("entries/<int:pk>/", views.entry_detail),
-    # DutySlips
-    path("dutyslips/", views.dutyslip_list),
-    path("dutyslips/<int:pk>/", views.dutyslip_detail),
-    path("dutyslips/<int:pk>/assign/", views.assign_entries_to_dutyslip),
-    path("dutyslips/<int:pk>/remove/<int:entry_id>/", views.remove_entry_from_dutyslip),
-    path("dutyslips/<int:pk>/status/", views.update_dutyslip_status),
-    path(
-        "dutyslips/<int:pk>/payment-status/",
-        views.update_dutyslip_payment_status,
-    ),
-    path("dutyslips/bulk-excel/", views.bulk_export_excel),
-    path("dutyslips/bulk-pdf/", views.bulk_download_invoice_pdf),
-    path("dutyslips/<int:pk>/pdf/", views.download_invoice_pdf),
-    path("dutyslips/<int:pk>/excel/", views.download_invoice_excel),
+    # Trips
+    path("trips/", views.trip_list),
+    path("trips/excel/", views.download_trips_excel),
+    path("trips/<int:pk>/", views.trip_detail),
+    path("trips/<int:pk>/duplicate/", views.duplicate_trip),
+    # Invoices
+    path("invoices/", views.invoice_list),
+    path("invoices/bulk-excel/", views.bulk_export_excel),
+    path("invoices/bulk-pdf/", views.bulk_download_invoice_pdf),
+    path("invoices/<int:pk>/", views.invoice_detail),
+    path("invoices/<int:pk>/assign/", views.assign_trips_to_invoice),
+    path("invoices/<int:pk>/remove/<int:trip_id>/", views.remove_trip_from_invoice),
+    path("invoices/<int:pk>/status/", views.update_invoice_status),
+    path("invoices/<int:pk>/payment-status/", views.update_invoice_payment_status),
+    path("invoices/<int:pk>/pdf/", views.download_invoice_pdf),
+    path("invoices/<int:pk>/excel/", views.download_invoice_excel),
     # Business Settings
     path("settings/", views.business_settings),
     # Backup and Restore Settings

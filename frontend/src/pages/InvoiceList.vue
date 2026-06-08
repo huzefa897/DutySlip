@@ -7,10 +7,10 @@
       <div class="page-header__content">
         <span class="page-header__eyebrow">Invoices</span>
         <h1 class="page-title">
-          Duty Slip invoices
+          Invoices
         </h1>
         <p class="page-header__subtitle">
-          Search, filter, and manage invoice-ready duty slips.
+          Search, filter, and manage invoices.
         </p>
       </div>
       <div class="page-header__actions">
@@ -29,7 +29,7 @@
           </button>
         </template>
         <router-link
-          to="/dutyslips/create"
+          to="/invoices/create"
           class="btn-primary"
         >
           + Create Invoice
@@ -92,7 +92,7 @@
 
       <div class="filter-summary">
         <p class="filter-count">
-          Showing {{ filteredSlips.length }} of {{ slips.length }} invoices
+          Showing {{ filteredInvoices.length }} of {{ invoices.length }} invoices
         </p>
         <button
           v-if="isFiltered"
@@ -111,7 +111,7 @@
       Loading invoices...
     </p>
     <p
-      v-else-if="filteredSlips.length === 0"
+      v-else-if="filteredInvoices.length === 0"
       class="empty-text"
     >
       No invoices match your filters.
@@ -122,37 +122,36 @@
       class="card-list"
     >
       <div
-        v-for="slip in paginatedSlips"
-        :key="slip.id"
+        v-for="invoice in paginatedInvoices"
+        :key="invoice.id"
         class="slip-card"
-        :class="{ 'slip-card--selected': isSelected(slip.id), 'slip-card--selectable': selectionMode }"
+        :class="{ 'slip-card--selected': isSelected(invoice.id), 'slip-card--selectable': selectionMode }"
       >
-        <!-- Clickable body: navigation or selection toggle -->
         <div
           class="slip-card__body"
-          @click="selectionMode ? toggleSelect(slip.id) : router.push(`/dutyslips/${slip.id}`)"
+          @click="selectionMode ? toggleSelect(invoice.id) : router.push(`/invoices/${invoice.id}`)"
         >
           <div class="slip-left">
             <div
               v-if="selectionMode"
               class="slip-checkbox"
-              :class="{ 'slip-checkbox--checked': isSelected(slip.id) }"
+              :class="{ 'slip-checkbox--checked': isSelected(invoice.id) }"
             />
             <div class="slip-left__text">
               <p class="slip-id">
-                INV-{{ formatSlipId(slip.id) }}
+                INV-{{ formatSlipId(invoice.id) }}
               </p>
               <p class="slip-party">
-                {{ slip.party_name }}
+                {{ invoice.party_name }}
               </p>
               <div class="slip-meta-row">
                 <p class="slip-meta">
-                  {{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}
+                  {{ invoice.company_name }} · {{ invoice.created_at?.slice(0, 10) }}
                 </p>
-                <StatusBadge :status="slip.status" />
-                <PaymentStatusBadge :status="slip.payment_status" />
+                <StatusBadge :status="invoice.status" />
+                <PaymentStatusBadge :status="invoice.payment_status" />
                 <span
-                  v-if="slip.slip_type === 'outstation'"
+                  v-if="invoice.invoice_type === 'outstation'"
                   class="outstation-badge"
                 >Outstation</span>
               </div>
@@ -160,20 +159,19 @@
           </div>
           <div class="slip-totals">
             <p class="slip-amount">
-              {{ currencySymbol }}{{ slip.grand_total }}
+              {{ currencySymbol }}{{ invoice.grand_total }}
             </p>
             <p class="slip-entries">
-              {{ slip.entries?.length ?? 0 }} line items
+              {{ invoice.trips?.length ?? 0 }} line items
             </p>
           </div>
         </div>
-        <!-- Actions: outside the clickable body entirely -->
         <RowActionMenu
           v-if="!selectionMode"
           :show-print="true"
-          @edit="router.push(`/dutyslips/${slip.id}`)"
-          @delete="deleteSlip(slip)"
-          @print="downloadSlipPdf(slip)"
+          @edit="router.push(`/invoices/${invoice.id}`)"
+          @delete="deleteInvoice(invoice)"
+          @print="downloadInvoicePdf(invoice)"
         />
       </div>
     </section>
@@ -214,11 +212,11 @@
     </div>
 
     <div
-      v-if="filteredSlips.length > 0"
+      v-if="filteredInvoices.length > 0"
       class="pagination-row"
     >
       <p class="pagination-info">
-        Showing {{ pageStart }}-{{ pageEnd }} of {{ filteredSlips.length }}
+        Showing {{ pageStart }}-{{ pageEnd }} of {{ filteredInvoices.length }}
       </p>
       <button
         class="btn-page"
@@ -278,29 +276,29 @@ const router = useRouter()
 const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
         confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
 
-async function deleteSlip(slip) {
+async function deleteInvoice(invoice) {
   const ok = await ask({
-    title: `Delete "${slip.party_name}"`,
-    message: `This will permanently delete duty slip ${formatSlipId(slip.id)} and unassign all its entries. This cannot be undone.`,
+    title: `Delete "${invoice.party_name}"`,
+    message: `This will permanently delete invoice ${formatSlipId(invoice.id)} and unassign all its trips. This cannot be undone.`,
     confirmLabel: 'Delete',
   })
   if (!ok) return
   try {
-    await api.delete(`/dutyslips/${slip.id}/`)
-    slips.value = slips.value.filter(s => s.id !== slip.id)
-    notify(`Duty slip ${formatSlipId(slip.id)} deleted.`)
+    await api.delete(`/invoices/${invoice.id}/`)
+    invoices.value = invoices.value.filter(s => s.id !== invoice.id)
+    notify(`Invoice ${formatSlipId(invoice.id)} deleted.`)
   } catch {
-    notify('Failed to delete duty slip.', 'error')
+    notify('Failed to delete invoice.', 'error')
   }
 }
 
-async function downloadSlipPdf(slip) {
+async function downloadInvoicePdf(invoice) {
   try {
-    const response = await api.get(`/dutyslips/${slip.id}/pdf/`, { responseType: 'blob' })
+    const response = await api.get(`/invoices/${invoice.id}/pdf/`, { responseType: 'blob' })
     const blobUrl = window.URL.createObjectURL(response.data)
     const link = document.createElement('a')
     link.href = blobUrl
-    link.download = `invoice-${formatSlipId(slip.id)}.pdf`
+    link.download = `invoice-${formatSlipId(invoice.id)}.pdf`
     document.body.appendChild(link)
     link.click()
     link.remove()
@@ -310,9 +308,9 @@ async function downloadSlipPdf(slip) {
   }
 }
 
-const slips        = ref([])
-const companies    = ref([])
-const loading      = ref(true)
+const invoices      = ref([])
+const companies     = ref([])
+const loading       = ref(true)
 const selectionMode  = ref(false)
 const selectedIds    = ref([])
 const exportingBulk  = ref(false)
@@ -329,7 +327,7 @@ function toggleSelect(id) {
 }
 
 function selectAll() {
-  selectedIds.value = filteredSlips.value.map(s => s.id)
+  selectedIds.value = filteredInvoices.value.map(s => s.id)
 }
 
 function enterSelectionMode() { selectionMode.value = true }
@@ -344,7 +342,7 @@ async function bulkPrint() {
   printingBulk.value = true
   try {
     const response = await api.post(
-      '/dutyslips/bulk-pdf/',
+      '/invoices/bulk-pdf/',
       { ids: selectedIds.value },
       { responseType: 'blob' },
     )
@@ -368,7 +366,7 @@ async function bulkExportExcel() {
   exportingBulk.value = true
   try {
     const response = await api.post(
-      '/dutyslips/bulk-excel/',
+      '/invoices/bulk-excel/',
       { ids: selectedIds.value },
       { responseType: 'blob' },
     )
@@ -392,8 +390,8 @@ const filters = ref({ party_name: '', company: '', status: '', payment_status: '
 
 const isFiltered = computed(() => Object.values(filters.value).some(v => v !== ''))
 
-const filteredSlips = computed(() =>
-  slips.value.filter(s => {
+const filteredInvoices = computed(() =>
+  invoices.value.filter(s => {
     if (filters.value.party_name &&
         !s.party_name.toLowerCase().includes(filters.value.party_name.toLowerCase())) return false
     if (filters.value.company && s.company !== filters.value.company) return false
@@ -409,7 +407,7 @@ function clearFilters() {
 }
 
 const {
-  paginated: paginatedSlips,
+  paginated: paginatedInvoices,
   currentPage,
   totalPages,
   pageStart,
@@ -419,15 +417,15 @@ const {
   goToPage,
   prevPage,
   nextPage,
-} = usePagination(filteredSlips)
+} = usePagination(filteredInvoices)
 
 async function fetchData() {
   try {
-    const [slipsRes, companiesRes] = await Promise.all([
-      api.get('/dutyslips/'),
+    const [invoicesRes, companiesRes] = await Promise.all([
+      api.get('/invoices/'),
       api.get('/companies/'),
     ])
-    slips.value     = slipsRes.data
+    invoices.value  = invoicesRes.data
     companies.value = companiesRes.data
   } finally {
     loading.value = false

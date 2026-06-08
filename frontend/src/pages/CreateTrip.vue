@@ -9,12 +9,12 @@
     <div class="w-full max-w-4xl">
       <div class="page-header">
         <div class="page-header__content">
-          <span class="page-header__eyebrow">Entries</span>
+          <span class="page-header__eyebrow">Duty Slips</span>
           <h1 class="page-title">
-            Create a new entry
+            Create a new duty slip
           </h1>
           <p class="page-header__subtitle">
-            Add a trip row without changing pricing, routing, or assignment logic.
+            Add a duty slip without changing pricing, routing, or assignment logic.
           </p>
         </div>
       </div>
@@ -93,21 +93,21 @@
             </div>
 
             <div class="field">
-              <label class="label">Entry Type</label>
+              <label class="label">Duty Slip Type</label>
               <div class="toggle-group">
                 <button
                   type="button"
                   class="toggle-btn"
-                  :class="{ 'toggle-btn--regular': form.entry_type === 'regular' }"
-                  @click="form.entry_type = 'regular'"
+                  :class="{ 'toggle-btn--regular': form.trip_type === 'regular' }"
+                  @click="form.trip_type = 'regular'"
                 >
                   Regular
                 </button>
                 <button
                   type="button"
                   class="toggle-btn"
-                  :class="{ 'toggle-btn--outstation': form.entry_type === 'outstation' }"
-                  @click="form.entry_type = 'outstation'"
+                  :class="{ 'toggle-btn--outstation': form.trip_type === 'outstation' }"
+                  @click="form.trip_type = 'outstation'"
                 >
                   Outstation
                 </button>
@@ -137,7 +137,7 @@
               </select>
 
               <div
-                v-if="rateOverride && form.entry_type === 'regular'"
+                v-if="rateOverride && form.trip_type === 'regular'"
                 class="summary-card mt-2"
               >
                 <div class="space-y-1 text-sm text-amber-200">
@@ -157,7 +157,7 @@
               </div>
 
               <div
-                v-if="rateOverride?.outstation_rate && form.entry_type === 'outstation'"
+                v-if="rateOverride?.outstation_rate && form.trip_type === 'outstation'"
                 class="summary-card mt-2"
               >
                 <div class="text-sm text-blue-200">
@@ -194,7 +194,7 @@
           </div>
 
           <div
-            v-if="form.entry_type === 'regular'"
+            v-if="form.trip_type === 'regular'"
             class="grid grid-cols-2 gap-4"
           >
             <div class="field">
@@ -202,7 +202,7 @@
               <input
                 v-model="form.start_time"
                 type="time"
-                :required="form.entry_type === 'regular'"
+                :required="form.trip_type === 'regular'"
                 class="field-control"
               >
             </div>
@@ -211,7 +211,7 @@
               <input
                 v-model="form.end_time"
                 type="time"
-                :required="form.entry_type === 'regular'"
+                :required="form.trip_type === 'regular'"
                 class="field-control"
               >
             </div>
@@ -240,17 +240,17 @@
             </div>
             <div class="field modal-form-grid__full">
               <label class="label">
-                Assign to Duty Slip <span class="label-hint">(optional)</span>
+                Assign to Invoice <span class="label-hint">(optional)</span>
               </label>
               <select
-                v-model="form.duty_slip"
+                v-model="form.invoice"
                 class="field-control"
               >
                 <option value="">
                   None — save as standalone
                 </option>
                 <option
-                  v-for="s in matchingDutySlips"
+                  v-for="s in matchingInvoices"
                   :key="s.id"
                   :value="s.id"
                 >
@@ -258,7 +258,7 @@
                 </option>
               </select>
               <p class="upload-hint">
-                Showing {{ matchingDutySlips.length }} {{ form.entry_type }} invoice(s) for assignment.
+                Showing {{ matchingInvoices.length }} {{ form.trip_type }} invoice(s) for assignment.
               </p>
             </div>
           </div>
@@ -266,10 +266,10 @@
           <div class="summary-grid !grid-cols-2">
             <div class="summary-card">
               <p class="summary-card__label">
-                Entry Type
+                Duty Slip Type
               </p>
               <p class="summary-card__value">
-                {{ form.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}
+                {{ form.trip_type === 'outstation' ? 'Outstation' : 'Regular' }}
               </p>
             </div>
             <div class="summary-card">
@@ -292,7 +292,6 @@
           </div>
         </template>
 
-        <!-- Error -->
         <p
           v-if="error"
           class="error"
@@ -300,7 +299,6 @@
           {{ error }}
         </p>
 
-        <!-- Submit -->
         <div class="actions">
           <button
             v-if="currentStep === 2"
@@ -325,7 +323,7 @@
             :disabled="submitting"
             class="btn-primary"
           >
-            {{ submitting ? 'Saving...' : 'Save Entry' }}
+            {{ submitting ? 'Saving...' : 'Save Duty Slip' }}
           </button>
           <router-link
             to="/"
@@ -348,7 +346,7 @@ import { currencySymbol } from '../store/currency'
 import AutocompleteInput from '../components/AutoCompleteInput.vue'
 const router = useRouter()
 const cars = ref([])
-const dutySlips = ref([])
+const invoices = ref([])
 const companies = ref([])
 const submitting = ref(false)
 const error = ref('')
@@ -360,7 +358,7 @@ const form = ref({
   party_name: '',
   company: '',
   date: '',
-  entry_type: 'regular',
+  trip_type: 'regular',
   car: '',
   start_kms: '',
   end_kms: '',
@@ -368,7 +366,7 @@ const form = ref({
   end_time: '',
   driver_bhatta: '0',
   parking: '0',
-  duty_slip: '',
+  invoice: '',
   notes: '',
 })
 
@@ -380,12 +378,12 @@ const canGoNext = computed(() =>
     form.value.car &&
     form.value.start_kms !== '' &&
     form.value.end_kms !== '' &&
-    (form.value.entry_type === 'outstation' || (form.value.start_time && form.value.end_time))
+    (form.value.trip_type === 'outstation' || (form.value.start_time && form.value.end_time))
   )
 )
 
-const matchingDutySlips = computed(() =>
-  dutySlips.value.filter((slip) => slip.slip_type === form.value.entry_type)
+const matchingInvoices = computed(() =>
+  invoices.value.filter((inv) => inv.invoice_type === form.value.trip_type)
 )
 
 watch(
@@ -401,7 +399,6 @@ watch(
     }
   }
 )
-// ── Watch company + car → load rate overrides ─────────────────
 watch(
   () => [form.value.company, form.value.car],
   async ([companyId, carId]) => {
@@ -418,42 +415,40 @@ watch(
 )
 
 watch(
-  () => form.value.entry_type,
+  () => form.value.trip_type,
   () => {
     if (
-      form.value.duty_slip &&
-      !matchingDutySlips.value.some((slip) => String(slip.id) === String(form.value.duty_slip))
+      form.value.invoice &&
+      !matchingInvoices.value.some((inv) => String(inv.id) === String(form.value.invoice))
     ) {
-      form.value.duty_slip = ''
+      form.value.invoice = ''
     }
   }
 )
 
-// ── Fetch dropdowns ───────────────────────────────────────────
 async function fetchOptions() {
-  const [carsRes, companiesRes, slipsRes] = await Promise.all([
+  const [carsRes, companiesRes, invoicesRes] = await Promise.all([
     api.get('/cars/'),
     api.get('/companies/'),
-    api.get('/dutyslips/'),
+    api.get('/invoices/'),
   ])
   cars.value = carsRes.data
   companies.value = companiesRes.data
-  dutySlips.value = slipsRes.data
+  invoices.value = invoicesRes.data
 }
 
-// ── Submit ────────────────────────────────────────────────────
 async function submit() {
   submitting.value = true
   error.value = ''
   try {
-    await api.post('/entries/', form.value)
+    await api.post('/trips/', form.value)
     router.push('/')
-    notify('Entry created successfully.')
+    notify('Duty Slip created successfully.')
   } catch (e) {
     error.value = e.response?.data
       ? Object.values(e.response.data).flat().join(' ')
       : 'Something went wrong'
-    notify('Failed to create entry.', 'error')
+    notify('Failed to create duty slip.', 'error')
   } finally {
     submitting.value = false
   }

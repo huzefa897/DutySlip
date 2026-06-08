@@ -16,22 +16,22 @@
         </thead>
         <tbody>
           <template
-            v-for="entry in entries"
-            :key="entry.id"
+            v-for="trip in trips"
+            :key="trip.id"
           >
             <tr class="expandable-row">
               <td class="data-table__numeric data-table__muted">
-                {{ entry.date }}
+                {{ trip.date }}
               </td>
-              <td>{{ entry.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}</td>
+              <td>{{ trip.trip_type === 'outstation' ? 'Outstation' : 'Regular' }}</td>
               <td class="data-table__muted">
-                {{ entry.car_name }}
+                {{ trip.car_name }}
               </td>
               <td class="data-table__numeric data-table__muted">
-                {{ entry.total_kms }}
+                {{ trip.total_kms }}
               </td>
               <td class="data-table__numeric data-table__accent">
-                {{ currencySymbol }}{{ entry.row_total }}
+                {{ currencySymbol }}{{ trip.row_total }}
               </td>
               <td
                 class="data-table__actions"
@@ -41,24 +41,24 @@
                   <button
                     type="button"
                     class="icon-btn"
-                    :aria-expanded="isEntryExpanded(entry.id)"
+                    :aria-expanded="isTripExpanded(trip.id)"
                     aria-label="Toggle invoice item details"
-                    @click="toggleEntryExpanded(entry.id)"
+                    @click="toggleTripExpanded(trip.id)"
                   >
                     <span
                       class="expand-arrow"
-                      :class="{ 'expand-arrow--open': isEntryExpanded(entry.id) }"
+                      :class="{ 'expand-arrow--open': isTripExpanded(trip.id) }"
                     >⌄</span>
                   </button>
                   <RowActionMenu
-                    @edit="$emit('edit', entry)"
-                    @delete="$emit('delete', entry.id)"
+                    @edit="$emit('edit', trip)"
+                    @delete="$emit('delete', trip.id)"
                   />
                 </div>
               </td>
             </tr>
             <tr
-              v-if="isEntryExpanded(entry.id)"
+              v-if="isTripExpanded(trip.id)"
               class="expanded-row"
             >
               <td
@@ -71,15 +71,15 @@
                     <div class="expanded-panel__grid">
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">Start KMs</span>
-                        <span class="expanded-panel__value">{{ entry.start_kms }}</span>
+                        <span class="expanded-panel__value">{{ trip.start_kms }}</span>
                       </div>
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">End KMs</span>
-                        <span class="expanded-panel__value">{{ entry.end_kms }}</span>
+                        <span class="expanded-panel__value">{{ trip.end_kms }}</span>
                       </div>
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">Total KMs</span>
-                        <span class="expanded-panel__value">{{ entry.total_kms }}</span>
+                        <span class="expanded-panel__value">{{ trip.total_kms }}</span>
                       </div>
                     </div>
                   </div>
@@ -88,15 +88,15 @@
                     <div class="expanded-panel__grid">
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">Start Time</span>
-                        <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : entry.start_time }}</span>
+                        <span class="expanded-panel__value">{{ trip.trip_type === 'outstation' ? '—' : trip.start_time }}</span>
                       </div>
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">End Time</span>
-                        <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : entry.end_time }}</span>
+                        <span class="expanded-panel__value">{{ trip.trip_type === 'outstation' ? '—' : trip.end_time }}</span>
                       </div>
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">Extra Hours</span>
-                        <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : entry.extra_hrs }}</span>
+                        <span class="expanded-panel__value">{{ trip.trip_type === 'outstation' ? '—' : trip.extra_hrs }}</span>
                       </div>
                     </div>
                   </div>
@@ -105,31 +105,31 @@
                     <div class="expanded-panel__grid">
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">Base Rate</span>
-                        <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${getBaseRate(entry.car)}` }}</span>
+                        <span class="expanded-panel__value">{{ trip.trip_type === 'outstation' ? '—' : `${currencySymbol}${getBaseRate(trip.car)}` }}</span>
                       </div>
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">Rate</span>
-                        <span class="expanded-panel__value">{{ getRateLabel(entry) }}</span>
+                        <span class="expanded-panel__value">{{ getRateLabel(trip) }}</span>
                       </div>
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">KM Cost</span>
-                        <span class="expanded-panel__value">{{ currencySymbol }}{{ entry.extra_kms_amount }}</span>
+                        <span class="expanded-panel__value">{{ currencySymbol }}{{ trip.extra_kms_amount }}</span>
                       </div>
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">Extra Hours Cost</span>
-                        <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${entry.extra_hrs_amount}` }}</span>
+                        <span class="expanded-panel__value">{{ trip.trip_type === 'outstation' ? '—' : `${currencySymbol}${trip.extra_hrs_amount}` }}</span>
                       </div>
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">Bhatta</span>
-                        <span class="expanded-panel__value">{{ currencySymbol }}{{ entry.driver_bhatta }}</span>
+                        <span class="expanded-panel__value">{{ currencySymbol }}{{ trip.driver_bhatta }}</span>
                       </div>
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">Parking</span>
-                        <span class="expanded-panel__value">{{ currencySymbol }}{{ entry.parking }}</span>
+                        <span class="expanded-panel__value">{{ currencySymbol }}{{ trip.parking }}</span>
                       </div>
                       <div class="expanded-panel__item">
                         <span class="expanded-panel__label">Row Total</span>
-                        <span class="expanded-panel__value expanded-panel__value--accent">{{ currencySymbol }}{{ entry.row_total }}</span>
+                        <span class="expanded-panel__value expanded-panel__value--accent">{{ currencySymbol }}{{ trip.row_total }}</span>
                       </div>
                     </div>
                   </div>
@@ -161,7 +161,7 @@ import { ref } from 'vue'
 import RowActionMenu from './RowActionMenu.vue'
 
 defineProps({
-  entries: { type: Array, default: () => [] },
+  trips: { type: Array, default: () => [] },
   grandTotal: { type: [String, Number], required: true },
   currencySymbol: { type: String, required: true },
   getBaseRate: { type: Function, required: true },
@@ -170,17 +170,17 @@ defineProps({
 
 defineEmits(['edit', 'delete'])
 
-const expandedEntryIds = ref([])
+const expandedTripIds = ref([])
 
-function isEntryExpanded(entryId) {
-  return expandedEntryIds.value.includes(entryId)
+function isTripExpanded(tripId) {
+  return expandedTripIds.value.includes(tripId)
 }
 
-function toggleEntryExpanded(entryId) {
-  if (isEntryExpanded(entryId)) {
-    expandedEntryIds.value = expandedEntryIds.value.filter(id => id !== entryId)
+function toggleTripExpanded(tripId) {
+  if (isTripExpanded(tripId)) {
+    expandedTripIds.value = expandedTripIds.value.filter(id => id !== tripId)
     return
   }
-  expandedEntryIds.value = [...expandedEntryIds.value, entryId]
+  expandedTripIds.value = [...expandedTripIds.value, tripId]
 }
 </script>

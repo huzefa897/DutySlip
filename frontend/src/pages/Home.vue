@@ -12,16 +12,16 @@
       </div>
       <div class="quick-actions-row">
         <router-link
-          to="/dutyslips/create"
+          to="/invoices/create"
           class="btn-primary"
         >
           + Create Invoice
         </router-link>
         <router-link
-          to="/entries/create"
+          to="/duty-slips/create"
           class="btn-secondary"
         >
-          + New Entry
+          + New Duty Slip
         </router-link>
       </div>
     </div>
@@ -46,7 +46,7 @@
           {{ stats.paidSlips }}
         </p>
         <p class="stat-meta">
-          Fully settled duty slips
+          Fully settled invoices
         </p>
       </div>
       <div class="stat-card">
@@ -80,7 +80,7 @@
             Recent Invoices
           </h2>
           <router-link
-            to="/dutyslips"
+            to="/invoices"
             class="view-all"
           >
             View all →
@@ -98,7 +98,7 @@
           <router-link
             v-for="slip in recentSlips"
             :key="slip.id"
-            :to="`/dutyslips/${slip.id}`"
+            :to="`/invoices/${slip.id}`"
             class="list-card"
           >
             <div>
@@ -125,10 +125,10 @@
       <section class="section-card">
         <div class="list-header">
           <h2 class="section-label">
-            Recent Entries
+            Recent Duty Slips
           </h2>
           <router-link
-            to="/entries"
+            to="/duty-slips"
             class="view-all"
           >
             View all →
@@ -136,33 +136,33 @@
         </div>
 
         <p
-          v-if="recentEntries.length === 0"
+          v-if="recentTrips.length === 0"
           class="empty-text"
         >
-          No entries yet.
+          No duty slips yet.
         </p>
 
         <div class="card-list">
           <div
-            v-for="entry in recentEntries"
-            :key="entry.id"
+            v-for="trip in recentTrips"
+            :key="trip.id"
             class="list-card list-card--static"
           >
             <div>
               <p class="card-name">
-                {{ entry.party_name }}
+                {{ trip.party_name }}
               </p>
               <p class="card-meta">
-                {{ entry.date }} · {{ entry.car_name }}
+                {{ trip.date }} · {{ trip.car_name }}
               </p>
             </div>
             <div class="card-right">
               <p class="card-amount">
-                {{ currencySymbol }}{{ entry.row_total }}
+                {{ currencySymbol }}{{ trip.row_total }}
               </p>
               <p class="card-status">
                 <span
-                  v-if="entry.duty_slip"
+                  v-if="trip.invoice"
                   class="status--assigned"
                 >assigned</span>
                 <span
@@ -185,16 +185,16 @@ import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
 import PaymentStatusBadge from '../components/PaymentStatusBadge.vue'
 
-const allSlips   = ref([])
-const allEntries = ref([])
-const bizName    = ref('')
+const allSlips  = ref([])
+const allTrips  = ref([])
+const bizName   = ref('')
 
 const today = new Date().toLocaleDateString('en-AU', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
 })
 
-const recentSlips   = computed(() => allSlips.value.slice(0, 5))
-const recentEntries = computed(() => allEntries.value.slice(0, 5))
+const recentSlips  = computed(() => allSlips.value.slice(0, 5))
+const recentTrips  = computed(() => allTrips.value.slice(0, 5))
 
 const stats = computed(() => {
   const now = new Date()
@@ -218,13 +218,13 @@ const stats = computed(() => {
 })
 
 onMounted(async () => {
-  const [slipsRes, entriesRes, settingsRes] = await Promise.all([
-    api.get('/dutyslips/'),
-    api.get('/entries/'),
+  const [slipsRes, tripsRes, settingsRes] = await Promise.all([
+    api.get('/invoices/'),
+    api.get('/trips/'),
     api.get('/settings/'),
   ])
-  allSlips.value   = slipsRes.data
-  allEntries.value = entriesRes.data
-  bizName.value    = settingsRes.data?.name || ''
+  allSlips.value  = slipsRes.data
+  allTrips.value  = tripsRes.data
+  bizName.value   = settingsRes.data?.name || ''
 })
 </script>

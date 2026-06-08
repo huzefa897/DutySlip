@@ -1,8 +1,5 @@
 from rest_framework import serializers
-from .models import Company, Car, DutySlip, DutySlipEntry, BusinessSettings
-from .models import (
-    CompanyCarRate,
-)
+from .models import Company, Car, Invoice, DutySlip, BusinessSettings, CompanyCarRate
 
 
 class CompanySerializer(serializers.ModelSerializer):
@@ -17,12 +14,12 @@ class CarSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class DutySlipEntrySerializer(serializers.ModelSerializer):
+class DutySlipSerializer(serializers.ModelSerializer):
     car_name = serializers.CharField(source="car.name", read_only=True)
     company_name = serializers.CharField(source="company.name", read_only=True)
 
     class Meta:
-        model = DutySlipEntry
+        model = DutySlip
         fields = "__all__"
         read_only_fields = [
             "total_kms",
@@ -34,29 +31,29 @@ class DutySlipEntrySerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        entry_type = attrs.get("entry_type")
-        duty_slip = attrs.get("duty_slip")
+        trip_type = attrs.get("trip_type")
+        invoice = attrs.get("invoice")
 
         if self.instance:
-            if entry_type is None:
-                entry_type = self.instance.entry_type
-            if duty_slip is None:
-                duty_slip = self.instance.duty_slip
+            if trip_type is None:
+                trip_type = self.instance.trip_type
+            if invoice is None:
+                invoice = self.instance.invoice
 
-        if duty_slip and entry_type and duty_slip.slip_type != entry_type:
+        if invoice and trip_type and invoice.invoice_type != trip_type:
             raise serializers.ValidationError(
-                {"duty_slip": "Entry type must match the duty slip type."}
+                {"invoice": "Trip type must match the invoice type."}
             )
 
         return attrs
 
 
-class DutySlipSerializer(serializers.ModelSerializer):
-    entries = DutySlipEntrySerializer(many=True, read_only=True)
+class InvoiceSerializer(serializers.ModelSerializer):
+    trips = DutySlipSerializer(many=True, read_only=True)
     company_name = serializers.CharField(source="company.name", read_only=True)
 
     class Meta:
-        model = DutySlip
+        model = Invoice
         fields = "__all__"
         read_only_fields = ["grand_total"]
 

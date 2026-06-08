@@ -18,20 +18,20 @@ import requests as http_requests
 from .models import (
     Company,
     Car,
+    Invoice,
     DutySlip,
-    DutySlipEntry,
     BusinessSettings,
     CompanyCarRate,
 )
 from .serializers import (
     CompanySerializer,
     CarSerializer,
+    InvoiceSerializer,
     DutySlipSerializer,
-    DutySlipEntrySerializer,
     BusinessSettingsSerializer,
     CompanyCarRateSerializer,
 )
-from .services import compute_entry, compute_duty_slip_total
+from .services import compute_trip, compute_invoice_total
 from decimal import Decimal
 
 
@@ -117,7 +117,7 @@ def company_detail(request, pk):
 @api_view(["GET"])
 def company_parties(request, company_id):
     names = (
-        DutySlipEntry.objects.filter(company_id=company_id)
+        DutySlip.objects.filter(company_id=company_id)
         .values_list("party_name", flat=True)
         .distinct()
         .order_by("party_name")
@@ -212,94 +212,91 @@ def car_detail(request, pk):
             return Response(status=status.HTTP_204_NO_CONTENT)
         except Exception:
             return Response(
-                {"error": "Cannot delete — car is used in existing entries."},
+                {"error": "Cannot delete — car is used in existing trips."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
 
-# ── DutySlipEntry ─────────────────────────────────────────────
+# ── DutySlip (Trip) ───────────────────────────────────────────
 @api_view(["GET", "POST"])
-def entry_list(request):
+def trip_list(request):
     if request.method == "GET":
-        entries = DutySlipEntry.objects.all().order_by("-date")
-        return Response(DutySlipEntrySerializer(entries, many=True).data)
+        trips = DutySlip.objects.all().order_by("-date")
+        return Response(DutySlipSerializer(trips, many=True).data)
 
-    serializer = DutySlipEntrySerializer(data=request.data)
+    serializer = DutySlipSerializer(data=request.data)
     if serializer.is_valid():
-        entry = serializer.save()
-        entry = compute_entry(entry)
-        entry.save()
-        return Response(
-            DutySlipEntrySerializer(entry).data, status=status.HTTP_201_CREATED
-        )
+        trip = serializer.save()
+        trip = compute_trip(trip)
+        trip.save()
+        return Response(DutySlipSerializer(trip).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET", "PUT", "DELETE"])
-def entry_detail(request, pk):
+def trip_detail(request, pk):
     try:
-        entry = DutySlipEntry.objects.get(pk=pk)
-    except DutySlipEntry.DoesNotExist:
-        return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
+        trip = DutySlip.objects.get(pk=pk)
+    except DutySlip.DoesNotExist:
+        return Response({"error": "Trip not found"}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == "GET":
-        return Response(DutySlipEntrySerializer(entry).data)
+        return Response(DutySlipSerializer(trip).data)
 
     if request.method == "PUT":
-        serializer = DutySlipEntrySerializer(entry, data=request.data)
+        serializer = DutySlipSerializer(trip, data=request.data)
         if serializer.is_valid():
-            entry = serializer.save()
-            entry = compute_entry(entry)
-            entry.save()
-            if entry.duty_slip:
-                compute_duty_slip_total(entry.duty_slip)
-            return Response(DutySlipEntrySerializer(entry).data)
+            trip = serializer.save()
+            trip = compute_trip(trip)
+            trip.save()
+            if trip.invoice:
+                compute_invoice_total(trip.invoice)
+            return Response(DutySlipSerializer(trip).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     if request.method == "DELETE":
-        duty_slip = entry.duty_slip
-        entry.delete()
-        if duty_slip:
-            compute_duty_slip_total(duty_slip)
+        invoice = trip.invoice
+        trip.delete()
+        if invoice:
+            compute_invoice_total(invoice)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(["POST"])
-def duplicate_entry(request, pk):
+def duplicate_trip(request, pk):
     try:
-        entry = DutySlipEntry.objects.get(pk=pk)
-    except DutySlipEntry.DoesNotExist:
-        return Response({"error": "Entry not found"}, status=status.HTTP_404_NOT_FOUND)
+        trip = DutySlip.objects.get(pk=pk)
+    except DutySlip.DoesNotExist:
+        return Response({"error": "Trip not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    new_entry = DutySlipEntry.objects.create(
-        duty_slip=None,
-        company=entry.company,
-        party_name=entry.party_name,
-        date=entry.date,
-        car=entry.car,
-        start_kms=entry.start_kms,
-        end_kms=entry.end_kms,
-        start_time=entry.start_time,
-        end_time=entry.end_time,
-        driver_bhatta=entry.driver_bhatta,
-        parking=entry.parking,
-        notes=entry.notes,
+    new_trip = DutySlip.objects.create(
+        invoice=None,
+        company=trip.company,
+        party_name=trip.party_name,
+        trip_type=trip.trip_type,
+        date=trip.date,
+        car=trip.car,
+        start_kms=trip.start_kms,
+        end_kms=trip.end_kms,
+        start_time=trip.start_time,
+        end_time=trip.end_time,
+        driver_bhatta=trip.driver_bhatta,
+        parking=trip.parking,
+        notes=trip.notes,
     )
-    new_entry = compute_entry(new_entry)
-    new_entry.save()
-    return Response(
-        DutySlipEntrySerializer(new_entry).data, status=status.HTTP_201_CREATED
-    )
+    new_trip = compute_trip(new_trip)
+    new_trip.save()
+    return Response(DutySlipSerializer(new_trip).data, status=status.HTTP_201_CREATED)
 
 
-# ── DutySlip ──────────────────────────────────────────────────
+# ── Invoice ───────────────────────────────────────────────────
 @api_view(["GET", "POST"])
-def dutyslip_list(request):
+def invoice_list(request):
     if request.method == "GET":
-        slips = DutySlip.objects.all().order_by("-created_at")
-        return Response(DutySlipSerializer(slips, many=True).data)
+        invoices = Invoice.objects.all().order_by("-created_at")
+        return Response(InvoiceSerializer(invoices, many=True).data)
 
-    serializer = DutySlipSerializer(data=request.data)
+    serializer = InvoiceSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -307,81 +304,81 @@ def dutyslip_list(request):
 
 
 @api_view(["GET", "DELETE"])
-def dutyslip_detail(request, pk):
+def invoice_detail(request, pk):
     try:
-        slip = DutySlip.objects.get(pk=pk)
-    except DutySlip.DoesNotExist:
+        invoice = Invoice.objects.get(pk=pk)
+    except Invoice.DoesNotExist:
         return Response(
-            {"error": "DutySlip not found"}, status=status.HTTP_404_NOT_FOUND
+            {"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND
         )
 
     if request.method == "GET":
-        return Response(DutySlipSerializer(slip).data)
+        return Response(InvoiceSerializer(invoice).data)
 
     if request.method == "DELETE":
-        slip.delete()
+        invoice.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(["POST"])
-def assign_entries_to_dutyslip(request, pk):
+def assign_trips_to_invoice(request, pk):
     try:
-        slip = DutySlip.objects.get(pk=pk)
-    except DutySlip.DoesNotExist:
+        invoice = Invoice.objects.get(pk=pk)
+    except Invoice.DoesNotExist:
         return Response(
-            {"error": "DutySlip not found"}, status=status.HTTP_404_NOT_FOUND
+            {"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND
         )
 
-    entry_ids = request.data.get("entry_ids", [])
-    entries = DutySlipEntry.objects.filter(id__in=entry_ids)
+    trip_ids = request.data.get("trip_ids", [])
+    trips = DutySlip.objects.filter(id__in=trip_ids)
 
-    mismatched = entries.exclude(entry_type=slip.slip_type)
+    mismatched = trips.exclude(trip_type=invoice.invoice_type)
     if mismatched.exists():
         return Response(
-            {"error": "Selected entries must match the duty slip type."},
+            {"error": "Selected trips must match the invoice type."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    entries.update(duty_slip=slip)
-    compute_duty_slip_total(slip)
-    return Response(DutySlipSerializer(slip).data)
+    trips.update(invoice=invoice)
+    compute_invoice_total(invoice)
+    return Response(InvoiceSerializer(invoice).data)
 
 
 @api_view(["POST"])
-def remove_entry_from_dutyslip(request, pk, entry_id):
+def remove_trip_from_invoice(request, pk, trip_id):
     try:
-        slip = DutySlip.objects.get(pk=pk)
-        entry = DutySlipEntry.objects.get(pk=entry_id, duty_slip=slip)
-    except (DutySlip.DoesNotExist, DutySlipEntry.DoesNotExist):
+        invoice = Invoice.objects.get(pk=pk)
+        trip = DutySlip.objects.get(pk=trip_id, invoice=invoice)
+    except (Invoice.DoesNotExist, DutySlip.DoesNotExist):
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    entry.duty_slip = None
-    entry.save()
-    compute_duty_slip_total(slip)
-    return Response(DutySlipSerializer(slip).data)
+    trip.invoice = None
+    trip.save()
+    compute_invoice_total(invoice)
+    return Response(InvoiceSerializer(invoice).data)
 
 
 @api_view(["PATCH"])
-def update_dutyslip_status(request, pk):
+def update_invoice_status(request, pk):
     try:
-        slip = DutySlip.objects.get(pk=pk)
-    except DutySlip.DoesNotExist:
+        invoice = Invoice.objects.get(pk=pk)
+    except Invoice.DoesNotExist:
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
     new_status = request.data.get("status")
     if new_status not in ["draft", "finalised"]:
         return Response({"error": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
 
-    slip.status = new_status
-    slip.save()
-    return Response(DutySlipSerializer(slip).data)
+    invoice.status = new_status
+    invoice.save()
+    return Response(InvoiceSerializer(invoice).data)
 
 
 @api_view(["PATCH"])
-def update_dutyslip_payment_status(request, pk):
+def update_invoice_payment_status(request, pk):
     try:
-        slip = DutySlip.objects.get(pk=pk)
-    except DutySlip.DoesNotExist:
+        invoice = Invoice.objects.get(pk=pk)
+    except Invoice.DoesNotExist:
         return Response({"error": "Not found"}, status=status.HTTP_404_NOT_FOUND)
 
     new_status = request.data.get("payment_status")
@@ -390,23 +387,20 @@ def update_dutyslip_payment_status(request, pk):
             {"error": "Invalid payment status"}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    slip.payment_status = new_status
-    slip.save()
-    return Response(DutySlipSerializer(slip).data)
-
-
-# ── DutySlip ──────────────────────────────────────────────────────────────────
+    invoice.payment_status = new_status
+    invoice.save()
+    return Response(InvoiceSerializer(invoice).data)
 
 
 # ── Excel helpers ─────────────────────────────────────────────
 
 
-def _calc_total_hrs(entry):
-    """Return total trip hours for regular entries; 0 for outstation."""
-    if not entry.start_time or not entry.end_time:
+def _calc_total_hrs(trip):
+    """Return total trip hours for regular trips; 0 for outstation."""
+    if not trip.start_time or not trip.end_time:
         return Decimal("0")
-    s = datetime.datetime.combine(entry.date, entry.start_time)
-    e = datetime.datetime.combine(entry.date, entry.end_time)
+    s = datetime.datetime.combine(trip.date, trip.start_time)
+    e = datetime.datetime.combine(trip.date, trip.end_time)
     if e < s:
         e += datetime.timedelta(days=1)
     return Decimal(str(round((e - s).total_seconds() / 3600, 2)))
@@ -486,13 +480,13 @@ def _amount_to_words(amount):
 
 
 def _build_invoice_html(
-    slip, entries, biz, currency, invoice_ref, logo_url, today, request_base_url
+    invoice, trips, biz, currency, invoice_ref, logo_url, today, request_base_url
 ):
     html_string = render_to_string(
         "invoice.html",
         {
-            "slip": slip,
-            "entries": entries,
+            "invoice": invoice,
+            "trips": trips,
             "settings": biz,
             "currency": currency,
             "invoice_ref": invoice_ref,
@@ -507,30 +501,28 @@ def _build_invoice_html(
 @api_view(["GET"])
 def download_invoice_pdf(request, pk):
     try:
-        slip = DutySlip.objects.select_related("company").get(pk=pk)
-    except DutySlip.DoesNotExist:
+        invoice = Invoice.objects.select_related("company").get(pk=pk)
+    except Invoice.DoesNotExist:
         return Response({"error": "Not found"}, status=404)
 
-    entries = (
-        DutySlipEntry.objects.filter(duty_slip=slip)
-        .select_related("car")
-        .order_by("date")
+    trips = (
+        DutySlip.objects.filter(invoice=invoice).select_related("car").order_by("date")
     )
-    entries_with_totals = []
-    for entry in entries:
-        entry.total_hrs = _calc_total_hrs(entry)
-        entries_with_totals.append(entry)
+    trips_with_totals = []
+    for trip in trips:
+        trip.total_hrs = _calc_total_hrs(trip)
+        trips_with_totals.append(trip)
 
     biz = BusinessSettings.objects.first()
     currency = "₹" if biz and biz.currency == "INR" else "$"
     year = datetime.date.today().year
-    invoice_ref = f"786/110/{year}{str(slip.id).zfill(3)}"
+    invoice_ref = f"786/110/{year}{str(invoice.id).zfill(3)}"
     logo_url = biz.logo if biz and biz.logo else ""
     today = datetime.date.today().strftime("%d %B %Y")
 
     pdf = _build_invoice_html(
-        slip,
-        entries_with_totals,
+        invoice,
+        trips_with_totals,
         biz,
         currency,
         invoice_ref,
@@ -548,7 +540,7 @@ def download_invoice_pdf(request, pk):
 # ── Invoice Excel helpers ──────────────────────────────────────
 
 
-def _build_invoice_sheet(ws, slip, entries, biz, currency, invoice_ref, company_rates):
+def _build_invoice_sheet(ws, invoice, trips, biz, currency, invoice_ref, company_rates):
     """Populate ws with the full invoice layout (header, table, totals, signature)."""
     LAST_COL = "M"
     N_COLS = 13
@@ -655,20 +647,22 @@ def _build_invoice_sheet(ws, slip, entries, biz, currency, invoice_ref, company_
     )
 
     set_merged(
-        "A10:F10", slip.company.name, font=Font(bold=True, size=11), align=LEFT_AL
+        "A10:F10", invoice.company.name, font=Font(bold=True, size=11), align=LEFT_AL
     )
     set_merged(
         "H10:M10",
-        f"Date: {slip.created_at.strftime('%d/%m/%Y')}",
+        f"Date: {invoice.created_at.strftime('%d/%m/%Y')}",
         font=Font(size=10),
         align=RIGHT_AL,
     )
 
-    if slip.company.abn:
-        set_merged("A11:F11", f"ABN: {slip.company.abn}", font=GRAY_FONT, align=LEFT_AL)
+    if invoice.company.abn:
+        set_merged(
+            "A11:F11", f"ABN: {invoice.company.abn}", font=GRAY_FONT, align=LEFT_AL
+        )
     set_merged(
         "H11:M11",
-        f"Payment: {slip.payment_status.capitalize()}",
+        f"Payment: {invoice.payment_status.capitalize()}",
         font=Font(size=10),
         align=RIGHT_AL,
     )
@@ -678,14 +672,14 @@ def _build_invoice_sheet(ws, slip, entries, biz, currency, invoice_ref, company_
     # ── Section 3: Guest Name Row (row 13) ───────────────────────
     set_merged(
         "A13:M13",
-        f"Guest Name: {slip.party_name}",
+        f"Guest Name: {invoice.party_name}",
         font=Font(bold=True, size=10),
         align=LEFT_AL,
     )
 
     ws.row_dimensions[14].height = 8
 
-    # ── Section 4: Duty Slip Table ───────────────────────────────
+    # ── Section 4: Trip Table ─────────────────────────────────────
     TABLE_ROW = 15
     HEADERS = [
         "Date",
@@ -712,33 +706,31 @@ def _build_invoice_sheet(ws, slip, entries, biz, currency, invoice_ref, company_
     ws.row_dimensions[TABLE_ROW].height = 18
 
     data_row = TABLE_ROW + 1
-    for idx, entry in enumerate(entries):
-        cr = company_rates.get(entry.car_id)
+    for idx, trip in enumerate(trips):
+        cr = company_rates.get(trip.car_id)
         base_rate = (
-            cr.base_rate if (cr and cr.base_rate is not None) else entry.car.base_rate
+            cr.base_rate if (cr and cr.base_rate is not None) else trip.car.base_rate
         )
-        total_hrs = _calc_total_hrs(entry)
+        total_hrs = _calc_total_hrs(trip)
         row_fill = STRIPE_FILL if idx % 2 == 1 else None
 
-        write_data_cell(data_row, 1, entry.date.strftime("%d/%m/%Y"), None, row_fill)
-        write_data_cell(data_row, 2, entry.car.name, None, row_fill)
-        write_data_cell(data_row, 3, float(entry.start_kms), NUM_FMT, row_fill)
-        write_data_cell(data_row, 4, float(entry.end_kms), NUM_FMT, row_fill)
-        write_data_cell(data_row, 5, float(entry.total_kms), NUM_FMT, row_fill)
-        write_data_cell(data_row, 6, float(entry.extra_kms), NUM_FMT, row_fill)
+        write_data_cell(data_row, 1, trip.date.strftime("%d/%m/%Y"), None, row_fill)
+        write_data_cell(data_row, 2, trip.car.name, None, row_fill)
+        write_data_cell(data_row, 3, float(trip.start_kms), NUM_FMT, row_fill)
+        write_data_cell(data_row, 4, float(trip.end_kms), NUM_FMT, row_fill)
+        write_data_cell(data_row, 5, float(trip.total_kms), NUM_FMT, row_fill)
+        write_data_cell(data_row, 6, float(trip.extra_kms), NUM_FMT, row_fill)
         write_data_cell(data_row, 7, float(total_hrs), NUM_FMT, row_fill)
         write_data_cell(
-            data_row, 8, float(entry.extra_hrs_amount), CURRENCY_FMT, row_fill
+            data_row, 8, float(trip.extra_hrs_amount), CURRENCY_FMT, row_fill
         )
         write_data_cell(
-            data_row, 9, float(entry.extra_kms_amount), CURRENCY_FMT, row_fill
+            data_row, 9, float(trip.extra_kms_amount), CURRENCY_FMT, row_fill
         )
-        write_data_cell(
-            data_row, 10, float(entry.driver_bhatta), CURRENCY_FMT, row_fill
-        )
+        write_data_cell(data_row, 10, float(trip.driver_bhatta), CURRENCY_FMT, row_fill)
         write_data_cell(data_row, 11, float(base_rate), CURRENCY_FMT, row_fill)
-        write_data_cell(data_row, 12, float(entry.parking), CURRENCY_FMT, row_fill)
-        write_data_cell(data_row, 13, float(entry.row_total), CURRENCY_FMT, row_fill)
+        write_data_cell(data_row, 12, float(trip.parking), CURRENCY_FMT, row_fill)
+        write_data_cell(data_row, 13, float(trip.row_total), CURRENCY_FMT, row_fill)
         ws.row_dimensions[data_row].height = 16
         data_row += 1
 
@@ -750,7 +742,7 @@ def _build_invoice_sheet(ws, slip, entries, biz, currency, invoice_ref, company_
 
     set_merged(
         f"A{total_row}:F{total_row}",
-        _amount_to_words(slip.grand_total),
+        _amount_to_words(invoice.grand_total),
         font=Font(italic=True, size=10),
         align=LEFT_AL,
     )
@@ -768,7 +760,7 @@ def _build_invoice_sheet(ws, slip, entries, biz, currency, invoice_ref, company_
         )
     ws.merge_cells(f"H{total_row}:{LAST_COL}{total_row}")
     gt_cell = ws[f"H{total_row}"]
-    gt_cell.value = f"Grand Total: {currency}{float(slip.grand_total):,.2f}"
+    gt_cell.value = f"Grand Total: {currency}{float(invoice.grand_total):,.2f}"
     gt_cell.font = Font(bold=True, size=13)
     gt_cell.alignment = RIGHT_AL
 
@@ -818,7 +810,7 @@ def _build_invoice_sheet(ws, slip, entries, biz, currency, invoice_ref, company_
     ws.page_margins = PageMargins(left=0.5, right=0.5, top=0.75, bottom=0.75)
 
 
-def _build_entries_sheet(ws, entries, biz, currency, report_title, report_date):
+def _build_trips_sheet(ws, trips, biz, currency, report_title, report_date):
     LAST_COL = "K"
     N_COLS = 11
     DARK_FILL = PatternFill("solid", fgColor="1A1A2E")
@@ -914,7 +906,7 @@ def _build_entries_sheet(ws, entries, biz, currency, report_title, report_date):
     set_merged("H9:K9", report_date, font=Font(size=10), align=RIGHT_AL)
     set_merged(
         "A10:K10",
-        "Entries exported from the current database state",
+        "Trips exported from the current database state",
         font=GRAY_FONT,
         align=LEFT_AL,
     )
@@ -932,7 +924,7 @@ def _build_entries_sheet(ws, entries, biz, currency, report_title, report_date):
         "Extra Hrs",
         "Bhatta",
         "Parking",
-        "Duty Slip",
+        "Invoice",
         "Row Total",
     ]
     for col, hdr in enumerate(HEADERS, start=1):
@@ -945,33 +937,31 @@ def _build_entries_sheet(ws, entries, biz, currency, report_title, report_date):
     ws.row_dimensions[TABLE_ROW].height = 18
 
     data_row = TABLE_ROW + 1
-    for idx, entry in enumerate(entries):
+    for idx, trip in enumerate(trips):
         row_fill = STRIPE_FILL if idx % 2 == 1 else None
-        write_data_cell(data_row, 1, entry.date.strftime("%d/%m/%Y"), None, row_fill)
+        write_data_cell(data_row, 1, trip.date.strftime("%d/%m/%Y"), None, row_fill)
         write_data_cell(
             data_row,
             2,
-            "Outstation Trip" if entry.entry_type == "outstation" else "Regular Trip",
+            "Outstation Trip" if trip.trip_type == "outstation" else "Regular Trip",
             None,
             row_fill,
         )
-        write_data_cell(data_row, 3, entry.party_name, None, row_fill)
-        write_data_cell(data_row, 4, entry.company.name, None, row_fill)
-        write_data_cell(data_row, 5, entry.car.name, None, row_fill)
-        write_data_cell(data_row, 6, float(entry.total_kms), NUM_FMT, row_fill)
-        write_data_cell(data_row, 7, float(entry.extra_hrs), NUM_FMT, row_fill)
-        write_data_cell(data_row, 8, float(entry.driver_bhatta), CURRENCY_FMT, row_fill)
-        write_data_cell(data_row, 9, float(entry.parking), CURRENCY_FMT, row_fill)
+        write_data_cell(data_row, 3, trip.party_name, None, row_fill)
+        write_data_cell(data_row, 4, trip.company.name, None, row_fill)
+        write_data_cell(data_row, 5, trip.car.name, None, row_fill)
+        write_data_cell(data_row, 6, float(trip.total_kms), NUM_FMT, row_fill)
+        write_data_cell(data_row, 7, float(trip.extra_hrs), NUM_FMT, row_fill)
+        write_data_cell(data_row, 8, float(trip.driver_bhatta), CURRENCY_FMT, row_fill)
+        write_data_cell(data_row, 9, float(trip.parking), CURRENCY_FMT, row_fill)
         write_data_cell(
             data_row,
             10,
-            f"INV-{str(entry.duty_slip_id).zfill(3)}"
-            if entry.duty_slip_id
-            else "Unassigned",
+            f"INV-{str(trip.invoice_id).zfill(3)}" if trip.invoice_id else "Unassigned",
             None,
             row_fill,
         )
-        write_data_cell(data_row, 11, float(entry.row_total), CURRENCY_FMT, row_fill)
+        write_data_cell(data_row, 11, float(trip.row_total), CURRENCY_FMT, row_fill)
         ws.row_dimensions[data_row].height = 16
         data_row += 1
 
@@ -979,7 +969,7 @@ def _build_entries_sheet(ws, entries, biz, currency, report_title, report_date):
     ws.row_dimensions[last_data_row + 1].height = 6
     total_row = last_data_row + 2
 
-    grand_total = sum((e.row_total for e in entries), Decimal("0"))
+    grand_total = sum((t.row_total for t in trips), Decimal("0"))
 
     set_merged(
         f"A{total_row}:J{total_row}",
@@ -1039,24 +1029,22 @@ def _build_entries_sheet(ws, entries, biz, currency, report_title, report_date):
 
 @api_view(["GET"])
 def download_invoice_excel(request, pk):
-    slip = get_object_or_404(DutySlip.objects.select_related("company"), pk=pk)
-    entries = list(
-        DutySlipEntry.objects.filter(duty_slip=slip)
-        .select_related("car")
-        .order_by("date")
+    invoice = get_object_or_404(Invoice.objects.select_related("company"), pk=pk)
+    trips = list(
+        DutySlip.objects.filter(invoice=invoice).select_related("car").order_by("date")
     )
     biz = BusinessSettings.objects.first()
     currency = "₹" if biz and biz.currency == "INR" else "$"
     year = datetime.date.today().year
-    invoice_ref = f"786/110/{year}{str(slip.id).zfill(3)}"
+    invoice_ref = f"786/110/{year}{str(invoice.id).zfill(3)}"
     company_rates = {
-        cr.car_id: cr for cr in CompanyCarRate.objects.filter(company=slip.company)
+        cr.car_id: cr for cr in CompanyCarRate.objects.filter(company=invoice.company)
     }
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Invoice"
-    _build_invoice_sheet(ws, slip, entries, biz, currency, invoice_ref, company_rates)
+    _build_invoice_sheet(ws, invoice, trips, biz, currency, invoice_ref, company_rates)
 
     buf = BytesIO()
     wb.save(buf)
@@ -1077,7 +1065,9 @@ def bulk_download_invoice_pdf(request):
     if not ids:
         return Response({"error": "No invoice IDs provided."}, status=400)
 
-    slips = DutySlip.objects.filter(id__in=ids).select_related("company").order_by("id")
+    invoices = (
+        Invoice.objects.filter(id__in=ids).select_related("company").order_by("id")
+    )
     biz = BusinessSettings.objects.first()
     currency = "₹" if biz and biz.currency == "INR" else "$"
     year = datetime.date.today().year
@@ -1086,24 +1076,24 @@ def bulk_download_invoice_pdf(request):
 
     documents = []
     valid_refs = []
-    for slip in slips:
-        entries = (
-            DutySlipEntry.objects.filter(duty_slip=slip)
+    for invoice in invoices:
+        trips = (
+            DutySlip.objects.filter(invoice=invoice)
             .select_related("car")
             .order_by("date")
         )
-        entries_with_totals = []
-        for entry in entries:
-            entry.total_hrs = _calc_total_hrs(entry)
-            entries_with_totals.append(entry)
+        trips_with_totals = []
+        for trip in trips:
+            trip.total_hrs = _calc_total_hrs(trip)
+            trips_with_totals.append(trip)
 
-        invoice_ref = f"786/110/{year}{str(slip.id).zfill(3)}"
+        invoice_ref = f"786/110/{year}{str(invoice.id).zfill(3)}"
         logo_url = biz.logo if biz and biz.logo else ""
 
         documents.append(
             _build_invoice_html(
-                slip,
-                entries_with_totals,
+                invoice,
+                trips_with_totals,
                 biz,
                 currency,
                 invoice_ref,
@@ -1130,8 +1120,8 @@ def bulk_download_invoice_pdf(request):
 
 
 @api_view(["GET"])
-def download_entries_excel(request):
-    qs = DutySlipEntry.objects.select_related("car", "company", "duty_slip")
+def download_trips_excel(request):
+    qs = DutySlip.objects.select_related("car", "company", "invoice")
     ids = request.query_params.get("ids", "")
     if ids:
         id_list = [int(value) for value in ids.split(",") if value.strip().isdigit()]
@@ -1154,15 +1144,15 @@ def download_entries_excel(request):
         if date_to:
             qs = qs.filter(date__lte=date_to)
 
-    entries = list(qs.order_by("-date", "-id"))
+    trips = list(qs.order_by("-date", "-id"))
     biz = BusinessSettings.objects.first()
     currency = "₹" if biz and biz.currency == "INR" else "$"
     report_date = datetime.date.today().strftime("%d/%m/%Y")
 
     wb = Workbook()
     ws = wb.active
-    ws.title = "Entries"
-    _build_entries_sheet(ws, entries, biz, currency, "Entries Report", report_date)
+    ws.title = "Trips"
+    _build_trips_sheet(ws, trips, biz, currency, "Trips Report", report_date)
 
     buf = BytesIO()
     wb.save(buf)
@@ -1173,7 +1163,7 @@ def download_entries_excel(request):
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
     response["Content-Disposition"] = (
-        f'attachment; filename="entries-export-{today}.xlsx"'
+        f'attachment; filename="trips-export-{today}.xlsx"'
     )
     return response
 
@@ -1184,7 +1174,9 @@ def bulk_export_excel(request):
     if not ids:
         return Response({"error": "No invoice IDs provided."}, status=400)
 
-    slips = DutySlip.objects.filter(id__in=ids).select_related("company").order_by("id")
+    invoices = (
+        Invoice.objects.filter(id__in=ids).select_related("company").order_by("id")
+    )
     biz = BusinessSettings.objects.first()
     currency = "₹" if biz and biz.currency == "INR" else "$"
     year = datetime.date.today().year
@@ -1192,19 +1184,20 @@ def bulk_export_excel(request):
     wb = Workbook()
     wb.remove(wb.active)  # remove default blank sheet
 
-    for slip in slips:
-        entries = list(
-            DutySlipEntry.objects.filter(duty_slip=slip)
+    for invoice in invoices:
+        trips = list(
+            DutySlip.objects.filter(invoice=invoice)
             .select_related("car")
             .order_by("date")
         )
-        invoice_ref = f"786/110/{year}{str(slip.id).zfill(3)}"
+        invoice_ref = f"786/110/{year}{str(invoice.id).zfill(3)}"
         company_rates = {
-            cr.car_id: cr for cr in CompanyCarRate.objects.filter(company=slip.company)
+            cr.car_id: cr
+            for cr in CompanyCarRate.objects.filter(company=invoice.company)
         }
-        ws = wb.create_sheet(title=f"INV-{str(slip.id).zfill(3)}")
+        ws = wb.create_sheet(title=f"INV-{str(invoice.id).zfill(3)}")
         _build_invoice_sheet(
-            ws, slip, entries, biz, currency, invoice_ref, company_rates
+            ws, invoice, trips, biz, currency, invoice_ref, company_rates
         )
 
     if not wb.sheetnames:
@@ -1232,11 +1225,10 @@ def get_backup_data():
         "companies": list(Company.objects.values()),
         "cars": list(Car.objects.values()),
         "company_car_rates": list(CompanyCarRate.objects.values()),
-        "duty_slips": list(DutySlip.objects.values()),
-        "entries": list(DutySlipEntry.objects.values()),
+        "invoices": list(Invoice.objects.values()),
+        "trips": list(DutySlip.objects.values()),
         "business_settings": list(BusinessSettings.objects.values()),
     }
-    # serialize and deserialize to convert all Decimals and dates to JSON-safe types
     return json.loads(json.dumps(data, cls=DecimalEncoder))
 
 
@@ -1286,8 +1278,8 @@ def restore_database(request):
         return Response({"error": "Incompatible backup version."}, status=400)
 
     try:
-        DutySlipEntry.objects.all().delete()
         DutySlip.objects.all().delete()
+        Invoice.objects.all().delete()
         CompanyCarRate.objects.all().delete()
         Company.objects.all().delete()
         Car.objects.all().delete()
@@ -1299,10 +1291,10 @@ def restore_database(request):
             Car.objects.create(**row)
         for row in backup.get("company_car_rates", []):
             CompanyCarRate.objects.create(**row)
-        for row in backup.get("duty_slips", []):
+        for row in backup.get("invoices", []):
+            Invoice.objects.create(**row)
+        for row in backup.get("trips", []):
             DutySlip.objects.create(**row)
-        for row in backup.get("entries", []):
-            DutySlipEntry.objects.create(**row)
         for row in backup.get("business_settings", []):
             row.pop("logo", None)
             BusinessSettings.objects.create(**row)
@@ -1313,8 +1305,8 @@ def restore_database(request):
                 "summary": {
                     "companies": len(backup.get("companies", [])),
                     "cars": len(backup.get("cars", [])),
-                    "duty_slips": len(backup.get("duty_slips", [])),
-                    "entries": len(backup.get("entries", [])),
+                    "invoices": len(backup.get("invoices", [])),
+                    "trips": len(backup.get("trips", [])),
                 },
             }
         )
@@ -1390,7 +1382,6 @@ def restore_from_github(request):
     except Exception:
         return Response({"error": "Invalid backup file."}, status=400)
 
-    # ── call restore logic directly (no fake request) ──────────
     return _do_restore(backup)
 
 
@@ -1400,8 +1391,8 @@ def _do_restore(backup):
         return Response({"error": "Incompatible backup version."}, status=400)
 
     try:
-        DutySlipEntry.objects.all().delete()
         DutySlip.objects.all().delete()
+        Invoice.objects.all().delete()
         CompanyCarRate.objects.all().delete()
         Company.objects.all().delete()
         Car.objects.all().delete()
@@ -1413,10 +1404,10 @@ def _do_restore(backup):
             Car.objects.create(**row)
         for row in backup.get("company_car_rates", []):
             CompanyCarRate.objects.create(**row)
-        for row in backup.get("duty_slips", []):
+        for row in backup.get("invoices", []):
+            Invoice.objects.create(**row)
+        for row in backup.get("trips", []):
             DutySlip.objects.create(**row)
-        for row in backup.get("entries", []):
-            DutySlipEntry.objects.create(**row)
 
         settings_rows = backup.get("business_settings", [])
         if settings_rows:
@@ -1435,8 +1426,8 @@ def _do_restore(backup):
             tables = [
                 "api_company",
                 "api_car",
+                "api_invoice",
                 "api_dutyslip",
-                "api_dutyslipentry",
                 "api_companycarrate",
                 "api_businesssettings",
             ]
@@ -1451,8 +1442,8 @@ def _do_restore(backup):
                 "summary": {
                     "companies": len(backup.get("companies", [])),
                     "cars": len(backup.get("cars", [])),
-                    "duty_slips": len(backup.get("duty_slips", [])),
-                    "entries": len(backup.get("entries", [])),
+                    "invoices": len(backup.get("invoices", [])),
+                    "trips": len(backup.get("trips", [])),
                 },
             }
         )
