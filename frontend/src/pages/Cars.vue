@@ -1,17 +1,20 @@
 <template>
-  <div>
+  <div class="page">
     <button
-      class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+      class="back-btn"
       @click="$router.back()"
     >
       ← Back
     </button>
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-xl font-mono font-bold text-white">
-        Cars
-      </h1>
+    <div class="page-header">
+      <div class="page-header__content">
+        <span class="page-header__eyebrow">Cars</span>
+        <h1 class="page-title">
+          Fleet pricing
+        </h1>
+      </div>
       <button
-        class="bg-amber-400 text-gray-950 text-sm font-bold px-4 py-2 rounded hover:bg-amber-300 transition-colors"
+        class="btn-primary"
         @click="openCreate"
       >
         + New Car
@@ -20,184 +23,184 @@
 
     <p
       v-if="loading"
-      class="text-gray-500 text-sm"
+      class="empty-text"
     >
       Loading...
     </p>
 
     <p
       v-else-if="cars.length === 0"
-      class="text-gray-500 text-sm"
+      class="empty-text"
     >
       No cars yet. Add your first one.
     </p>
 
-    <div
+    <section
       v-else
-      class="overflow-x-auto"
+      class="table-card"
     >
-      <table class="w-full text-sm border-collapse">
-        <thead>
-          <tr class="border-b border-gray-800 text-gray-400 text-left">
-            <th class="py-3 pr-6 font-mono font-normal">
-              Name
-            </th>
-            <th class="py-3 pr-6 font-mono font-normal">
-              Base Rate
-            </th>
-            <th class="py-3 pr-6 font-mono font-normal">
-              Extra KM Rate
-            </th>
-            <th class="py-3 pr-6 font-mono font-normal">
-              Extra Hr Rate
-            </th>
-            <th class="py-3 pr-6 font-mono font-normal">
-              Outstation Rate
-            </th>
-
-            <th class="py-3 font-mono font-normal" />
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="car in cars"
-            :key="car.id"
-            class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors"
-          >
-            <td class="py-3 pr-6 text-white font-medium">
-              {{ car.name }}
-            </td>
-            <td class="py-3 pr-6 font-mono text-amber-400">
-              {{ currencySymbol }}{{ car.base_rate }}
-            </td>
-            <td class="py-3 pr-6 font-mono text-gray-300">
-              {{ currencySymbol }}{{ car.extra_km_rate }}/km
-            </td>
-            <td class="py-3 pr-6 font-mono text-gray-300">
-              {{ currencySymbol }}{{ car.extra_hr_rate }}/hr
-            </td>
-            <td class="py-3 pr-6 font-mono text-gray-300">
-              {{ currencySymbol }}{{ car.outstation_rate }}/km
-            </td>
-            <td class="py-3 flex items-center gap-4">
-              <button
-                class="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                @click="openEdit(car)"
-              >
-                Edit
-              </button>
-              <button
-                class="text-xs text-red-500 hover:text-red-400 transition-colors"
-                @click="deleteCar(car)"
-              >
-                Delete
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <div class="table-shell">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>
+                Name
+              </th>
+              <th>
+                Base Rate
+              </th>
+              <th>
+                Extra KM Rate
+              </th>
+              <th>
+                Extra Hr Rate
+              </th>
+              <th>
+                Outstation Rate
+              </th>
+              <th class="data-table__actions" />
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="car in cars"
+              :key="car.id"
+            >
+              <td>
+                {{ car.name }}
+              </td>
+              <td class="data-table__numeric data-table__accent">
+                {{ currencySymbol }}{{ car.base_rate }}
+              </td>
+              <td class="data-table__numeric data-table__muted">
+                {{ currencySymbol }}{{ car.extra_km_rate }}/km
+              </td>
+              <td class="data-table__numeric data-table__muted">
+                {{ currencySymbol }}{{ car.extra_hr_rate }}/hr
+              </td>
+              <td class="data-table__numeric data-table__muted">
+                {{ currencySymbol }}{{ car.outstation_rate }}/km
+              </td>
+              <td class="data-table__actions">
+                <div class="data-table__actions-group">
+                  <button
+                    class="clear-filters"
+                    @click="openEdit(car)"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    class="btn-delete"
+                    @click="deleteCar(car)"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <!-- Modal -->
     <div
       v-if="showModal"
-      class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
+      class="modal-overlay"
       @click.self="closeModal"
     >
-      <div class="bg-gray-900 border border-gray-800 rounded-lg w-full max-w-md">
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-          <h2 class="text-sm font-mono font-bold text-white uppercase tracking-wider">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">
             {{ editingCar ? 'Edit Car' : 'New Car' }}
           </h2>
           <button
-            class="text-gray-500 hover:text-white transition-colors text-xl leading-none"
+            class="btn-cancel text-xl leading-none"
             @click="closeModal"
           >
             ×
           </button>
         </div>
 
-        <!-- Form -->
         <form
-          class="px-6 py-5 space-y-4"
+          class="modal-body form"
           @submit.prevent="submit"
         >
-          <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Car Name</label>
+          <div class="field">
+            <label class="label">Car Name</label>
             <input
               v-model="form.name"
               type="text"
               required
               placeholder="e.g. Ute, Camry, HiAce"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+              class="field-control"
             >
           </div>
 
-          <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Base Rate ({{ currencySymbol }})</label>
+          <div class="field">
+            <label class="label">Base Rate ({{ currencySymbol }})</label>
             <input
               v-model="form.base_rate"
               type="number"
               step="0.01"
               required
               placeholder="e.g. 100.00"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+              class="field-control"
             >
           </div>
 
-          <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Extra KM Rate ({{ currencySymbol }} per km over 80)</label>
+          <div class="field">
+            <label class="label">Extra KM Rate ({{ currencySymbol }} per km over 80)</label>
             <input
               v-model="form.extra_km_rate"
               type="number"
               step="0.01"
               required
               placeholder="e.g. 1.20"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+              class="field-control"
             >
           </div>
 
-          <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Extra Hour Rate ({{ currencySymbol }} per hr over 8)</label>
+          <div class="field">
+            <label class="label">Extra Hour Rate ({{ currencySymbol }} per hr over 8)</label>
             <input
               v-model="form.extra_hr_rate"
               type="number"
               step="0.01"
               required
               placeholder="e.g. 12.00"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+              class="field-control"
             >
           </div>
-          <div>
-            <label class="block text-xs text-gray-400 font-mono mb-1">Outstation Rate ({{ currencySymbol }} per km)</label>
+          <div class="field">
+            <label class="label">Outstation Rate ({{ currencySymbol }} per km)</label>
             <input
               v-model="form.outstation_rate"
               type="number"
               step="0.01"
               placeholder="e.g. 2.00"
-              class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+              class="field-control"
             >
           </div>
 
           <p
             v-if="error"
-            class="text-red-400 text-sm"
+            class="error"
           >
             {{ error }}
           </p>
 
-          <div class="flex gap-3 pt-2">
+          <div class="actions">
             <button
               type="submit"
               :disabled="submitting"
-              class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50"
+              class="btn-primary"
             >
               {{ submitting ? 'Saving...' : editingCar ? 'Save Changes' : 'Create Car' }}
             </button>
             <button
               type="button"
-              class="text-sm text-gray-400 hover:text-white px-4 py-2 transition-colors"
+              class="btn-cancel px-2 py-2"
               @click="closeModal"
             >
               Cancel

@@ -1,22 +1,30 @@
 <template>
-  <div class="max-w-2xl">
+  <div class="page container">
     <button
-      class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+      class="back-btn"
       @click="$router.back()"
     >
       ← Back
     </button>
-    <h1 class="text-xl font-mono font-bold text-white mb-6">
-      New Entry
-    </h1>
+    <div class="page-header">
+      <div class="page-header__content">
+        <span class="page-header__eyebrow">Entries</span>
+        <h1 class="page-title">
+          Create a new entry
+        </h1>
+        <p class="page-header__subtitle">
+          Add a trip row without changing pricing, routing, or assignment logic.
+        </p>
+      </div>
+    </div>
 
     <form
-      class="space-y-5"
+      class="section-card form"
       @submit.prevent="submit"
     >
       <!-- Party Name -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Party Name</label>
+      <div class="field">
+        <label class="label">Party Name</label>
         <AutocompleteInput
           v-model="form.party_name"
           :suggestions="partyNames"
@@ -25,18 +33,18 @@
         />
         <p
           v-if="partyNames.length > 0"
-          class="text-xs text-gray-600 font-mono mt-1"
+          class="upload-hint"
         >
           {{ partyNames.length }} saved name(s) for this company
         </p>
       </div>
       <!-- Company -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Company</label>
+      <div class="field">
+        <label class="label">Company</label>
         <select
           v-model="form.company"
           required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+          class="field-control"
         >
           <option
             value=""
@@ -55,36 +63,32 @@
       </div>
 
       <!-- Date -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Date</label>
+      <div class="field">
+        <label class="label">Date</label>
         <input
           v-model="form.date"
           type="date"
           required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+          class="field-control"
         >
       </div>
 
       <!-- Entry Type -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Entry Type</label>
-        <div class="flex gap-2">
+      <div class="field">
+        <label class="label">Entry Type</label>
+        <div class="toggle-group">
           <button
             type="button"
-            class="flex-1 py-2 text-xs font-mono rounded border transition-colors"
-            :class="form.entry_type === 'regular'
-              ? 'bg-amber-400 border-amber-400 text-gray-950 font-bold'
-              : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'"
+            class="toggle-btn"
+            :class="{ 'toggle-btn--regular': form.entry_type === 'regular' }"
             @click="form.entry_type = 'regular'"
           >
             Regular
           </button>
           <button
             type="button"
-            class="flex-1 py-2 text-xs font-mono rounded border transition-colors"
-            :class="form.entry_type === 'outstation'
-              ? 'bg-blue-500 border-blue-500 text-white font-bold'
-              : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500'"
+            class="toggle-btn"
+            :class="{ 'toggle-btn--outstation': form.entry_type === 'outstation' }"
             @click="form.entry_type = 'outstation'"
           >
             Outstation
@@ -93,12 +97,12 @@
       </div>
 
       <!-- Car -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Car</label>
+      <div class="field">
+        <label class="label">Car</label>
         <select
           v-model="form.car"
           required
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+          class="field-control"
         >
           <option
             value=""
@@ -118,11 +122,10 @@
         <!-- Regular rate override indicator -->
         <div
           v-if="rateOverride && form.entry_type === 'regular'"
-          class="mt-2 flex items-start gap-2 bg-amber-400/10 border border-amber-400/30 rounded px-3 py-2"
+          class="summary-card mt-2"
         >
-          <span class="text-amber-400 text-xs mt-0.5">⚡</span>
-          <div class="text-xs font-mono text-amber-300 space-y-0.5">
-            <p class="font-bold text-amber-400">
+          <div class="space-y-1 text-sm text-amber-200">
+            <p class="font-semibold text-amber-300">
               Custom rates applied for this company
             </p>
             <p v-if="rateOverride.base_rate">
@@ -140,11 +143,10 @@
         <!-- Outstation rate override indicator -->
         <div
           v-if="rateOverride?.outstation_rate && form.entry_type === 'outstation'"
-          class="mt-2 flex items-start gap-2 bg-blue-400/10 border border-blue-400/30 rounded px-3 py-2"
+          class="summary-card mt-2"
         >
-          <span class="text-blue-400 text-xs mt-0.5">⚡</span>
-          <div class="text-xs font-mono text-blue-300">
-            <p class="font-bold text-blue-400">
+          <div class="text-sm text-blue-200">
+            <p class="font-semibold text-blue-300">
               Custom outstation rate applied
             </p>
             <p>{{ currencySymbol }}{{ rateOverride.outstation_rate }}/km</p>
@@ -154,24 +156,24 @@
 
       <!-- KMs -->
       <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs text-gray-400 font-mono mb-1">Start KMs</label>
+        <div class="field">
+          <label class="label">Start KMs</label>
           <input
             v-model="form.start_kms"
             type="number"
             step="0.01"
             required
-            class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+            class="field-control"
           >
         </div>
-        <div>
-          <label class="block text-xs text-gray-400 font-mono mb-1">End KMs</label>
+        <div class="field">
+          <label class="label">End KMs</label>
           <input
             v-model="form.end_kms"
             type="number"
             step="0.01"
             required
-            class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+            class="field-control"
           >
         </div>
       </div>
@@ -181,56 +183,56 @@
         v-if="form.entry_type === 'regular'"
         class="grid grid-cols-2 gap-4"
       >
-        <div>
-          <label class="block text-xs text-gray-400 font-mono mb-1">Start Time</label>
+        <div class="field">
+          <label class="label">Start Time</label>
           <input
             v-model="form.start_time"
             type="time"
             :required="form.entry_type === 'regular'"
-            class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+            class="field-control"
           >
         </div>
-        <div>
-          <label class="block text-xs text-gray-400 font-mono mb-1">End Time</label>
+        <div class="field">
+          <label class="label">End Time</label>
           <input
             v-model="form.end_time"
             type="time"
             :required="form.entry_type === 'regular'"
-            class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+            class="field-control"
           >
         </div>
       </div>
 
       <!-- Charges -->
       <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs text-gray-400 font-mono mb-1">Driver Bhatta ({{ currencySymbol }})</label>
+        <div class="field">
+          <label class="label">Driver Bhatta ({{ currencySymbol }})</label>
           <input
             v-model="form.driver_bhatta"
             type="number"
             step="0.01"
-            class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+            class="field-control"
           >
         </div>
-        <div>
-          <label class="block text-xs text-gray-400 font-mono mb-1">Parking ({{ currencySymbol }})</label>
+        <div class="field">
+          <label class="label">Parking ({{ currencySymbol }})</label>
           <input
             v-model="form.parking"
             type="number"
             step="0.01"
-            class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+            class="field-control"
           >
         </div>
       </div>
 
       <!-- Optional Duty Slip assignment -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">
-          Assign to Duty Slip <span class="text-gray-600">(optional)</span>
+      <div class="field">
+        <label class="label">
+          Assign to Duty Slip <span class="label-hint">(optional)</span>
         </label>
         <select
           v-model="form.duty_slip"
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+          class="field-control"
         >
           <option value="">
             None — save as standalone
@@ -246,35 +248,35 @@
       </div>
 
       <!-- Notes -->
-      <div>
-        <label class="block text-xs text-gray-400 font-mono mb-1">Notes (optional)</label>
+      <div class="field">
+        <label class="label">Notes (optional)</label>
         <textarea
           v-model="form.notes"
           rows="2"
-          class="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+          class="field-control textarea"
         />
       </div>
 
       <!-- Error -->
       <p
         v-if="error"
-        class="text-red-400 text-sm"
+        class="error"
       >
         {{ error }}
       </p>
 
       <!-- Submit -->
-      <div class="flex gap-3">
+      <div class="actions">
         <button
           type="submit"
           :disabled="submitting"
-          class="bg-amber-400 text-gray-950 text-sm font-bold px-6 py-2 rounded hover:bg-amber-300 transition-colors disabled:opacity-50"
+          class="btn-primary"
         >
           {{ submitting ? 'Saving...' : 'Save Entry' }}
         </button>
         <router-link
           to="/"
-          class="text-sm text-gray-400 hover:text-white px-4 py-2 transition-colors"
+          class="btn-cancel px-2 py-2"
         >
           Cancel
         </router-link>

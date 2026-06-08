@@ -6,7 +6,7 @@
       :required="required"
       :readonly="readonly"
       :placeholder="placeholder"
-      class="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400 read-only:opacity-60"
+      class="autocomplete-input"
       :class="inputClass"
       autocomplete="off"
       @input="onInput"
@@ -21,13 +21,13 @@
     <!-- Suggestions dropdown -->
     <ul
       v-if="showSuggestions && filtered.length > 0"
-      class="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded shadow-lg max-h-48 overflow-y-auto"
+      class="absolute z-50 w-full mt-2 overflow-y-auto rounded-[14px] border border-[var(--border-subtle)] bg-[var(--surface-solid-strong)] shadow-[var(--shadow-glass)] max-h-48"
     >
       <li
         v-for="(suggestion, index) in filtered"
         :key="suggestion"
-        class="px-3 py-2 text-sm text-gray-300 cursor-pointer transition-colors"
-        :class="index === highlighted ? 'bg-amber-400/20 text-white' : 'hover:bg-gray-700'"
+        class="cursor-pointer px-3 py-2 text-sm text-[var(--text-secondary)] transition-colors"
+        :class="index === highlighted ? 'bg-white/8 text-white' : 'hover:bg-white/5'"
         @mousedown.prevent="select(suggestion)"
       >
         {{ suggestion }}
@@ -37,7 +37,7 @@
     <!-- No suggestions hint -->
     <p
       v-if="showSuggestions && inputValue && filtered.length === 0 && suggestions.length > 0"
-      class="absolute z-50 w-full mt-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-xs text-gray-600 font-mono"
+      class="absolute z-50 w-full mt-2 rounded-[14px] border border-[var(--border-subtle)] bg-[var(--surface-solid-strong)] px-3 py-2 text-xs text-[var(--text-muted)]"
     >
       No matches — new party name will be created
     </p>

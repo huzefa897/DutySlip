@@ -1,6 +1,6 @@
 <template>
   <span
-    class="text-xs font-mono px-2 py-1 rounded"
+    class="status-badge"
     :class="styles[status] || styles.unpaid"
   >
     {{ labels[status] || labels.unpaid }}
@@ -12,7 +12,7 @@ defineProps({ status: String })
 
 const labels = { unpaid: 'Unpaid', paid: 'Paid' }
 const styles = {
-  unpaid: 'bg-amber-900/50 text-amber-300',
-  paid:   'bg-green-900 text-green-400',
+  unpaid: 'status-badge--unpaid',
+  paid: 'status-badge--paid',
 }
 </script>

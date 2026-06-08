@@ -1,25 +1,29 @@
 <template>
-  <div v-if="slip">
-    <!-- ── SCREEN VIEW ─────────────────────────────────────────────── -->
-    <div class="no-print">
+  <div
+    v-if="slip"
+    class="page"
+  >
+    <div class="no-print page">
       <button
-        class="text-xs text-gray-500 hover:text-white font-mono transition-colors mb-4 flex items-center gap-1"
+        class="back-btn"
         @click="$router.back()"
       >
         ← Back
       </button>
-      <!-- Header -->
-      <div class="flex items-start justify-between mb-8">
-        <div>
-          <h1 class="text-xl font-mono font-bold text-white">
+      <div class="page-header">
+        <div class="page-header__content">
+          <span class="page-header__eyebrow">Invoice {{ formatSlipId(slip.id) }}</span>
+          <h1 class="page-title">
             {{ slip.party_name }}
           </h1>
-
-          <div class="flex items-center gap-3 mt-2">
+          <p class="page-header__subtitle">
+            {{ slip.company_name }} · Created {{ slip.created_at?.slice(0, 10) }}
+          </p>
+          <div class="slip-meta-row">
             <StatusBadge :status="slip.status" />
             <select
               :value="slip.status"
-              class="bg-gray-800 border border-gray-700 text-gray-300 text-xs font-mono px-2 py-1 rounded focus:outline-none focus:border-amber-400"
+              class="field-control px-3 py-2 text-xs"
               @change="updateStatus($event.target.value)"
             >
               <option value="draft">
@@ -32,7 +36,7 @@
             <PaymentStatusBadge :status="slip.payment_status" />
             <select
               :value="slip.payment_status"
-              class="bg-gray-800 border border-gray-700 text-gray-300 text-xs font-mono px-2 py-1 rounded focus:outline-none focus:border-amber-400"
+              class="field-control px-3 py-2 text-xs"
               @change="updatePaymentStatus($event.target.value)"
             >
               <option value="unpaid">
@@ -43,50 +47,72 @@
               </option>
             </select>
           </div>
-          <p class="text-gray-500 text-sm font-mono mt-1">
-            {{ slip.company_name }} · Created {{ slip.created_at?.slice(0, 10) }}
-          </p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="quick-actions-row">
           <a
             :href="`${apiUrl}/dutyslips/${slip.id}/pdf/`"
             target="_blank"
             download
-            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+            class="btn-secondary"
           >
-            ⬇ Download PDF
+            Download PDF
           </a>
           <button
-            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono"
+            class="btn-secondary"
             @click="printInvoice"
           >
-            🖨 Print Invoice
+            Print Invoice
           </button>
           <button
-            class="bg-red-900/50 border border-red-800 text-red-400 text-sm px-4 py-2 rounded hover:bg-red-900 transition-colors font-mono"
+            v-if="slip.payment_status !== 'paid'"
+            class="btn-primary"
+            @click="updatePaymentStatus('paid')"
+          >
+            Mark Paid
+          </button>
+          <button
+            class="btn-danger"
             @click="deleteSlip"
           >
-            🗑 Delete
+            Delete
           </button>
-          <div class="text-right">
-            <p class="text-xs text-gray-500 font-mono mb-1">
-              Grand Total
-            </p>
-            <p class="text-2xl font-mono font-bold text-amber-400">
-              {{ currencySymbol }}{{ slip.grand_total }}
-            </p>
-          </div>
         </div>
       </div>
 
-      <!-- Assigned Entries Table -->
-      <div class="mb-8">
+      <div class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-card__label">
+            Total
+          </p>
+          <p class="summary-card__value summary-card__value--accent">
+            {{ currencySymbol }}{{ slip.grand_total }}
+          </p>
+        </div>
+        <div class="summary-card">
+          <p class="summary-card__label">
+            Status
+          </p>
+          <div class="mt-3">
+            <StatusBadge :status="slip.status" />
+          </div>
+        </div>
+        <div class="summary-card">
+          <p class="summary-card__label">
+            Created Date
+          </p>
+          <p class="summary-card__value">
+            {{ slip.created_at?.slice(0, 10) }}
+          </p>
+        </div>
+      </div>
+
+      <section class="page">
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-mono text-gray-400 uppercase tracking-wider">
-            Entries
+          <h2 class="section-label">
+            Invoice Items
           </h2>
           <button
-            class="bg-amber-400 text-gray-950 text-xs font-bold px-3 py-1.5 rounded hover:bg-amber-300 transition-colors"
+            class="btn-primary"
             @click="showModal = true"
           >
             + Add Entry
@@ -95,129 +121,146 @@
 
         <p
           v-if="slip.entries?.length === 0"
-          class="text-gray-600 text-sm"
+          class="empty-text"
         >
           No entries yet — add one above.
         </p>
 
-        <div
+        <section
           v-else
-          class="overflow-x-auto"
+          class="table-card"
         >
-          <table class="invoice-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Car</th>
-                <th>Start KMs</th>
-                <th>End KMs</th>
-                <th>Total KMs</th>
-                <th>Rate</th>
-                <th>KM Cost</th>
-                <th>Start Time</th>
-                <th>End Time</th>
-                <th>Extra Hrs</th>
-                <th>Extra Hrs Cost</th>
-                <th>Base Rate</th>
-                <th>Bhatta</th>
-                <th>Parking</th>
-                <th>Row Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="entry in slip.entries"
-                :key="entry.id"
-              >
-                <td>{{ entry.date }}</td>
-                <td>{{ entry.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}</td>
-                <td>{{ entry.car_name }}</td>
-                <td>{{ entry.start_kms }}</td>
-                <td>{{ entry.end_kms }}</td>
-                <td>{{ entry.total_kms }}</td>
-                <!-- Rate column -->
-                <td>
-                  <span v-if="entry.entry_type === 'outstation'">
-                    {{ currencySymbol }}{{ entry.outstation_rate }}/km
-                  </span>
-                  <span v-else>—</span>
-                </td>
-                <!-- KM Cost -->
-                <td>
-                  <span v-if="entry.entry_type === 'outstation'">
-                    {{ currencySymbol }}{{ entry.extra_kms_amount }}
-                  </span>
-                  <span v-else>
-                    {{ currencySymbol }}{{ entry.extra_kms_amount }}
-                  </span>
-                </td>
-                <!-- Time columns — empty for outstation -->
-                <td>{{ entry.entry_type === 'outstation' ? '—' : entry.start_time }}</td>
-                <td>{{ entry.entry_type === 'outstation' ? '—' : entry.end_time }}</td>
-                <td>{{ entry.entry_type === 'outstation' ? '—' : entry.extra_hrs }}</td>
-                <td>{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${entry.extra_hrs_amount}` }}</td>
-                <!-- Base rate — not applicable for outstation -->
-                <td>{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${getBaseRate(entry.car)}` }}</td>
-                <td>{{ currencySymbol }}{{ entry.driver_bhatta }}</td>
-                <td>{{ currencySymbol }}{{ entry.parking }}</td>
-                <td>{{ currencySymbol }}{{ entry.row_total }}</td>
-              </tr>
-            </tbody>
-            <tfoot>
-              <tr>
-                <td
-                  colspan="15"
-                  class="grand-total-label"
+          <div class="table-shell">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Car</th>
+                  <th>Start KMs</th>
+                  <th>End KMs</th>
+                  <th>Total KMs</th>
+                  <th>Rate</th>
+                  <th>KM Cost</th>
+                  <th>Start Time</th>
+                  <th>End Time</th>
+                  <th>Extra Hrs</th>
+                  <th>Extra Hrs Cost</th>
+                  <th>Base Rate</th>
+                  <th>Bhatta</th>
+                  <th>Parking</th>
+                  <th>Row Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="entry in slip.entries"
+                  :key="entry.id"
                 >
-                  GRAND TOTAL
-                </td>
-                <td class="grand-total-value">
-                  {{ currencySymbol }}{{ slip.grand_total }}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ entry.date }}
+                  </td>
+                  <td>{{ entry.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}</td>
+                  <td class="data-table__muted">
+                    {{ entry.car_name }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ entry.start_kms }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ entry.end_kms }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ entry.total_kms }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    <span v-if="entry.entry_type === 'outstation'">
+                      {{ currencySymbol }}{{ entry.outstation_rate }}/km
+                    </span>
+                    <span v-else>—</span>
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ currencySymbol }}{{ entry.extra_kms_amount }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ entry.entry_type === 'outstation' ? '—' : entry.start_time }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ entry.entry_type === 'outstation' ? '—' : entry.end_time }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ entry.entry_type === 'outstation' ? '—' : entry.extra_hrs }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${entry.extra_hrs_amount}` }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${getBaseRate(entry.car)}` }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ currencySymbol }}{{ entry.driver_bhatta }}
+                  </td>
+                  <td class="data-table__numeric data-table__muted">
+                    {{ currencySymbol }}{{ entry.parking }}
+                  </td>
+                  <td class="data-table__numeric data-table__accent">
+                    {{ currencySymbol }}{{ entry.row_total }}
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td
+                    colspan="15"
+                    class="data-table__actions"
+                  >
+                    GRAND TOTAL
+                  </td>
+                  <td class="data-table__numeric data-table__accent">
+                    {{ currencySymbol }}{{ slip.grand_total }}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+      </section>
 
-      <!-- Bulk Assign Unassigned Entries -->
-      <div
+      <section
         v-if="unassigned.length > 0"
-        class="border-t border-gray-800 pt-6"
+        class="section-card"
       >
         <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-mono text-gray-400 uppercase tracking-wider">
+          <h2 class="section-label">
             Unassigned Entries for {{ slip.party_name }}
           </h2>
           <button
             :disabled="selected.length === 0"
-            class="bg-gray-700 text-white text-xs font-bold px-3 py-1.5 rounded hover:bg-gray-600 transition-colors disabled:opacity-30"
+            class="btn-secondary"
             @click="bulkAssign"
           >
             Assign Selected ({{ selected.length }})
           </button>
         </div>
-        <div class="space-y-2">
+        <div class="selection-list">
           <label
             v-for="entry in unassigned"
             :key="entry.id"
-            class="flex items-center gap-3 bg-gray-900 border border-gray-800 rounded px-4 py-3 cursor-pointer hover:border-gray-600 transition-colors"
+            class="selection-item"
           >
             <input
               v-model="selected"
               type="checkbox"
               :value="entry.id"
-              class="accent-amber-400"
+              class="accent-[var(--accent-blue)]"
             >
-            <span class="font-mono text-sm text-gray-300">
+            <span class="data-table__muted">
               {{ entry.date }} · {{ entry.car_name }} · {{ currencySymbol }}{{ entry.row_total }}
             </span>
           </label>
         </div>
-      </div>
+      </section>
     </div>
-    <!-- ── END SCREEN VIEW ─────────────────────────────────────────── -->
 
 
     <!-- ── PRINT / INVOICE VIEW ───────────────────────────────────── -->

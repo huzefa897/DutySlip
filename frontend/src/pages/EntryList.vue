@@ -1,264 +1,257 @@
 <template>
-  <div>
+  <div class="page">
     <div class="no-print">
-      <div class="flex items-center justify-between mb-6">
-        <h1 class="text-xl font-mono font-bold text-white">
-          Entries
-        </h1>
-        <div class="flex items-center gap-3">
+      <div class="page-header">
+        <div class="page-header__content">
+          <span class="page-header__eyebrow">Entries</span>
+          <h1 class="page-title">
+            Trip and invoice entries
+          </h1>
+          <p class="page-header__subtitle">
+            Manage all trip rows before assigning them to invoices.
+          </p>
+        </div>
+        <div class="quick-actions-row">
           <button
             type="button"
-            class="bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2 rounded hover:bg-gray-700 transition-colors font-mono disabled:opacity-40"
+            class="btn-secondary"
             :disabled="entriesToPrint.length === 0"
             @click="printEntries"
           >
-            🖨 Print {{ selectedEntryIds.length ? `Selected (${selectedEntryIds.length})` : 'Entries' }}
+            Print {{ selectedEntryIds.length ? `Selected (${selectedEntryIds.length})` : 'Entries' }}
           </button>
           <router-link
             to="/entries/create"
-            class="bg-amber-400 text-gray-950 text-sm font-bold px-4 py-2 rounded hover:bg-amber-300 transition-colors"
+            class="btn-primary"
           >
             + New Entry
           </router-link>
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <input
-          v-model="filters.party_name"
-          type="text"
-          placeholder="Search party name..."
-          class="bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400 font-mono placeholder-gray-600"
-        >
-        <select
-          v-model="filters.company"
-          class="bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
-        >
-          <option value="">
-            All Companies
-          </option>
-          <option
-            v-for="c in companies"
-            :key="c.id"
-            :value="c.id"
-          >
-            {{ c.name }}
-          </option>
-        </select>
-        <select
-          v-model="filters.car"
-          class="bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
-        >
-          <option value="">
-            All Cars
-          </option>
-          <option
-            v-for="c in cars"
-            :key="c.id"
-            :value="c.id"
-          >
-            {{ c.name }}
-          </option>
-        </select>
-        <div class="flex gap-2">
+      <section class="section-card">
+        <div class="filters-grid">
           <input
-            v-model="filters.date_from"
-            type="date"
-            class="w-full bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+            v-model="filters.party_name"
+            type="text"
+            placeholder="Search party name..."
+            class="input"
           >
-          <input
-            v-model="filters.date_to"
-            type="date"
-            class="w-full bg-gray-900 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-400"
+          <select
+            v-model="filters.company"
+            class="input"
           >
+            <option value="">
+              All Companies
+            </option>
+            <option
+              v-for="c in companies"
+              :key="c.id"
+              :value="c.id"
+            >
+              {{ c.name }}
+            </option>
+          </select>
+          <select
+            v-model="filters.car"
+            class="input"
+          >
+            <option value="">
+              All Cars
+            </option>
+            <option
+              v-for="c in cars"
+              :key="c.id"
+              :value="c.id"
+            >
+              {{ c.name }}
+            </option>
+          </select>
+          <div class="quick-actions-row">
+            <input
+              v-model="filters.date_from"
+              type="date"
+              class="input"
+            >
+            <input
+              v-model="filters.date_to"
+              type="date"
+              class="input"
+            >
+          </div>
         </div>
-      </div>
 
-      <!-- Filter summary -->
-      <div class="flex items-center justify-between mb-4">
-        <p class="text-xs font-mono text-gray-500">
-          Showing {{ filteredEntries.length }} of {{ entries.length }} entries
-          <span v-if="selectedEntryIds.length">
-            · {{ selectedEntryIds.length }} selected
-          </span>
-        </p>
-        <div class="flex items-center gap-4">
-          <button
-            v-if="selectedEntryIds.length"
-            class="text-xs font-mono text-gray-400 hover:text-white transition-colors"
-            @click="clearSelection"
-          >
-            Clear selection ×
-          </button>
-          <button
-            v-if="isFiltered"
-            class="text-xs font-mono text-amber-400 hover:text-amber-300 transition-colors"
-            @click="clearFilters"
-          >
-            Clear filters ×
-          </button>
+        <div class="filter-summary">
+          <p class="filter-count">
+            Showing {{ filteredEntries.length }} of {{ entries.length }} entries
+            <span v-if="selectedEntryIds.length">
+              · {{ selectedEntryIds.length }} selected
+            </span>
+          </p>
+          <div class="quick-actions-row">
+            <button
+              v-if="selectedEntryIds.length"
+              class="clear-filters"
+              @click="clearSelection"
+            >
+              Clear selection
+            </button>
+            <button
+              v-if="isFiltered"
+              class="clear-filters"
+              @click="clearFilters"
+            >
+              Clear filters
+            </button>
+          </div>
         </div>
-      </div>
+      </section>
 
       <p
         v-if="loading"
-        class="text-gray-500 text-sm"
+        class="empty-text"
       >
         Loading...
       </p>
 
       <p
         v-else-if="filteredEntries.length === 0"
-        class="text-gray-500 text-sm"
+        class="empty-text"
       >
         No entries match your filters.
       </p>
 
-      <div
+      <section
         v-else
-        class="overflow-x-auto"
+        class="table-card"
       >
-        <table class="w-full text-sm border-collapse">
-          <thead>
-            <tr class="border-b border-gray-800 text-gray-400 text-left">
-              <th class="py-3 pr-4 font-mono font-normal">
-                <input
-                  type="checkbox"
-                  class="accent-amber-400"
-                  :checked="allVisibleSelected"
-                  :disabled="paginatedEntries.length === 0"
-                  @change="toggleVisibleEntries($event.target.checked)"
-                >
-              </th>
-              <th class="py-3 pr-4 font-mono font-normal">
-                Date
-              </th>
-              <th class="py-3 pr-4 font-mono font-normal">
-                Party
-              </th>
-              <th class="py-3 pr-4 font-mono font-normal">
-                Company
-              </th>
-              <th class="py-3 pr-4 font-mono font-normal">
-                Car
-              </th>
-              <th class="py-3 pr-4 font-mono font-normal">
-                KMs
-              </th>
-              <th class="py-3 pr-4 font-mono font-normal">
-                Extra Hrs
-              </th>
-              <th class="py-3 pr-4 font-mono font-normal">
-                Row Total
-              </th>
-              <th class="py-3 pr-4 font-mono font-normal">
-                Duty Slip
-              </th>
-              <th class="py-3 font-mono font-normal" />
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="entry in paginatedEntries"
-              :key="entry.id"
-              class="border-b border-gray-800/50 hover:bg-gray-900 transition-colors"
-            >
-              <td class="py-3 pr-4">
-                <input
-                  v-model="selectedEntryIds"
-                  type="checkbox"
-                  class="accent-amber-400"
-                  :value="entry.id"
-                >
-              </td>
-              <td class="py-3 pr-4 font-mono text-gray-300">
-                {{ entry.date }}
-              </td>
-              <td class="py-3 pr-4 text-white">
-                {{ entry.party_name }}
-              </td>
-              <td class="py-3 pr-4 text-gray-300">
-                {{ entry.company_name }}
-              </td>
-              <td class="py-3 pr-4 text-gray-300">
-                {{ entry.car_name }}
-              </td>
-              <td class="py-3 pr-4 font-mono text-gray-300">
-                {{ entry.total_kms }}
-              </td>
-              <td class="py-3 pr-4 font-mono text-gray-300">
-                {{ entry.extra_hrs }}h extra
-              </td>
-              <td class="py-3 pr-4 font-mono text-amber-400">
-                {{ currencySymbol }}{{ entry.row_total }}
-              </td>
-              <td class="py-3 pr-4">
-                <span
-                  v-if="entry.duty_slip"
-                  class="text-xs bg-green-900 text-green-400 px-2 py-1 rounded font-mono"
-                >
-                  {{ formatSlipId(entry.duty_slip) }}
-                </span>
-                <span
-                  v-else
-                  class="text-xs text-gray-600 font-mono"
-                >unassigned</span>
-              </td>
-              <td class="py-3 flex items-center gap-3">
-                <button
-                  class="text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                  @click="editingEntry = entry; showModal = true"
-                >
-                  Edit
-                </button>
-                <button
-                  class="text-xs text-red-500 hover:text-red-400 transition-colors"
-                  @click="deleteEntry(entry.id)"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <!-- Pagination -->
+        <div class="table-shell">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>
+                  <input
+                    type="checkbox"
+                    class="accent-[var(--accent-blue)]"
+                    :checked="allVisibleSelected"
+                    :disabled="paginatedEntries.length === 0"
+                    @change="toggleVisibleEntries($event.target.checked)"
+                  >
+                </th>
+                <th>Date</th>
+                <th>Party</th>
+                <th>Company</th>
+                <th>Car</th>
+                <th>KMs</th>
+                <th>Extra Hrs</th>
+                <th>Row Total</th>
+                <th>Duty Slip</th>
+                <th class="data-table__actions">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="entry in paginatedEntries"
+                :key="entry.id"
+              >
+                <td>
+                  <input
+                    v-model="selectedEntryIds"
+                    type="checkbox"
+                    class="accent-[var(--accent-blue)]"
+                    :value="entry.id"
+                  >
+                </td>
+                <td class="data-table__numeric data-table__muted">
+                  {{ entry.date }}
+                </td>
+                <td>
+                  {{ entry.party_name }}
+                </td>
+                <td class="data-table__muted">
+                  {{ entry.company_name }}
+                </td>
+                <td class="data-table__muted">
+                  {{ entry.car_name }}
+                </td>
+                <td class="data-table__numeric data-table__muted">
+                  {{ entry.total_kms }}
+                </td>
+                <td class="data-table__numeric data-table__muted">
+                  {{ entry.extra_hrs }}h extra
+                </td>
+                <td class="data-table__numeric data-table__accent">
+                  {{ currencySymbol }}{{ entry.row_total }}
+                </td>
+                <td>
+                  <span
+                    v-if="entry.duty_slip"
+                    class="status-badge status-badge--paid"
+                  >
+                    INV-{{ formatSlipId(entry.duty_slip) }}
+                  </span>
+                  <span
+                    v-else
+                    class="status-badge status-badge--draft"
+                  >unassigned</span>
+                </td>
+                <td class="data-table__actions">
+                  <div class="data-table__actions-group">
+                    <button
+                      class="clear-filters"
+                      @click="editingEntry = entry; showModal = true"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      class="btn-delete"
+                      @click="deleteEntry(entry.id)"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <div
           v-if="filteredEntries.length > 0"
-          class="flex items-center justify-center gap-3 flex-wrap mt-6"
+          class="pagination-row p-4"
         >
-          <p class="text-xs font-mono text-gray-500 mr-2">
+          <p class="pagination-info">
             Showing {{ pageStart }}-{{ pageEnd }} of {{ filteredEntries.length }}
           </p>
           <button
-            class="bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 text-xs font-mono px-3 py-2 rounded transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
+            class="btn-page"
             :disabled="!hasPrev"
             @click="prevPage"
           >
             Previous
           </button>
-          <div class="flex gap-1.5">
+          <div class="page-numbers">
             <button
               v-for="page in totalPages"
               :key="page"
-              class="border text-xs font-mono px-3 py-2 rounded transition-colors"
-              :class="page === currentPage
-                ? 'bg-amber-400 border-amber-400 text-gray-950'
-                : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-white hover:border-gray-600'"
+              class="btn-page-number"
+              :class="{ 'btn-page-number--active': page === currentPage }"
               @click="goToPage(page)"
             >
               {{ page }}
             </button>
           </div>
           <button
-            class="bg-gray-900 border border-gray-800 text-gray-400 hover:text-white hover:border-gray-600 text-xs font-mono px-3 py-2 rounded transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
+            class="btn-page"
             :disabled="!hasNext"
             @click="nextPage"
           >
             Next
           </button>
         </div>
-      </div>
+      </section>
     </div>
 
     <div class="print-only entries-print">
