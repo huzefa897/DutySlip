@@ -46,16 +46,19 @@
             <div class="field">
               <label class="label">Party Name</label>
               <AutocompleteInput
-                v-model="form.party_name"
-                :suggestions="partyNames"
-                placeholder="Enter or select party name"
+                v-model="selectedPartyName"
+                :suggestions="partySuggestions"
+                :readonly="!form.company"
+                :allow-add="!!form.company"
+                :placeholder="form.company ? 'Search or add party name...' : 'Select company first...'"
                 required
+                @add="addParty"
               />
               <p
-                v-if="partyNames.length > 0"
+                v-if="form.company && partyOptions.length === 0 && !selectedPartyName"
                 class="upload-hint"
               >
-                {{ partyNames.length }} saved name(s) for this company
+                No parties yet — type a name to add one.
               </p>
             </div>
 
@@ -351,10 +354,13 @@ const companies = ref([])
 const submitting = ref(false)
 const error = ref('')
 const rateOverride = ref(null)
-const partyNames = ref([])
+const partyOptions = ref([])
+const selectedPartyName = ref('')
+const partySuggestions = computed(() => partyOptions.value.map(p => p.name))
 const currentStep = ref(1)
 
 const form = ref({
+  party: '',
   party_name: '',
   company: '',
   date: '',
@@ -370,9 +376,15 @@ const form = ref({
   notes: '',
 })
 
+watch(selectedPartyName, (name) => {
+  const found = partyOptions.value.find(p => p.name === name)
+  form.value.party = found?.id || ''
+  form.value.party_name = name
+})
+
 const canGoNext = computed(() =>
   Boolean(
-    form.value.party_name &&
+    form.value.party &&
     form.value.company &&
     form.value.date &&
     form.value.car &&
@@ -389,16 +401,31 @@ const matchingInvoices = computed(() =>
 watch(
   () => form.value.company,
   async (companyId) => {
-    partyNames.value = []
+    selectedPartyName.value = ''
+    form.value.party = ''
+    form.value.party_name = ''
+    partyOptions.value = []
     if (!companyId) return
     try {
       const res = await api.get(`/companies/${companyId}/parties/`)
-      partyNames.value = res.data
+      partyOptions.value = res.data
     } catch {
-      partyNames.value = []
+      partyOptions.value = []
     }
   }
 )
+
+async function addParty(name) {
+  try {
+    const res = await api.post(`/companies/${form.value.company}/parties/`, { name })
+    partyOptions.value = [...partyOptions.value, res.data].sort((a, b) => a.name.localeCompare(b.name))
+    selectedPartyName.value = res.data.name
+    form.value.party = res.data.id
+    form.value.party_name = res.data.name
+  } catch {
+    notify('Failed to add party.', 'error')
+  }
+}
 watch(
   () => [form.value.company, form.value.car],
   async ([companyId, carId]) => {

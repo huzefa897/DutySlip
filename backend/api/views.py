@@ -22,6 +22,7 @@ from .models import (
     DutySlip,
     BusinessSettings,
     CompanyCarRate,
+    Party,
 )
 from .serializers import (
     CompanySerializer,
@@ -114,15 +115,34 @@ def company_detail(request, pk):
             )
 
 
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 def company_parties(request, company_id):
-    names = (
-        DutySlip.objects.filter(company_id=company_id)
-        .values_list("party_name", flat=True)
-        .distinct()
-        .order_by("party_name")
+    company = get_object_or_404(Company, pk=company_id)
+    if request.method == "GET":
+        parties = Party.objects.filter(company=company)
+        return Response([{"id": p.id, "name": p.name} for p in parties])
+    name = request.data.get("name", "").strip()
+    if not name:
+        return Response({"name": ["This field is required."]}, status=400)
+    party, created = Party.objects.get_or_create(company=company, name=name)
+    return Response(
+        {"id": party.id, "name": party.name}, status=201 if created else 200
     )
-    return Response(list(names))
+
+
+@api_view(["GET", "POST"])
+def company_invoice_parties(request, company_id):
+    company = get_object_or_404(Company, pk=company_id)
+    if request.method == "GET":
+        parties = Party.objects.filter(company=company)
+        return Response([{"id": p.id, "name": p.name} for p in parties])
+    name = request.data.get("name", "").strip()
+    if not name:
+        return Response({"name": ["This field is required."]}, status=400)
+    party, created = Party.objects.get_or_create(company=company, name=name)
+    return Response(
+        {"id": party.id, "name": party.name}, status=201 if created else 200
+    )
 
 
 # ── Company Car Rates ─────────────────────────────────────────
@@ -227,6 +247,8 @@ def trip_list(request):
     serializer = DutySlipSerializer(data=request.data)
     if serializer.is_valid():
         trip = serializer.save()
+        if trip.party:
+            trip.party_name = trip.party.name
         trip = compute_trip(trip)
         trip.save()
         return Response(DutySlipSerializer(trip).data, status=status.HTTP_201_CREATED)
@@ -247,6 +269,8 @@ def trip_detail(request, pk):
         serializer = DutySlipSerializer(trip, data=request.data)
         if serializer.is_valid():
             trip = serializer.save()
+            if trip.party:
+                trip.party_name = trip.party.name
             trip = compute_trip(trip)
             trip.save()
             if trip.invoice:
@@ -272,6 +296,7 @@ def duplicate_trip(request, pk):
     new_trip = DutySlip.objects.create(
         invoice=None,
         company=trip.company,
+        party=trip.party,
         party_name=trip.party_name,
         trip_type=trip.trip_type,
         date=trip.date,
@@ -298,8 +323,11 @@ def invoice_list(request):
 
     serializer = InvoiceSerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        invoice = serializer.save()
+        if invoice.party:
+            invoice.party_name = invoice.party.name
+            invoice.save(update_fields=["party_name"])
+        return Response(InvoiceSerializer(invoice).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

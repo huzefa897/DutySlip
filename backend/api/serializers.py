@@ -51,11 +51,24 @@ class DutySlipSerializer(serializers.ModelSerializer):
 class InvoiceSerializer(serializers.ModelSerializer):
     trips = DutySlipSerializer(many=True, read_only=True)
     company_name = serializers.CharField(source="company.name", read_only=True)
+    party_name = serializers.CharField(read_only=True)
 
     class Meta:
         model = Invoice
-        fields = "__all__"
-        read_only_fields = ["grand_total"]
+        fields = [
+            "id",
+            "company",
+            "company_name",
+            "party",
+            "party_name",
+            "invoice_type",
+            "status",
+            "payment_status",
+            "grand_total",
+            "created_at",
+            "trips",
+        ]
+        read_only_fields = ["grand_total", "created_at", "party_name", "company_name"]
 
 
 class BusinessSettingsSerializer(serializers.ModelSerializer):

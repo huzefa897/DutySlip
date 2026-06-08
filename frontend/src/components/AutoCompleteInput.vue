@@ -34,13 +34,25 @@
       </li>
     </ul>
 
-    <!-- No suggestions hint -->
-    <p
-      v-if="showSuggestions && inputValue && filtered.length === 0 && suggestions.length > 0"
-      class="autocomplete-empty"
+    <!-- No suggestions / add option -->
+    <ul
+      v-else-if="showSuggestions && inputValue && filtered.length === 0"
+      class="autocomplete-menu"
     >
-      No matches — new party name will be created
-    </p>
+      <li
+        v-if="allowAdd && inputValue.trim()"
+        class="autocomplete-menu__item autocomplete-add"
+        @mousedown.prevent="emit('add', inputValue.trim()); close()"
+      >
+        + Add "{{ inputValue }}"
+      </li>
+      <li
+        v-else
+        class="autocomplete-menu__item autocomplete-empty"
+      >
+        No matches
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -54,9 +66,10 @@ const props = defineProps({
   required: { type: Boolean, default: false },
   readonly: { type: Boolean, default: false },
   inputClass: { type: String, default: '' },
+  allowAdd: { type: Boolean, default: false },
 })
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue', 'add'])
 
 const inputValue = ref(props.modelValue || '')
 const isFocused = ref(false)
