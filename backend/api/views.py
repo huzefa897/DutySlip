@@ -1130,6 +1130,7 @@ def download_trips_excel(request):
         party_name = request.query_params.get("party_name", "").strip()
         company = request.query_params.get("company", "").strip()
         car = request.query_params.get("car", "").strip()
+        trip_type = request.query_params.get("trip_type", "").strip()
         date_from = request.query_params.get("date_from", "").strip()
         date_to = request.query_params.get("date_to", "").strip()
 
@@ -1139,6 +1140,8 @@ def download_trips_excel(request):
             qs = qs.filter(company_id=company)
         if car:
             qs = qs.filter(car_id=car)
+        if trip_type:
+            qs = qs.filter(trip_type=trip_type)
         if date_from:
             qs = qs.filter(date__gte=date_from)
         if date_to:
