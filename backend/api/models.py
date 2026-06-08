@@ -176,7 +176,7 @@ class BusinessSettings(models.Model):
     address = models.TextField()
     phone = models.CharField(max_length=50)
     email = models.EmailField()
-    logo = models.ImageField(upload_to="logos/", blank=True, null=True)
+    logo = models.TextField(blank=True, null=True)
     currency = models.CharField(
         max_length=5,
         choices=[("USD", "Dollar ($)"), ("INR", "Rupee (₹)")],

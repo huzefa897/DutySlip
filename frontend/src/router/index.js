@@ -7,6 +7,7 @@ import DutySlipDetail from '../pages/DutySlipDetail.vue'
 import CreateDutySlip from '../pages/CreateDutySlip.vue'
 import Cars from '../pages/Cars.vue'
 import Settings from '../pages/Settings.vue'
+import BackupSettings from '../pages/BackupSettings.vue'
 import Companies from '../pages/Companies.vue'
 
 
@@ -19,6 +20,7 @@ const routes = [
   { path: '/dutyslips/:id',       component: DutySlipDetail },
   { path: '/cars',                component: Cars },
   { path: '/settings',            component: Settings },
+  { path: '/settings/backup',     component: BackupSettings },
   { path: '/companies',           component: Companies },
 ]
 

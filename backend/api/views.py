@@ -14,7 +14,6 @@ import datetime
 import json
 import base64
 import requests as http_requests
-from pathlib import Path
 
 from .models import (
     Company,
@@ -55,12 +54,19 @@ def business_settings(request):
     if request.method == "GET":
         return Response(BusinessSettingsSerializer(settings_obj).data)
 
-    serializer = BusinessSettingsSerializer(
-        settings_obj, data=request.data, partial=True
-    )
+    logo_file = request.FILES.get("logo")
+    data = request.data.dict() if hasattr(request.data, "dict") else dict(request.data)
+    data.pop("logo", None)
+
+    serializer = BusinessSettingsSerializer(settings_obj, data=data, partial=True)
     if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data)
+        obj = serializer.save()
+        if logo_file:
+            mime = logo_file.content_type or "image/png"
+            encoded = base64.b64encode(logo_file.read()).decode("utf-8")
+            obj.logo = f"data:{mime};base64,{encoded}"
+            obj.save(update_fields=["logo"])
+        return Response(BusinessSettingsSerializer(obj).data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -519,11 +525,7 @@ def download_invoice_pdf(request, pk):
     currency = "₹" if biz and biz.currency == "INR" else "$"
     year = datetime.date.today().year
     invoice_ref = f"786/110/{year}{str(slip.id).zfill(3)}"
-    logo_url = ""
-    if biz and biz.logo:
-        logo_path = Path(biz.logo.path)
-        if logo_path.exists():
-            logo_url = logo_path.as_uri()
+    logo_url = biz.logo if biz and biz.logo else ""
     today = datetime.date.today().strftime("%d %B %Y")
 
     pdf = _build_invoice_html(
@@ -597,15 +599,18 @@ def _build_invoice_sheet(ws, slip, entries, biz, currency, invoice_ref, company_
     ws.row_dimensions[1].height = 4
 
     has_logo = False
-    if biz and biz.logo:
-        logo_path = Path(biz.logo.path)
-        if logo_path.exists():
-            img = XLImage(str(logo_path))
+    if biz and biz.logo and biz.logo.startswith("data:"):
+        try:
+            _, b64data = biz.logo.split(",", 1)
+            img_bytes = base64.b64decode(b64data)
+            img = XLImage(BytesIO(img_bytes))
             img.height = 110
             img.width = 110
             ws.add_image(img, "A2")
             ws.row_dimensions[2].height = 84
             has_logo = True
+        except Exception:
+            pass
     if not has_logo:
         ws.row_dimensions[2].height = 4
 
@@ -862,15 +867,18 @@ def _build_entries_sheet(ws, entries, biz, currency, report_title, report_date):
     ws.row_dimensions[1].height = 4
 
     has_logo = False
-    if biz and biz.logo:
-        logo_path = Path(biz.logo.path)
-        if logo_path.exists():
-            img = XLImage(str(logo_path))
+    if biz and biz.logo and biz.logo.startswith("data:"):
+        try:
+            _, b64data = biz.logo.split(",", 1)
+            img_bytes = base64.b64decode(b64data)
+            img = XLImage(BytesIO(img_bytes))
             img.height = 90
             img.width = 90
             ws.add_image(img, "A2")
             ws.row_dimensions[2].height = 70
             has_logo = True
+        except Exception:
+            pass
     if not has_logo:
         ws.row_dimensions[2].height = 4
 
@@ -1090,11 +1098,7 @@ def bulk_download_invoice_pdf(request):
             entries_with_totals.append(entry)
 
         invoice_ref = f"786/110/{year}{str(slip.id).zfill(3)}"
-        logo_url = ""
-        if biz and biz.logo:
-            logo_path = Path(biz.logo.path)
-            if logo_path.exists():
-                logo_url = logo_path.as_uri()
+        logo_url = biz.logo if biz and biz.logo else ""
 
         documents.append(
             _build_invoice_html(
