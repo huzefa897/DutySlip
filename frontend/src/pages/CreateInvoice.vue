@@ -48,21 +48,21 @@
       </div>
 
       <div class="field">
-        <label class="label">Slip Type</label>
+        <label class="label">Invoice Type</label>
         <div class="toggle-group">
           <button
             type="button"
             class="toggle-btn"
-            :class="{ 'toggle-btn--regular': form.slip_type === 'regular' }"
-            @click="form.slip_type = 'regular'"
+            :class="{ 'toggle-btn--regular': form.invoice_type === 'regular' }"
+            @click="form.invoice_type = 'regular'"
           >
             Regular
           </button>
           <button
             type="button"
             class="toggle-btn"
-            :class="{ 'toggle-btn--outstation': form.slip_type === 'outstation' }"
-            @click="form.slip_type = 'outstation'"
+            :class="{ 'toggle-btn--outstation': form.invoice_type === 'outstation' }"
+            @click="form.invoice_type = 'outstation'"
           >
             Outstation
           </button>
@@ -82,10 +82,10 @@
           :disabled="submitting"
           class="btn-primary"
         >
-          {{ submitting ? 'Creating...' : 'Create Duty Slip' }}
+          {{ submitting ? 'Creating...' : 'Create Invoice' }}
         </button>
         <router-link
-          to="/dutyslips"
+          to="/invoices"
           class="btn-cancel"
         >
           Cancel
@@ -108,15 +108,15 @@ const error = ref('')
 const form = ref({
   party_name: '',
   company: '',
-  slip_type: 'regular',
+  invoice_type: 'regular',
 })
 
 async function submit() {
   submitting.value = true
   error.value = ''
   try {
-    const res = await api.post('/dutyslips/', form.value)
-    router.push(`/dutyslips/${res.data.id}`)
+    const res = await api.post('/invoices/', form.value)
+    router.push(`/invoices/${res.data.id}`)
   } catch (e) {
     error.value = JSON.stringify(e.response?.data || 'Something went wrong')
   } finally {

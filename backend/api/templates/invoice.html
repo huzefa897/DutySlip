@@ -206,19 +206,19 @@
       <h2 class="invoice-title">INVOICE</h2>
       <p class="invoice-meta">Date: {{ today }}</p>
       <p class="invoice-meta">Ref: {{ invoice_ref }}</p>
-      <p class="invoice-status">{{ slip.status }}</p>
-      <p class="invoice-status">Payment: {{ slip.payment_status }}</p>
+      <p class="invoice-status">{{ invoice.status }}</p>
+      <p class="invoice-status">Payment: {{ invoice.payment_status }}</p>
     </div>
   </div>
 
   <!-- Billed To -->
   <div class="billed-to">
     <p class="billed-label">Billed To</p>
-    <p class="billed-company">{{ slip.company.name }}</p>
-    <p class="billed-party">{{ slip.party_name }}</p>
+    <p class="billed-company">{{ invoice.company.name }}</p>
+    <p class="billed-party">{{ invoice.party_name }}</p>
   </div>
 
-  <!-- Entries Table -->
+  <!-- Trips Table -->
   <table>
     <thead>
       <tr>
@@ -235,25 +235,25 @@
       </tr>
     </thead>
     <tbody>
-      {% for entry in entries %}
+      {% for trip in trips %}
       <tr>
-        <td>{{ entry.date }}</td>
-        <td>{{ entry.entry_type|capfirst }} Trip</td>
-        <td>{{ entry.car.name }}</td>
-        <td class="col-hrs">{% if entry.total_hrs %}{{ entry.total_hrs }}{% else %}—{% endif %}</td>
-        <td class="col-hrs">{{ entry.extra_hrs }}</td>
-        <td>{{ entry.total_kms }}</td>
-        <td>{{ entry.extra_kms }}</td>
-        <td>{{ currency }}{{ entry.driver_bhatta }}</td>
-        <td>{{ currency }}{{ entry.parking }}</td>
-        <td>{{ currency }}{{ entry.row_total }}</td>
+        <td>{{ trip.date }}</td>
+        <td>{{ trip.trip_type|capfirst }} Trip</td>
+        <td>{{ trip.car.name }}</td>
+        <td class="col-hrs">{% if trip.total_hrs %}{{ trip.total_hrs }}{% else %}—{% endif %}</td>
+        <td class="col-hrs">{{ trip.extra_hrs }}</td>
+        <td>{{ trip.total_kms }}</td>
+        <td>{{ trip.extra_kms }}</td>
+        <td>{{ currency }}{{ trip.driver_bhatta }}</td>
+        <td>{{ currency }}{{ trip.parking }}</td>
+        <td>{{ currency }}{{ trip.row_total }}</td>
       </tr>
       {% endfor %}
     </tbody>
     <tfoot>
       <tr>
         <td colspan="9" class="grand-total-label">GRAND TOTAL</td>
-        <td class="grand-total-value">{{ currency }}{{ slip.grand_total }}</td>
+        <td class="grand-total-value">{{ currency }}{{ invoice.grand_total }}</td>
       </tr>
     </tfoot>
   </table>

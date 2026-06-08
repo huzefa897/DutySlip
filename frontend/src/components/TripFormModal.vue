@@ -8,7 +8,7 @@
         <div class="modal-header">
           <div>
             <h2 class="modal-title">
-              {{ props.entry ? 'Edit Entry' : 'New Entry' }}
+              {{ props.trip ? 'Edit Duty Slip' : 'New Duty Slip' }}
             </h2>
             <p class="page-header__subtitle mt-1">
               Step {{ currentStep }} of 2 · {{ currentStep === 1 ? 'Basics' : 'Charges & Notes' }}
@@ -93,29 +93,29 @@
               </div>
 
               <div class="field">
-                <label class="label">Entry Type</label>
+                <label class="label">Duty Slip Type</label>
                 <p
-                  v-if="lockedEntryType"
+                  v-if="lockedTripType"
                   class="upload-hint mb-2"
                 >
-                  This invoice only accepts {{ lockedEntryType === 'outstation' ? 'outstation' : 'regular' }} trip types.
+                  This invoice only accepts {{ lockedTripType === 'outstation' ? 'outstation' : 'regular' }} duty slip types.
                 </p>
                 <div class="toggle-group">
                   <button
                     type="button"
                     class="toggle-btn"
-                    :class="{ 'toggle-btn--regular': form.entry_type === 'regular' }"
-                    :disabled="!!lockedEntryType"
-                    @click="form.entry_type = 'regular'"
+                    :class="{ 'toggle-btn--regular': form.trip_type === 'regular' }"
+                    :disabled="!!lockedTripType"
+                    @click="form.trip_type = 'regular'"
                   >
                     Regular
                   </button>
                   <button
                     type="button"
                     class="toggle-btn"
-                    :class="{ 'toggle-btn--outstation': form.entry_type === 'outstation' }"
-                    :disabled="!!lockedEntryType"
-                    @click="form.entry_type = 'outstation'"
+                    :class="{ 'toggle-btn--outstation': form.trip_type === 'outstation' }"
+                    :disabled="!!lockedTripType"
+                    @click="form.trip_type = 'outstation'"
                   >
                     Outstation
                   </button>
@@ -190,7 +190,7 @@
             </div>
 
             <div
-              v-if="form.entry_type === 'regular'"
+              v-if="form.trip_type === 'regular'"
               class="grid grid-cols-2 gap-3"
             >
               <div class="field">
@@ -198,7 +198,7 @@
                 <input
                   v-model="form.start_time"
                   type="time"
-                  :required="form.entry_type === 'regular'"
+                  :required="form.trip_type === 'regular'"
                   class="field-control"
                 >
               </div>
@@ -207,14 +207,14 @@
                 <input
                   v-model="form.end_time"
                   type="time"
-                  :required="form.entry_type === 'regular'"
+                  :required="form.trip_type === 'regular'"
                   class="field-control"
                 >
               </div>
             </div>
 
             <div
-              v-if="form.entry_type === 'outstation' && rateOverride?.outstation_rate"
+              v-if="form.trip_type === 'outstation' && rateOverride?.outstation_rate"
               class="summary-card mt-2"
             >
               <div class="text-sm text-blue-200">
@@ -251,10 +251,10 @@
             <div class="summary-grid !grid-cols-2">
               <div class="summary-card">
                 <p class="summary-card__label">
-                  Entry Type
+                  Duty Slip Type
                 </p>
                 <p class="summary-card__value">
-                  {{ form.entry_type === 'outstation' ? 'Outstation' : 'Regular' }}
+                  {{ form.trip_type === 'outstation' ? 'Outstation' : 'Regular' }}
                 </p>
               </div>
               <div class="summary-card">
@@ -308,7 +308,7 @@
               :disabled="submitting"
               class="btn-primary"
             >
-              {{ submitting ? 'Saving...' : props.entry ? 'Save Changes' : 'Save Entry' }}
+              {{ submitting ? 'Saving...' : props.trip ? 'Save Changes' : 'Save Duty Slip' }}
             </button>
             <button
               type="button"
@@ -329,18 +329,17 @@ import { computed, ref, onMounted, watch } from 'vue'
 import api from '../api'
 import { currencySymbol } from '../store/currency'
 import AutocompleteInput from './AutoCompleteInput.vue'
-// ── 1. Props first ────────────────────────────────────────────
+
 const props = defineProps({
     partyName: String,
     companyId: Number,
-    dutySlipId: Number,
-    lockedEntryType: String,
-    entry: Object,
+    invoiceId: Number,
+    lockedTripType: String,
+    trip: Object,
 })
 
 const emit = defineEmits(['close', 'saved'])
 
-// ── 2. Refs ───────────────────────────────────────────────────
 const cars = ref([])
 const companies = ref([])
 const submitting = ref(false)
@@ -348,23 +347,21 @@ const error = ref('')
 const rateOverride = ref(null)
 const currentStep = ref(1)
 
-// ── 3. Form (needs props, so must come after defineProps) ─────
 const form = ref({
-    party_name: props.entry?.party_name || props.partyName || '',
-    company: props.entry?.company || props.companyId || '',
-    date: props.entry?.date || '',
-    car: props.entry?.car || '',
-    start_kms: props.entry?.start_kms || '',
-    end_kms: props.entry?.end_kms || '',
-    start_time: props.entry?.start_time || '',
-    end_time: props.entry?.end_time || '',
-    driver_bhatta: props.entry?.driver_bhatta || '0',
-    parking: props.entry?.parking || '0',
-    entry_type: props.lockedEntryType || props.entry?.entry_type || 'regular',
-    notes: props.entry?.notes || '',
+    party_name: props.trip?.party_name || props.partyName || '',
+    company: props.trip?.company || props.companyId || '',
+    date: props.trip?.date || '',
+    car: props.trip?.car || '',
+    start_kms: props.trip?.start_kms || '',
+    end_kms: props.trip?.end_kms || '',
+    start_time: props.trip?.start_time || '',
+    end_time: props.trip?.end_time || '',
+    driver_bhatta: props.trip?.driver_bhatta || '0',
+    parking: props.trip?.parking || '0',
+    trip_type: props.lockedTripType || props.trip?.trip_type || 'regular',
+    notes: props.trip?.notes || '',
 })
 
-// ── 4. Watch (needs form, so must come after form ref) ────────
 watch(
     () => [form.value.company, form.value.car],
     async ([companyId, carId]) => {
@@ -381,10 +378,10 @@ watch(
 )
 
 watch(
-    () => props.lockedEntryType,
+    () => props.lockedTripType,
     (lockedType) => {
         if (lockedType) {
-            form.value.entry_type = lockedType
+            form.value.trip_type = lockedType
         }
     },
     { immediate: true }
@@ -399,7 +396,7 @@ const canGoNext = computed(() =>
     form.value.car &&
     form.value.start_kms !== '' &&
     form.value.end_kms !== '' &&
-    (form.value.entry_type === 'outstation' || (form.value.start_time && form.value.end_time))
+    (form.value.trip_type === 'outstation' || (form.value.start_time && form.value.end_time))
   )
 )
 
@@ -415,9 +412,9 @@ watch(
             partyNames.value = []
         }
     },
-    { immediate: true } // ← run on mount too if company is pre-filled
+    { immediate: true }
 )
-// ── 5. Functions ──────────────────────────────────────────────
+
 function goToStepTwo() {
     error.value = ''
     if (!canGoNext.value) return
@@ -428,16 +425,16 @@ async function submit() {
     submitting.value = true
     error.value = ''
     try {
-        if (props.lockedEntryType) {
-            form.value.entry_type = props.lockedEntryType
+        if (props.lockedTripType) {
+            form.value.trip_type = props.lockedTripType
         }
         let res
-        if (props.entry) {
-            res = await api.put(`/entries/${props.entry.id}/`, form.value)
+        if (props.trip) {
+            res = await api.put(`/trips/${props.trip.id}/`, form.value)
         } else {
             const payload = { ...form.value }
-            if (props.dutySlipId) payload.duty_slip = props.dutySlipId
-            res = await api.post('/entries/', payload)
+            if (props.invoiceId) payload.invoice = props.invoiceId
+            res = await api.post('/trips/', payload)
         }
         emit('saved', res.data)
         emit('close')
@@ -450,7 +447,6 @@ async function submit() {
     }
 }
 
-// ── 6. Lifecycle ──────────────────────────────────────────────
 onMounted(async () => {
     const [carsRes, companiesRes] = await Promise.all([
         api.get('/cars/'),
@@ -459,11 +455,10 @@ onMounted(async () => {
     cars.value = carsRes.data
     companies.value = companiesRes.data
 
-    // check override on load if editing an existing entry
-    if (props.entry?.company && props.entry?.car) {
+    if (props.trip?.company && props.trip?.car) {
         try {
-            const res = await api.get(`/companies/${props.entry.company}/rates/`)
-            const match = res.data.find(r => r.car === props.entry.car)
+            const res = await api.get(`/companies/${props.trip.company}/rates/`)
+            const match = res.data.find(r => r.car === props.trip.car)
             rateOverride.value = match || null
         } catch {
             rateOverride.value = null

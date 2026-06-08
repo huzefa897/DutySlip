@@ -20,7 +20,7 @@ class Car(models.Model):
         return self.name
 
 
-class DutySlip(models.Model):
+class Invoice(models.Model):
     STATUS_CHOICES = [
         ("draft", "Draft"),
         ("finalised", "Finalised"),
@@ -29,13 +29,13 @@ class DutySlip(models.Model):
         ("unpaid", "Unpaid"),
         ("paid", "Paid"),
     ]
-    SLIP_TYPE_CHOICES = [
+    INVOICE_TYPE_CHOICES = [
         ("regular", "Regular"),
         ("outstation", "Outstation"),
     ]
 
     company = models.ForeignKey(
-        Company, on_delete=models.PROTECT, related_name="duty_slips"
+        Company, on_delete=models.PROTECT, related_name="invoices"
     )
     party_name = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -44,33 +44,31 @@ class DutySlip(models.Model):
     payment_status = models.CharField(
         max_length=20, choices=PAYMENT_STATUS_CHOICES, default="unpaid"
     )
-    slip_type = models.CharField(
-        max_length=20, choices=SLIP_TYPE_CHOICES, default="regular"
+    invoice_type = models.CharField(
+        max_length=20, choices=INVOICE_TYPE_CHOICES, default="regular"
     )
 
     def __str__(self):
         return f"{self.party_name} - {self.company.name}"
 
 
-class DutySlipEntry(models.Model):
-    ENTRY_TYPE_CHOICES = [
+class DutySlip(models.Model):
+    TRIP_TYPE_CHOICES = [
         ("regular", "Regular"),
         ("outstation", "Outstation"),
     ]
 
-    duty_slip = models.ForeignKey(
-        DutySlip,
+    invoice = models.ForeignKey(
+        Invoice,
         on_delete=models.SET_NULL,
-        related_name="entries",
+        related_name="trips",
         null=True,
         blank=True,
     )
-    company = models.ForeignKey(
-        Company, on_delete=models.PROTECT, related_name="entries"
-    )
+    company = models.ForeignKey(Company, on_delete=models.PROTECT, related_name="trips")
     party_name = models.CharField(max_length=255)
-    entry_type = models.CharField(
-        max_length=20, choices=ENTRY_TYPE_CHOICES, default="regular"
+    trip_type = models.CharField(
+        max_length=20, choices=TRIP_TYPE_CHOICES, default="regular"
     )
     date = models.DateField()
     car = models.ForeignKey(Car, on_delete=models.PROTECT)
@@ -101,48 +99,7 @@ class DutySlipEntry(models.Model):
     notes = models.TextField(blank=True, null=True)
 
     def __str__(self):
-        return f"{self.date} - {self.car.name} - {self.party_name} ({self.entry_type})"
-
-
-class DutySlipEntryOutStation(models.Model):
-    duty_slip = models.ForeignKey(
-        DutySlip,
-        on_delete=models.SET_NULL,
-        related_name="out_station_entries",
-        null=True,
-        blank=True,
-    )
-    company = models.ForeignKey(
-        Company, on_delete=models.PROTECT, related_name="out_station_entries"
-    )
-    party_name = models.CharField(max_length=255)
-    date = models.DateField()
-    car = models.ForeignKey(Car, on_delete=models.PROTECT)
-
-    # KMs
-    start_kms = models.DecimalField(max_digits=10, decimal_places=2)
-    end_kms = models.DecimalField(max_digits=10, decimal_places=2)
-    total_kms = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    extra_kms = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    extra_kms_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-
-    # Time
-    start_time = models.TimeField()
-    end_time = models.TimeField()
-    extra_hrs = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    extra_hrs_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-
-    # Charges
-    driver_bhatta = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    parking = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-
-    # Row total
-    row_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-
-    notes = models.TextField(blank=True, null=True)
-
-    def __str__(self):
-        return f"{self.date} - {self.car.name} - {self.party_name}"
+        return f"{self.date} - {self.car.name} - {self.party_name} ({self.trip_type})"
 
 
 class CompanyCarRate(models.Model):

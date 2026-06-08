@@ -1,41 +1,41 @@
 <template>
   <div
     class="page"
-    :class="{ 'page--selection-active': selectedEntryIds.length > 0 }"
+    :class="{ 'page--selection-active': selectedTripIds.length > 0 }"
   >
     <div class="no-print">
       <div class="page-header">
         <div class="page-header__content">
-          <span class="page-header__eyebrow">Entries</span>
+          <span class="page-header__eyebrow">Duty Slips</span>
           <h1 class="page-title">
-            Trip and invoice entries
+            Duty Slip records
           </h1>
           <p class="page-header__subtitle">
-            Manage all trip rows before assigning them to invoices.
+            Manage all duty slip entries before assigning them to invoices.
           </p>
         </div>
         <div class="quick-actions-row">
           <button
             type="button"
             class="btn-secondary"
-            :disabled="entriesToPrint.length === 0"
-            @click="printEntries"
+            :disabled="tripsToPrint.length === 0"
+            @click="printTrips"
           >
-            Print {{ selectedEntryIds.length ? `Selected (${selectedEntryIds.length})` : 'Entries' }}
+            Print {{ selectedTripIds.length ? `Selected (${selectedTripIds.length})` : 'Duty Slips' }}
           </button>
           <button
             type="button"
             class="btn-secondary"
             :disabled="downloadingExcel"
-            @click="downloadEntriesExcel"
+            @click="downloadTripsExcel"
           >
             {{ downloadingExcel ? 'Preparing Excel...' : 'Export Excel' }}
           </button>
           <router-link
-            to="/entries/create"
+            to="/duty-slips/create"
             class="btn-primary"
           >
-            + New Entry
+            + New Duty Slip
           </router-link>
         </div>
       </div>
@@ -94,14 +94,14 @@
 
         <div class="filter-summary">
           <p class="filter-count">
-            Showing {{ filteredEntries.length }} of {{ entries.length }} entries
-            <span v-if="selectedEntryIds.length">
-              · {{ selectedEntryIds.length }} selected
+            Showing {{ filteredTrips.length }} of {{ trips.length }} duty slips
+            <span v-if="selectedTripIds.length">
+              · {{ selectedTripIds.length }} selected
             </span>
           </p>
           <div class="quick-actions-row">
             <button
-              v-if="selectedEntryIds.length"
+              v-if="selectedTripIds.length"
               class="clear-filters"
               @click="clearSelection"
             >
@@ -126,10 +126,10 @@
       </p>
 
       <p
-        v-else-if="filteredEntries.length === 0"
+        v-else-if="filteredTrips.length === 0"
         class="empty-text"
       >
-        No entries match your filters.
+        No duty slips match your filters.
       </p>
 
       <section
@@ -145,8 +145,8 @@
                     type="checkbox"
                     class="sr-only"
                     :checked="allVisibleSelected"
-                    :disabled="paginatedEntries.length === 0"
-                    @change="toggleVisibleEntries($event.target.checked)"
+                    :disabled="paginatedTrips.length === 0"
+                    @change="toggleVisibleTrips($event.target.checked)"
                   >
                   <span
                     class="slip-checkbox"
@@ -160,7 +160,7 @@
                 <th>KMs</th>
                 <th>Extra Hrs</th>
                 <th>Row Total</th>
-                <th>Duty Slip</th>
+                <th>Invoice</th>
                 <th class="data-table__actions">
                   Actions
                 </th>
@@ -168,52 +168,52 @@
             </thead>
             <tbody>
               <tr
-                v-for="entry in paginatedEntries"
-                :key="entry.id"
+                v-for="trip in paginatedTrips"
+                :key="trip.id"
                 class="entry-row"
-                :class="{ 'entry-row--selected': selectedEntryIds.includes(entry.id) }"
+                :class="{ 'entry-row--selected': selectedTripIds.includes(trip.id) }"
               >
                 <td>
                   <label class="entry-select">
                     <input
-                      v-model="selectedEntryIds"
+                      v-model="selectedTripIds"
                       type="checkbox"
                       class="sr-only"
-                      :value="entry.id"
+                      :value="trip.id"
                     >
                     <span
                       class="slip-checkbox"
-                      :class="{ 'slip-checkbox--checked': selectedEntryIds.includes(entry.id) }"
+                      :class="{ 'slip-checkbox--checked': selectedTripIds.includes(trip.id) }"
                     />
                   </label>
                 </td>
                 <td class="data-table__numeric data-table__muted">
-                  {{ entry.date }}
+                  {{ trip.date }}
                 </td>
                 <td>
-                  {{ entry.party_name }}
+                  {{ trip.party_name }}
                 </td>
                 <td class="data-table__muted">
-                  {{ entry.company_name }}
+                  {{ trip.company_name }}
                 </td>
                 <td class="data-table__muted">
-                  {{ entry.car_name }}
+                  {{ trip.car_name }}
                 </td>
                 <td class="data-table__numeric data-table__muted">
-                  {{ entry.total_kms }}
+                  {{ trip.total_kms }}
                 </td>
                 <td class="data-table__numeric data-table__muted">
-                  {{ entry.extra_hrs }}h extra
+                  {{ trip.extra_hrs }}h extra
                 </td>
                 <td class="data-table__numeric data-table__accent">
-                  {{ currencySymbol }}{{ entry.row_total }}
+                  {{ currencySymbol }}{{ trip.row_total }}
                 </td>
                 <td>
                   <span
-                    v-if="entry.duty_slip"
+                    v-if="trip.invoice"
                     class="status-badge status-badge--paid"
                   >
-                    INV-{{ formatSlipId(entry.duty_slip) }}
+                    INV-{{ formatSlipId(trip.invoice) }}
                   </span>
                   <span
                     v-else
@@ -223,8 +223,8 @@
                 <td class="data-table__actions">
                   <div class="data-table__actions-group data-table__actions-group--compact">
                     <RowActionMenu
-                      @edit="editingEntry = entry; showModal = true"
-                      @delete="deleteEntry(entry.id)"
+                      @edit="editingTrip = trip; showModal = true"
+                      @delete="deleteTrip(trip.id)"
                     />
                   </div>
                 </td>
@@ -234,11 +234,11 @@
         </div>
 
         <div
-          v-if="filteredEntries.length > 0"
+          v-if="filteredTrips.length > 0"
           class="pagination-row p-4"
         >
           <p class="pagination-info">
-            Showing {{ pageStart }}-{{ pageEnd }} of {{ filteredEntries.length }}
+            Showing {{ pageStart }}-{{ pageEnd }} of {{ filteredTrips.length }}
           </p>
           <button
             class="btn-page"
@@ -270,11 +270,11 @@
     </div>
 
     <div
-      v-if="selectedEntryIds.length > 0"
+      v-if="selectedTripIds.length > 0"
       class="selection-bar"
     >
       <span class="selection-bar__count">
-        {{ selectedEntryIds.length }} selected
+        {{ selectedTripIds.length }} selected
       </span>
       <div class="selection-bar__actions">
         <button
@@ -286,29 +286,29 @@
         <button
           class="btn-secondary"
           :disabled="downloadingExcel"
-          @click="downloadEntriesExcel"
+          @click="downloadTripsExcel"
         >
           {{ downloadingExcel ? 'Preparing Excel...' : 'Export Excel' }}
         </button>
         <button
           class="btn-secondary"
-          :disabled="entriesToPrint.length === 0"
-          @click="printEntries"
+          :disabled="tripsToPrint.length === 0"
+          @click="printTrips"
         >
           Print Selected
         </button>
       </div>
     </div>
 
-    <div class="print-only entries-print">
+    <div class="print-only trips-print">
       <div class="print-header">
         <div>
-          <h1>{{ selectedEntryIds.length ? 'Selected Entries Report' : 'Entries Report' }}</h1>
+          <h1>{{ selectedTripIds.length ? 'Selected Duty Slips Report' : 'Duty Slips Report' }}</h1>
           <p>{{ printDate }}</p>
         </div>
         <div class="print-summary">
-          <p>{{ entriesToPrint.length }} entries</p>
-          <p>Total: {{ currencySymbol }}{{ entriesToPrintTotal }}</p>
+          <p>{{ tripsToPrint.length }} duty slips</p>
+          <p>Total: {{ currencySymbol }}{{ tripsToPrintTotal }}</p>
         </div>
       </div>
 
@@ -331,26 +331,26 @@
             <th>Extra Hrs</th>
             <th>Bhatta</th>
             <th>Parking</th>
-            <th>Duty Slip</th>
+            <th>Invoice</th>
             <th>Row Total</th>
           </tr>
         </thead>
         <tbody>
           <tr
-            v-for="entry in entriesToPrint"
-            :key="entry.id"
+            v-for="trip in tripsToPrint"
+            :key="trip.id"
           >
-            <td>{{ entry.date }}</td>
-            <td>{{ formatEntryType(entry.entry_type) }}</td>
-            <td>{{ entry.party_name }}</td>
-            <td>{{ entry.company_name }}</td>
-            <td>{{ entry.car_name }}</td>
-            <td>{{ entry.total_kms }}</td>
-            <td>{{ entry.extra_hrs }}</td>
-            <td>{{ currencySymbol }}{{ entry.driver_bhatta }}</td>
-            <td>{{ currencySymbol }}{{ entry.parking }}</td>
-            <td>{{ entry.duty_slip ? formatSlipId(entry.duty_slip) : 'Unassigned' }}</td>
-            <td>{{ currencySymbol }}{{ entry.row_total }}</td>
+            <td>{{ trip.date }}</td>
+            <td>{{ formatTripType(trip.trip_type) }}</td>
+            <td>{{ trip.party_name }}</td>
+            <td>{{ trip.company_name }}</td>
+            <td>{{ trip.car_name }}</td>
+            <td>{{ trip.total_kms }}</td>
+            <td>{{ trip.extra_hrs }}</td>
+            <td>{{ currencySymbol }}{{ trip.driver_bhatta }}</td>
+            <td>{{ currencySymbol }}{{ trip.parking }}</td>
+            <td>{{ trip.invoice ? formatSlipId(trip.invoice) : 'Unassigned' }}</td>
+            <td>{{ currencySymbol }}{{ trip.row_total }}</td>
           </tr>
         </tbody>
         <tfoot>
@@ -362,7 +362,7 @@
               GRAND TOTAL
             </td>
             <td class="print-total-value">
-              {{ currencySymbol }}{{ entriesToPrintTotal }}
+              {{ currencySymbol }}{{ tripsToPrintTotal }}
             </td>
           </tr>
         </tfoot>
@@ -370,11 +370,11 @@
     </div>
 
     <div class="no-print">
-      <EntryFormModal
+      <TripFormModal
         v-if="showModal"
-        :entry="editingEntry"
-        @close="showModal = false; editingEntry = null"
-        @saved="onEntrySaved"
+        :trip="editingTrip"
+        @close="showModal = false; editingTrip = null"
+        @saved="onTripSaved"
       />
       <ConfirmDialog
         :visible="confirmVisible"
@@ -395,7 +395,7 @@ import api from '../api'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
 import { notify } from '../store/notification'
-import EntryFormModal from '../components/EntryFormModal.vue'
+import TripFormModal from '../components/TripFormModal.vue'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { useConfirm } from '../composables/useConfirm'
 import { usePagination } from '../composables/usePagination'
@@ -405,13 +405,13 @@ import RowActionMenu from '../components/RowActionMenu.vue'
 const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
         confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
 
-const entries = ref([])
+const trips = ref([])
 const cars = ref([])
 const companies = ref([])
 const loading = ref(true)
 const showModal = ref(false)
-const editingEntry = ref(null)
-const selectedEntryIds = ref([])
+const editingTrip = ref(null)
+const selectedTripIds = ref([])
 const downloadingExcel = ref(false)
 
 const filters = ref({
@@ -426,41 +426,41 @@ const isFiltered = computed(() =>
   Object.values(filters.value).some(v => v !== '')
 )
 
-const filteredEntries = computed(() => {
-  return entries.value.filter(e => {
+const filteredTrips = computed(() => {
+  return trips.value.filter(t => {
     if (filters.value.party_name &&
-      !e.party_name.toLowerCase().includes(filters.value.party_name.toLowerCase()))
+      !t.party_name.toLowerCase().includes(filters.value.party_name.toLowerCase()))
       return false
-    if (filters.value.company && String(e.company) !== String(filters.value.company))
+    if (filters.value.company && String(t.company) !== String(filters.value.company))
       return false
-    if (filters.value.car && String(e.car) !== String(filters.value.car))
+    if (filters.value.car && String(t.car) !== String(filters.value.car))
       return false
-    if (filters.value.date_from && e.date < filters.value.date_from)
+    if (filters.value.date_from && t.date < filters.value.date_from)
       return false
-    if (filters.value.date_to && e.date > filters.value.date_to)
+    if (filters.value.date_to && t.date > filters.value.date_to)
       return false
     return true
   })
 })
 
-const selectedEntries = computed(() => {
-  const selected = new Set(selectedEntryIds.value.map(id => String(id)))
-  return entries.value.filter(e => selected.has(String(e.id)))
+const selectedTrips = computed(() => {
+  const selected = new Set(selectedTripIds.value.map(id => String(id)))
+  return trips.value.filter(t => selected.has(String(t.id)))
 })
 
-const entriesToPrint = computed(() =>
-  selectedEntries.value.length ? selectedEntries.value : filteredEntries.value
+const tripsToPrint = computed(() =>
+  selectedTrips.value.length ? selectedTrips.value : filteredTrips.value
 )
 
-const entriesToPrintTotal = computed(() =>
-  entriesToPrint.value
-    .reduce((sum, e) => sum + parseFloat(e.row_total || 0), 0)
+const tripsToPrintTotal = computed(() =>
+  tripsToPrint.value
+    .reduce((sum, t) => sum + parseFloat(t.row_total || 0), 0)
     .toFixed(2)
 )
 
 const allVisibleSelected = computed(() =>
-  paginatedEntries.value.length > 0 &&
-  paginatedEntries.value.every(e => selectedEntryIds.value.includes(e.id))
+  paginatedTrips.value.length > 0 &&
+  paginatedTrips.value.every(t => selectedTripIds.value.includes(t.id))
 )
 
 const printDate = computed(() =>
@@ -487,7 +487,7 @@ const printFilterSummary = computed(() => {
   return parts.join(' | ')
 })
 
-function formatEntryType(type) {
+function formatTripType(type) {
   return type === 'outstation' ? 'Outstation' : 'Regular'
 }
 
@@ -501,19 +501,19 @@ function escapeHtml(value) {
 }
 
 function buildPrintHtml() {
-  const rows = entriesToPrint.value.map((entry) => `
+  const rows = tripsToPrint.value.map((trip) => `
     <tr>
-      <td>${escapeHtml(entry.date)}</td>
-      <td>${escapeHtml(formatEntryType(entry.entry_type))}</td>
-      <td>${escapeHtml(entry.party_name)}</td>
-      <td>${escapeHtml(entry.company_name)}</td>
-      <td>${escapeHtml(entry.car_name)}</td>
-      <td>${escapeHtml(entry.total_kms)}</td>
-      <td>${escapeHtml(entry.extra_hrs)}</td>
-      <td>${escapeHtml(`${currencySymbol.value}${entry.driver_bhatta}`)}</td>
-      <td>${escapeHtml(`${currencySymbol.value}${entry.parking}`)}</td>
-      <td>${escapeHtml(entry.duty_slip ? `INV-${formatSlipId(entry.duty_slip)}` : 'Unassigned')}</td>
-      <td>${escapeHtml(`${currencySymbol.value}${entry.row_total}`)}</td>
+      <td>${escapeHtml(trip.date)}</td>
+      <td>${escapeHtml(formatTripType(trip.trip_type))}</td>
+      <td>${escapeHtml(trip.party_name)}</td>
+      <td>${escapeHtml(trip.company_name)}</td>
+      <td>${escapeHtml(trip.car_name)}</td>
+      <td>${escapeHtml(trip.total_kms)}</td>
+      <td>${escapeHtml(trip.extra_hrs)}</td>
+      <td>${escapeHtml(`${currencySymbol.value}${trip.driver_bhatta}`)}</td>
+      <td>${escapeHtml(`${currencySymbol.value}${trip.parking}`)}</td>
+      <td>${escapeHtml(trip.invoice ? `INV-${formatSlipId(trip.invoice)}` : 'Unassigned')}</td>
+      <td>${escapeHtml(`${currencySymbol.value}${trip.row_total}`)}</td>
     </tr>
   `).join('')
 
@@ -521,7 +521,7 @@ function buildPrintHtml() {
   <html>
     <head>
       <meta charset="utf-8">
-      <title>${selectedEntryIds.value.length ? 'Selected Entries Report' : 'Entries Report'}</title>
+      <title>${selectedTripIds.value.length ? 'Selected Duty Slips Report' : 'Duty Slips Report'}</title>
       <style>
         body {
           font-family: Arial, sans-serif;
@@ -596,12 +596,12 @@ function buildPrintHtml() {
     <body>
       <div class="print-header">
         <div>
-          <h1>${escapeHtml(selectedEntryIds.value.length ? 'Selected Entries Report' : 'Entries Report')}</h1>
+          <h1>${escapeHtml(selectedTripIds.value.length ? 'Selected Duty Slips Report' : 'Duty Slips Report')}</h1>
           <p>${escapeHtml(printDate.value)}</p>
         </div>
         <div class="print-summary">
-          <p>${escapeHtml(`${entriesToPrint.value.length} entries`)}</p>
-          <p>Total: ${escapeHtml(`${currencySymbol.value}${entriesToPrintTotal.value}`)}</p>
+          <p>${escapeHtml(`${tripsToPrint.value.length} duty slips`)}</p>
+          <p>Total: ${escapeHtml(`${currencySymbol.value}${tripsToPrintTotal.value}`)}</p>
         </div>
       </div>
       ${printFilterSummary.value ? `<div class="print-filters">${escapeHtml(printFilterSummary.value)}</div>` : ''}
@@ -617,7 +617,7 @@ function buildPrintHtml() {
             <th>Extra Hrs</th>
             <th>Bhatta</th>
             <th>Parking</th>
-            <th>Duty Slip</th>
+            <th>Invoice</th>
             <th>Row Total</th>
           </tr>
         </thead>
@@ -625,7 +625,7 @@ function buildPrintHtml() {
         <tfoot>
           <tr>
             <td colspan="10" class="print-total-label">GRAND TOTAL</td>
-            <td class="print-total-value">${escapeHtml(`${currencySymbol.value}${entriesToPrintTotal.value}`)}</td>
+            <td class="print-total-value">${escapeHtml(`${currencySymbol.value}${tripsToPrintTotal.value}`)}</td>
           </tr>
         </tfoot>
       </table>
@@ -633,10 +633,10 @@ function buildPrintHtml() {
   </html>`
 }
 
-function printEntries() {
+function printTrips() {
   const printWindow = window.open('', '_blank', 'width=1200,height=900')
   if (!printWindow) {
-    notify('Popup blocked. Allow popups to print the entries report.', 'error')
+    notify('Popup blocked. Allow popups to print the duty slips report.', 'error')
     return
   }
 
@@ -649,12 +649,12 @@ function printEntries() {
   }
 }
 
-async function downloadEntriesExcel() {
+async function downloadTripsExcel() {
   downloadingExcel.value = true
   try {
     const params = {}
-    if (selectedEntryIds.value.length > 0) {
-      params.ids = selectedEntryIds.value.join(',')
+    if (selectedTripIds.value.length > 0) {
+      params.ids = selectedTripIds.value.join(',')
     } else {
       if (filters.value.party_name) params.party_name = filters.value.party_name
       if (filters.value.company) params.company = filters.value.company
@@ -663,37 +663,37 @@ async function downloadEntriesExcel() {
       if (filters.value.date_to) params.date_to = filters.value.date_to
     }
 
-    const response = await api.get('/entries/excel/', {
+    const response = await api.get('/trips/excel/', {
       responseType: 'blob',
       params,
     })
     const blobUrl = window.URL.createObjectURL(response.data)
     const link = document.createElement('a')
     link.href = blobUrl
-    const suffix = selectedEntryIds.value.length > 0 ? 'selected' : 'filtered'
-    link.download = `entries-export-${suffix}-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.xlsx`
+    const suffix = selectedTripIds.value.length > 0 ? 'selected' : 'filtered'
+    link.download = `trips-export-${suffix}-${new Date().toISOString().slice(0, 10).replaceAll('-', '')}.xlsx`
     document.body.appendChild(link)
     link.click()
     link.remove()
     window.URL.revokeObjectURL(blobUrl)
-    notify('Entries Excel exported.')
+    notify('Duty Slips Excel exported.')
   } catch {
-    notify('Failed to export entries Excel.', 'error')
+    notify('Failed to export Duty Slips Excel.', 'error')
   } finally {
     downloadingExcel.value = false
   }
 }
 
 function clearSelection() {
-  selectedEntryIds.value = []
+  selectedTripIds.value = []
 }
 
-function toggleVisibleEntries(checked) {
-  const visibleIds = paginatedEntries.value.map(e => e.id)
+function toggleVisibleTrips(checked) {
+  const visibleIds = paginatedTrips.value.map(t => t.id)
   if (checked) {
-    selectedEntryIds.value = Array.from(new Set([...selectedEntryIds.value, ...visibleIds]))
+    selectedTripIds.value = Array.from(new Set([...selectedTripIds.value, ...visibleIds]))
   } else {
-    selectedEntryIds.value = selectedEntryIds.value.filter(id => !visibleIds.includes(id))
+    selectedTripIds.value = selectedTripIds.value.filter(id => !visibleIds.includes(id))
   }
 }
 
@@ -701,7 +701,7 @@ function clearFilters() {
   filters.value = { party_name: '', company: '', car: '', date_from: '', date_to: '' }
 }
 const {
-  paginated: paginatedEntries,
+  paginated: paginatedTrips,
   currentPage,
   totalPages,
   pageStart,
@@ -711,17 +711,18 @@ const {
   goToPage,
   prevPage,
   nextPage,
-} = usePagination(filteredEntries)
-async function fetchEntries() {
+} = usePagination(filteredTrips)
+
+async function fetchTrips() {
   try {
-    const [entriesRes, carsRes, companiesRes] = await Promise.all([
-      api.get('/entries/'),
+    const [tripsRes, carsRes, companiesRes] = await Promise.all([
+      api.get('/trips/'),
       api.get('/cars/'),
       api.get('/companies/'),
     ])
-    entries.value = entriesRes.data
-    selectedEntryIds.value = selectedEntryIds.value.filter(id =>
-      entries.value.some(e => e.id === id)
+    trips.value = tripsRes.data
+    selectedTripIds.value = selectedTripIds.value.filter(id =>
+      trips.value.some(t => t.id === id)
     )
     cars.value = carsRes.data
     companies.value = companiesRes.data
@@ -729,25 +730,25 @@ async function fetchEntries() {
     loading.value = false
   }
 }
-async function deleteEntry(id) {
+async function deleteTrip(id) {
   const ok = await ask({
-    title: 'Delete Entry',
-    message: 'Are you sure you want to delete this entry? This cannot be undone.',
+    title: 'Delete Duty Slip',
+    message: 'Are you sure you want to delete this duty slip? This cannot be undone.',
     confirmLabel: 'Delete',
   })
   if (!ok) return
-  await api.delete(`/entries/${id}/`)
-  entries.value = entries.value.filter(e => e.id !== id)
-  selectedEntryIds.value = selectedEntryIds.value.filter(entryId => entryId !== id)
-  notify('Entry deleted.')
+  await api.delete(`/trips/${id}/`)
+  trips.value = trips.value.filter(t => t.id !== id)
+  selectedTripIds.value = selectedTripIds.value.filter(tripId => tripId !== id)
+  notify('Duty Slip deleted.')
 }
 
-async function onEntrySaved() {
-  await fetchEntries()
-  notify('Entry updated successfully.')
+async function onTripSaved() {
+  await fetchTrips()
+  notify('Duty Slip updated successfully.')
 }
 
-onMounted(fetchEntries)
+onMounted(fetchTrips)
 </script>
 
 <style scoped>
@@ -755,7 +756,7 @@ onMounted(fetchEntries)
   display: none;
 }
 
-.entries-print {
+.trips-print {
   color: #111;
   font-family: Arial, sans-serif;
 }
