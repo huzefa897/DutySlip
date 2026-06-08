@@ -12,6 +12,7 @@ urlpatterns = [
     ),
     # Company Parties
     path("companies/<int:company_id>/parties/", views.company_parties),
+    path("companies/<int:company_id>/invoice-parties/", views.company_invoice_parties),
     # Cars
     path("cars/", views.car_list),
     path("cars/<int:pk>/", views.car_detail),

@@ -20,6 +20,20 @@ class Car(models.Model):
         return self.name
 
 
+class Party(models.Model):
+    company = models.ForeignKey(
+        Company, on_delete=models.CASCADE, related_name="parties"
+    )
+    name = models.CharField(max_length=255)
+
+    class Meta:
+        unique_together = [("company", "name")]
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
 class Invoice(models.Model):
     STATUS_CHOICES = [
         ("draft", "Draft"),
@@ -37,7 +51,14 @@ class Invoice(models.Model):
     company = models.ForeignKey(
         Company, on_delete=models.PROTECT, related_name="invoices"
     )
-    party_name = models.CharField(max_length=255)
+    party = models.ForeignKey(
+        "Party",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="invoices",
+    )
+    party_name = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
@@ -66,6 +87,9 @@ class DutySlip(models.Model):
         blank=True,
     )
     company = models.ForeignKey(Company, on_delete=models.PROTECT, related_name="trips")
+    party = models.ForeignKey(
+        "Party", on_delete=models.SET_NULL, null=True, blank=True, related_name="trips"
+    )
     party_name = models.CharField(max_length=255)
     trip_type = models.CharField(
         max_length=20, choices=TRIP_TYPE_CHOICES, default="regular"
