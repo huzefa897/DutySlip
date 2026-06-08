@@ -33,6 +33,23 @@ class DutySlipEntrySerializer(serializers.ModelSerializer):
             "row_total",
         ]
 
+    def validate(self, attrs):
+        entry_type = attrs.get("entry_type")
+        duty_slip = attrs.get("duty_slip")
+
+        if self.instance:
+            if entry_type is None:
+                entry_type = self.instance.entry_type
+            if duty_slip is None:
+                duty_slip = self.instance.duty_slip
+
+        if duty_slip and entry_type and duty_slip.slip_type != entry_type:
+            raise serializers.ValidationError(
+                {"duty_slip": "Entry type must match the duty slip type."}
+            )
+
+        return attrs
+
 
 class DutySlipSerializer(serializers.ModelSerializer):
     entries = DutySlipEntrySerializer(many=True, read_only=True)

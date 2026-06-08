@@ -6,7 +6,7 @@
 
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
 @page {
-    size: A4 landscape;
+    size: A4 portrait;
     margin: 20px 30px;
   }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -107,7 +107,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 10px;
+      font-size: 11px;
       margin-bottom: 28px;
     }
 
@@ -117,17 +117,28 @@
     }
 
     th {
-      padding: 8px 6px;
+      padding: 10px 8px;
       text-align: left;
       font-weight: 500;
       letter-spacing: 0.3px;
-      white-space: nowrap;
+    }
+
+    th:last-child {
+      text-align: right;
     }
 
     td {
-      padding: 7px 6px;
+      padding: 9px 8px;
       border-bottom: 1px solid #e0e0e0;
+    }
+
+    td:last-child {
+      text-align: right;
+    }
+
+    .col-hrs {
       white-space: nowrap;
+      text-align: center;
     }
 
     tbody tr:nth-child(even) td {
@@ -149,6 +160,7 @@
 
     .grand-total-value {
       font-size: 13px;
+      text-align: right;
     }
 
     /* ── Footer ── */
@@ -159,6 +171,19 @@
       border-top: 1px solid #ddd;
       padding-top: 14px;
       margin-top: 8px;
+    }
+
+    .pdf-watermark {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 8px;
+      text-align: center;
+      font-size: 8px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(17, 17, 17, 0.38);
+      pointer-events: none;
     }
   </style>
 </head>
@@ -198,39 +223,27 @@
     <thead>
       <tr>
         <th>Date</th>
-        <th>Type</th>
-        <th>Car</th>
-        <th>Start KMs</th>
-        <th>End KMs</th>
+        <th>Trip Type</th>
+        <th>Vehicle</th>
+        <th class="col-hrs">Total Hrs</th>
+        <th class="col-hrs">Extra Hrs</th>
         <th>Total KMs</th>
         <th>Extra KMs</th>
-        <th>Extra KMs ({{ currency }})</th>
-        <th>Start Time</th>
-        <th>End Time</th>
-        <th>Extra Hrs</th>
-        <th>Extra Hrs ({{ currency }})</th>
-        <th>Base Rate</th>
         <th>Bhatta</th>
         <th>Parking</th>
-        <th>Row Total</th>
+        <th>Total</th>
       </tr>
     </thead>
     <tbody>
       {% for entry in entries %}
       <tr>
         <td>{{ entry.date }}</td>
-        <td>{{ entry.entry_type|capfirst }}</td>
+        <td>{{ entry.entry_type|capfirst }} Trip</td>
         <td>{{ entry.car.name }}</td>
-        <td>{{ entry.start_kms }}</td>
-        <td>{{ entry.end_kms }}</td>
+        <td class="col-hrs">{% if entry.total_hrs %}{{ entry.total_hrs }}{% else %}—{% endif %}</td>
+        <td class="col-hrs">{{ entry.extra_hrs }}</td>
         <td>{{ entry.total_kms }}</td>
         <td>{{ entry.extra_kms }}</td>
-        <td>{{ currency }}{{ entry.extra_kms_amount }}</td>
-        <td>{{ entry.start_time }}</td>
-        <td>{{ entry.end_time }}</td>
-        <td>{{ entry.extra_hrs }}</td>
-        <td>{{ currency }}{{ entry.extra_hrs_amount }}</td>
-        <td>{{ currency }}{{ entry.car.base_rate }}</td>
         <td>{{ currency }}{{ entry.driver_bhatta }}</td>
         <td>{{ currency }}{{ entry.parking }}</td>
         <td>{{ currency }}{{ entry.row_total }}</td>
@@ -239,7 +252,7 @@
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="15" class="grand-total-label">GRAND TOTAL</td>
+        <td colspan="9" class="grand-total-label">GRAND TOTAL</td>
         <td class="grand-total-value">{{ currency }}{{ slip.grand_total }}</td>
       </tr>
     </tfoot>
@@ -247,6 +260,10 @@
 
   <div class="invoice-footer">
     <p>Thank you for your business.</p>
+  </div>
+
+  <div class="pdf-watermark">
+    Created with Invoicely
   </div>
 
 </body>

@@ -1,28 +1,34 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 160 185" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="185" viewBox="0 0 540 185" fill="none">
   <defs>
-    <linearGradient id="faviconDocGrad" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="logoDocGrad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#60A5FA" stop-opacity=".46" />
       <stop offset=".55" stop-color="#2563EB" stop-opacity=".32" />
       <stop offset="1" stop-color="#8B5CF6" stop-opacity=".38" />
     </linearGradient>
-    <linearGradient id="faviconFoldGrad" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="logoFoldGrad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#22D3EE" />
       <stop offset="1" stop-color="#60A5FA" />
     </linearGradient>
-    <linearGradient id="faviconBadgeGrad" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="logoBadgeGrad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#60A5FA" />
       <stop offset=".52" stop-color="#2563EB" />
       <stop offset="1" stop-color="#8B5CF6" />
     </linearGradient>
   </defs>
-  <path d="M22 4h82l40 40v116c0 12-8 20-20 20H22c-12 0-20-8-20-20V24C2 12 10 4 22 4Z" fill="url(#faviconDocGrad)" stroke="#60A5FA" stroke-opacity=".75" stroke-width="2" />
-  <path d="M104 4v28c0 8 5 13 13 13h27L104 4Z" fill="url(#faviconFoldGrad)" />
+  <path d="M22 4h82l40 40v116c0 12-8 20-20 20H22c-12 0-20-8-20-20V24C2 12 10 4 22 4Z" fill="url(#logoDocGrad)" stroke="#60A5FA" stroke-opacity=".75" stroke-width="2" />
+  <path d="M104 4v28c0 8 5 13 13 13h27L104 4Z" fill="url(#logoFoldGrad)" />
   <rect x="28" y="42" width="52" height="5" rx="2.5" fill="#60A5FA" opacity=".65" />
   <rect x="28" y="62" width="42" height="5" rx="2.5" fill="#60A5FA" opacity=".55" />
   <rect x="28" y="82" width="34" height="5" rx="2.5" fill="#60A5FA" opacity=".5" />
   <path d="M32 142 C32 106 54 100 78 106 S127 100 127 68" fill="none" stroke="#22D3EE" stroke-width="3" stroke-linecap="round" stroke-dasharray="7 8" />
   <circle cx="32" cy="142" r="6" fill="#0B1020" stroke="#22D3EE" stroke-width="3" />
   <circle cx="127" cy="68" r="6" fill="#0B1020" stroke="#22D3EE" stroke-width="3" />
-  <circle cx="118" cy="146" r="31" fill="url(#faviconBadgeGrad)" stroke="#FFFFFF" stroke-opacity=".22" stroke-width="2" />
+  <circle cx="118" cy="146" r="31" fill="url(#logoBadgeGrad)" stroke="#FFFFFF" stroke-opacity=".22" stroke-width="2" />
   <path d="M104 145l12 12 22-26" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="185" y="90" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="72" font-weight="800" letter-spacing="-0.055em">
+    <tspan fill="#60A5FA">In</tspan><tspan fill="#FFFFFF">voicely</tspan>
+  </text>
+  <text x="187" y="132" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="600" letter-spacing="0.28em" fill="#A0AEC0">
+    SMART BILLING. SIMPLIFIED.
+  </text>
 </svg>

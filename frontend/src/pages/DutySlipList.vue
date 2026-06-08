@@ -1,5 +1,8 @@
 <template>
-  <div class="page">
+  <div
+    class="page"
+    :class="{ 'page--selection-active': selectionMode }"
+  >
     <div class="page-header">
       <div class="page-header__content">
         <span class="page-header__eyebrow">Invoices</span>
@@ -10,12 +13,28 @@
           Search, filter, and manage invoice-ready duty slips.
         </p>
       </div>
-      <router-link
-        to="/dutyslips/create"
-        class="btn-primary"
-      >
-        + Create Invoice
-      </router-link>
+      <div class="page-header__actions">
+        <template v-if="!selectionMode">
+          <button
+            class="btn-secondary"
+            @click="enterSelectionMode"
+          >
+            Bulk Print
+          </button>
+          <button
+            class="btn-secondary"
+            @click="enterSelectionMode"
+          >
+            Bulk Excel Export
+          </button>
+        </template>
+        <router-link
+          to="/dutyslips/create"
+          class="btn-primary"
+        >
+          + Create Invoice
+        </router-link>
+      </div>
     </div>
 
     <section class="section-card">
@@ -102,32 +121,43 @@
       v-else
       class="card-list"
     >
-      <router-link
+      <div
         v-for="slip in paginatedSlips"
         :key="slip.id"
-        :to="`/dutyslips/${slip.id}`"
         class="slip-card"
+        :class="{ 'slip-card--selected': isSelected(slip.id), 'slip-card--selectable': selectionMode }"
       >
-        <div class="slip-left">
-          <p class="slip-id">
-            INV-{{ formatSlipId(slip.id) }}
-          </p>
-          <p class="slip-party">
-            {{ slip.party_name }}
-          </p>
-          <div class="slip-meta-row">
-            <p class="slip-meta">
-              {{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}
-            </p>
-            <StatusBadge :status="slip.status" />
-            <PaymentStatusBadge :status="slip.payment_status" />
-            <span
-              v-if="slip.slip_type === 'outstation'"
-              class="outstation-badge"
-            >Outstation</span>
+        <!-- Clickable body: navigation or selection toggle -->
+        <div
+          class="slip-card__body"
+          @click="selectionMode ? toggleSelect(slip.id) : router.push(`/dutyslips/${slip.id}`)"
+        >
+          <div class="slip-left">
+            <div
+              v-if="selectionMode"
+              class="slip-checkbox"
+              :class="{ 'slip-checkbox--checked': isSelected(slip.id) }"
+            />
+            <div class="slip-left__text">
+              <p class="slip-id">
+                INV-{{ formatSlipId(slip.id) }}
+              </p>
+              <p class="slip-party">
+                {{ slip.party_name }}
+              </p>
+              <div class="slip-meta-row">
+                <p class="slip-meta">
+                  {{ slip.company_name }} · {{ slip.created_at?.slice(0, 10) }}
+                </p>
+                <StatusBadge :status="slip.status" />
+                <PaymentStatusBadge :status="slip.payment_status" />
+                <span
+                  v-if="slip.slip_type === 'outstation'"
+                  class="outstation-badge"
+                >Outstation</span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div class="slip-right">
           <div class="slip-totals">
             <p class="slip-amount">
               {{ currencySymbol }}{{ slip.grand_total }}
@@ -136,15 +166,52 @@
               {{ slip.entries?.length ?? 0 }} line items
             </p>
           </div>
-          <button
-            class="btn-delete"
-            @click="deleteSlip(slip, $event)"
-          >
-            Delete
-          </button>
         </div>
-      </router-link>
+        <!-- Actions: outside the clickable body entirely -->
+        <RowActionMenu
+          v-if="!selectionMode"
+          :show-print="true"
+          @edit="router.push(`/dutyslips/${slip.id}`)"
+          @delete="deleteSlip(slip)"
+          @print="downloadSlipPdf(slip)"
+        />
+      </div>
     </section>
+
+    <div
+      v-if="selectionMode"
+      class="selection-bar"
+    >
+      <span class="selection-bar__count">{{ selectedIds.length }} selected</span>
+      <div class="selection-bar__actions">
+        <button
+          class="btn-secondary"
+          @click="selectAll"
+        >
+          Select All
+        </button>
+        <button
+          class="btn-secondary"
+          :disabled="selectedIds.length === 0 || printingBulk"
+          @click="bulkPrint"
+        >
+          {{ printingBulk ? 'Printing…' : `Print (${selectedIds.length})` }}
+        </button>
+        <button
+          class="btn-primary"
+          :disabled="selectedIds.length === 0 || exportingBulk"
+          @click="bulkExportExcel"
+        >
+          {{ exportingBulk ? 'Exporting…' : `Export Excel (${selectedIds.length})` }}
+        </button>
+        <button
+          class="btn-secondary"
+          @click="exitSelectionMode"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
 
     <div
       v-if="filteredSlips.length > 0"
@@ -194,6 +261,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../api'
 import { currencySymbol } from '../store/currency'
 import { formatSlipId } from '../utils/formatId'
@@ -203,13 +271,14 @@ import { usePagination } from '../composables/usePagination'
 import { useConfirm } from '../composables/useConfirm'
 import { notify } from '../store/notification'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
+import RowActionMenu from '../components/RowActionMenu.vue'
+
+const router = useRouter()
 
 const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
         confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()
 
-async function deleteSlip(slip, e) {
-  e.preventDefault()
-  e.stopPropagation()
+async function deleteSlip(slip) {
   const ok = await ask({
     title: `Delete "${slip.party_name}"`,
     message: `This will permanently delete duty slip ${formatSlipId(slip.id)} and unassign all its entries. This cannot be undone.`,
@@ -225,9 +294,99 @@ async function deleteSlip(slip, e) {
   }
 }
 
-const slips     = ref([])
-const companies = ref([])
-const loading   = ref(true)
+async function downloadSlipPdf(slip) {
+  try {
+    const response = await api.get(`/dutyslips/${slip.id}/pdf/`, { responseType: 'blob' })
+    const blobUrl = window.URL.createObjectURL(response.data)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = `invoice-${formatSlipId(slip.id)}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(blobUrl)
+  } catch {
+    notify('Failed to download PDF.', 'error')
+  }
+}
+
+const slips        = ref([])
+const companies    = ref([])
+const loading      = ref(true)
+const selectionMode  = ref(false)
+const selectedIds    = ref([])
+const exportingBulk  = ref(false)
+const printingBulk   = ref(false)
+
+function isSelected(id) { return selectedIds.value.includes(id) }
+
+function toggleSelect(id) {
+  if (isSelected(id)) {
+    selectedIds.value = selectedIds.value.filter(i => i !== id)
+  } else {
+    selectedIds.value = [...selectedIds.value, id]
+  }
+}
+
+function selectAll() {
+  selectedIds.value = filteredSlips.value.map(s => s.id)
+}
+
+function enterSelectionMode() { selectionMode.value = true }
+
+function exitSelectionMode() {
+  selectionMode.value = false
+  selectedIds.value = []
+}
+
+async function bulkPrint() {
+  if (selectedIds.value.length === 0) return
+  printingBulk.value = true
+  try {
+    const response = await api.post(
+      '/dutyslips/bulk-pdf/',
+      { ids: selectedIds.value },
+      { responseType: 'blob' },
+    )
+    const blobUrl = window.URL.createObjectURL(response.data)
+    const w = window.open(blobUrl, '_blank')
+    if (!w) {
+      notify('Allow pop-ups to open the combined PDF.', 'error')
+      window.URL.revokeObjectURL(blobUrl)
+      return
+    }
+    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 60_000)
+  } catch {
+    notify('Failed to generate combined PDF.', 'error')
+  } finally {
+    printingBulk.value = false
+  }
+}
+
+async function bulkExportExcel() {
+  if (selectedIds.value.length === 0) return
+  exportingBulk.value = true
+  try {
+    const response = await api.post(
+      '/dutyslips/bulk-excel/',
+      { ids: selectedIds.value },
+      { responseType: 'blob' },
+    )
+    const blobUrl = window.URL.createObjectURL(response.data)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    link.download = `invoices-export-${today}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(blobUrl)
+  } catch {
+    notify('Failed to export Excel.', 'error')
+  } finally {
+    exportingBulk.value = false
+  }
+}
 
 const filters = ref({ party_name: '', company: '', status: '', payment_status: '' })
 

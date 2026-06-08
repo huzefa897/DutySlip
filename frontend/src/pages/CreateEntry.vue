@@ -250,13 +250,16 @@
                   None — save as standalone
                 </option>
                 <option
-                  v-for="s in dutySlips"
+                  v-for="s in matchingDutySlips"
                   :key="s.id"
                   :value="s.id"
                 >
                   {{ s.party_name }} · {{ s.company_name }}
                 </option>
               </select>
+              <p class="upload-hint">
+                Showing {{ matchingDutySlips.length }} {{ form.entry_type }} invoice(s) for assignment.
+              </p>
             </div>
           </div>
 
@@ -381,6 +384,10 @@ const canGoNext = computed(() =>
   )
 )
 
+const matchingDutySlips = computed(() =>
+  dutySlips.value.filter((slip) => slip.slip_type === form.value.entry_type)
+)
+
 watch(
   () => form.value.company,
   async (companyId) => {
@@ -406,6 +413,18 @@ watch(
       rateOverride.value = match || null
     } catch {
       rateOverride.value = null
+    }
+  }
+)
+
+watch(
+  () => form.value.entry_type,
+  () => {
+    if (
+      form.value.duty_slip &&
+      !matchingDutySlips.value.some((slip) => String(slip.id) === String(form.value.duty_slip))
+    ) {
+      form.value.duty_slip = ''
     }
   }
 )

@@ -66,53 +66,71 @@
                 class="expanded-row__cell"
               >
                 <div class="expanded-panel">
-                  <div class="expanded-panel__grid">
-                    <div class="expanded-panel__item">
-                      <span class="expanded-panel__label">Start KMs</span>
-                      <span class="expanded-panel__value">{{ entry.start_kms }}</span>
+                  <div class="expanded-panel__section">
+                    <span class="expanded-panel__section-title">Distance</span>
+                    <div class="expanded-panel__grid">
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">Start KMs</span>
+                        <span class="expanded-panel__value">{{ entry.start_kms }}</span>
+                      </div>
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">End KMs</span>
+                        <span class="expanded-panel__value">{{ entry.end_kms }}</span>
+                      </div>
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">Total KMs</span>
+                        <span class="expanded-panel__value">{{ entry.total_kms }}</span>
+                      </div>
                     </div>
-                    <div class="expanded-panel__item">
-                      <span class="expanded-panel__label">End KMs</span>
-                      <span class="expanded-panel__value">{{ entry.end_kms }}</span>
+                  </div>
+                  <div class="expanded-panel__section">
+                    <span class="expanded-panel__section-title">Time</span>
+                    <div class="expanded-panel__grid">
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">Start Time</span>
+                        <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : entry.start_time }}</span>
+                      </div>
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">End Time</span>
+                        <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : entry.end_time }}</span>
+                      </div>
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">Extra Hours</span>
+                        <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : entry.extra_hrs }}</span>
+                      </div>
                     </div>
-                    <div
-                      v-if="entry.entry_type === 'outstation'"
-                      class="expanded-panel__item"
-                    >
-                      <span class="expanded-panel__label">Rate</span>
-                      <span class="expanded-panel__value">{{ getRateLabel(entry) }}</span>
-                    </div>
-                    <div class="expanded-panel__item">
-                      <span class="expanded-panel__label">KM Cost</span>
-                      <span class="expanded-panel__value">{{ currencySymbol }}{{ entry.extra_kms_amount }}</span>
-                    </div>
-                    <div class="expanded-panel__item">
-                      <span class="expanded-panel__label">Start Time</span>
-                      <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : entry.start_time }}</span>
-                    </div>
-                    <div class="expanded-panel__item">
-                      <span class="expanded-panel__label">End Time</span>
-                      <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : entry.end_time }}</span>
-                    </div>
-                    <div class="expanded-panel__item">
-                      <span class="expanded-panel__label">Extra Hrs</span>
-                      <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : entry.extra_hrs }}</span>
-                    </div>
-                    <div class="expanded-panel__item">
-                      <span class="expanded-panel__label">Extra Hrs Cost</span>
-                      <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${entry.extra_hrs_amount}` }}</span>
-                    </div>
-                    <div class="expanded-panel__item">
-                      <span class="expanded-panel__label">Base Rate</span>
-                      <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${getBaseRate(entry.car)}` }}</span>
-                    </div>
-                    <div class="expanded-panel__item">
-                      <span class="expanded-panel__label">Bhatta</span>
-                      <span class="expanded-panel__value">{{ currencySymbol }}{{ entry.driver_bhatta }}</span>
-                    </div>
-                    <div class="expanded-panel__item">
-                      <span class="expanded-panel__label">Parking</span>
-                      <span class="expanded-panel__value">{{ currencySymbol }}{{ entry.parking }}</span>
+                  </div>
+                  <div class="expanded-panel__section">
+                    <span class="expanded-panel__section-title">Charges</span>
+                    <div class="expanded-panel__grid">
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">Base Rate</span>
+                        <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${getBaseRate(entry.car)}` }}</span>
+                      </div>
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">Rate</span>
+                        <span class="expanded-panel__value">{{ getRateLabel(entry) }}</span>
+                      </div>
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">KM Cost</span>
+                        <span class="expanded-panel__value">{{ currencySymbol }}{{ entry.extra_kms_amount }}</span>
+                      </div>
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">Extra Hours Cost</span>
+                        <span class="expanded-panel__value">{{ entry.entry_type === 'outstation' ? '—' : `${currencySymbol}${entry.extra_hrs_amount}` }}</span>
+                      </div>
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">Bhatta</span>
+                        <span class="expanded-panel__value">{{ currencySymbol }}{{ entry.driver_bhatta }}</span>
+                      </div>
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">Parking</span>
+                        <span class="expanded-panel__value">{{ currencySymbol }}{{ entry.parking }}</span>
+                      </div>
+                      <div class="expanded-panel__item">
+                        <span class="expanded-panel__label">Row Total</span>
+                        <span class="expanded-panel__value expanded-panel__value--accent">{{ currencySymbol }}{{ entry.row_total }}</span>
+                      </div>
                     </div>
                   </div>
                 </div>

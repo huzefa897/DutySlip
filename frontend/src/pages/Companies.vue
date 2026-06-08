@@ -61,18 +61,10 @@
             >
               {{ expandedCompany === company.id ? 'Hide Rates ↑' : 'Car Rates ↓' }}
             </button>
-            <button
-              class="clear-filters"
-              @click="openEdit(company)"
-            >
-              Edit
-            </button>
-            <button
-              class="btn-delete"
-              @click="deleteCompany(company)"
-            >
-              Delete
-            </button>
+            <RowActionMenu
+              @edit="openEdit(company)"
+              @delete="deleteCompany(company)"
+            />
           </div>
         </div>
 
@@ -281,6 +273,7 @@ import { notify } from '../store/notification'
 import { currencySymbol } from '../store/currency'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import { useConfirm } from '../composables/useConfirm'
+import RowActionMenu from '../components/RowActionMenu.vue'
 
 const { visible: confirmVisible, title: confirmTitle, message: confirmMessage,
         confirmLabel, destructive, ask, onConfirm, onCancel } = useConfirm()

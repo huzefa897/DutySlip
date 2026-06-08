@@ -36,7 +36,9 @@
             v-else
             class="logo-placeholder"
           >
-            <span class="logo-placeholder-text">No logo</span>
+            <span class="logo-placeholder-text">
+              No logo
+            </span>
           </div>
           <div>
             <input
