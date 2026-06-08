@@ -1,0 +1,28 @@
+name: Merge Conflict Checker
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-conflicts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan for merge conflict markers
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git grep -nE '^(<<<<<<<|=======|>>>>>>>)' -- . >/tmp/merge-conflicts.txt; then
+            echo "Merge conflict markers found:"
+            cat /tmp/merge-conflicts.txt
+            exit 1
+          fi
+
+          echo "No merge conflict markers found."

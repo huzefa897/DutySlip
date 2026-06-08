@@ -63,21 +63,37 @@
               {{ c.name }}
             </option>
           </select>
-          <select
-            v-model="filters.car"
-            class="input"
-          >
-            <option value="">
-              All Cars
-            </option>
-            <option
-              v-for="c in cars"
-              :key="c.id"
-              :value="c.id"
+          <div class="filter-stack">
+            <select
+              v-model="filters.car"
+              class="input"
             >
-              {{ c.name }}
-            </option>
-          </select>
+              <option value="">
+                All Cars
+              </option>
+              <option
+                v-for="c in cars"
+                :key="c.id"
+                :value="c.id"
+              >
+                {{ c.name }}
+              </option>
+            </select>
+            <select
+              v-model="filters.trip_type"
+              class="input"
+            >
+              <option value="">
+                All Trip Types
+              </option>
+              <option value="regular">
+                Regular
+              </option>
+              <option value="outstation">
+                Outstation
+              </option>
+            </select>
+          </div>
           <div class="quick-actions-row">
             <input
               v-model="filters.date_from"
@@ -418,6 +434,7 @@ const filters = ref({
   party_name: '',
   company: '',
   car: '',
+  trip_type: '',
   date_from: '',
   date_to: '',
 })
@@ -434,6 +451,8 @@ const filteredTrips = computed(() => {
     if (filters.value.company && String(t.company) !== String(filters.value.company))
       return false
     if (filters.value.car && String(t.car) !== String(filters.value.car))
+      return false
+    if (filters.value.trip_type && String(t.trip_type) !== String(filters.value.trip_type))
       return false
     if (filters.value.date_from && t.date < filters.value.date_from)
       return false
@@ -482,6 +501,7 @@ const printFilterSummary = computed(() => {
     const car = cars.value.find(c => String(c.id) === String(filters.value.car))
     parts.push(`Car: ${car?.name || filters.value.car}`)
   }
+  if (filters.value.trip_type) parts.push(`Type: ${formatTripType(filters.value.trip_type)}`)
   if (filters.value.date_from) parts.push(`From: ${filters.value.date_from}`)
   if (filters.value.date_to) parts.push(`To: ${filters.value.date_to}`)
   return parts.join(' | ')
@@ -659,6 +679,7 @@ async function downloadTripsExcel() {
       if (filters.value.party_name) params.party_name = filters.value.party_name
       if (filters.value.company) params.company = filters.value.company
       if (filters.value.car) params.car = filters.value.car
+      if (filters.value.trip_type) params.trip_type = filters.value.trip_type
       if (filters.value.date_from) params.date_from = filters.value.date_from
       if (filters.value.date_to) params.date_to = filters.value.date_to
     }
@@ -698,7 +719,7 @@ function toggleVisibleTrips(checked) {
 }
 
 function clearFilters() {
-  filters.value = { party_name: '', company: '', car: '', date_from: '', date_to: '' }
+  filters.value = { party_name: '', company: '', car: '', trip_type: '', date_from: '', date_to: '' }
 }
 const {
   paginated: paginatedTrips,
@@ -759,6 +780,23 @@ onMounted(fetchTrips)
 .trips-print {
   color: #111;
   font-family: Arial, sans-serif;
+}
+
+.filter-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.filter-stack .input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+}
+
+.quick-actions-row .input {
+  height: 48px;
 }
 
 .print-header {
