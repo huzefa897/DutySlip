@@ -190,70 +190,72 @@
     </div>
 
     <!-- Company Modal -->
-    <div
-      v-if="showModal"
-      class="modal-overlay"
-      @click.self="closeModal"
-    >
-      <div class="modal-card">
-        <div class="modal-header">
-          <h2 class="modal-title">
-            {{ editingCompany ? 'Edit Company' : 'New Company' }}
-          </h2>
-          <button
-            class="btn-cancel text-xl leading-none"
-            @click="closeModal"
-          >
-            ×
-          </button>
-        </div>
-        <form
-          class="modal-body form"
-          @submit.prevent="submit"
-        >
-          <div class="field">
-            <label class="label">Company Name</label>
-            <input
-              v-model="form.name"
-              type="text"
-              required
-              class="field-control"
-            >
-          </div>
-          <div class="field">
-            <label class="label">ABN</label>
-            <input
-              v-model="form.abn"
-              type="text"
-              required
-              class="field-control"
-            >
-          </div>
-          <p
-            v-if="error"
-            class="error"
-          >
-            {{ error }}
-          </p>
-          <div class="actions">
+    <Teleport to="body">
+      <div
+        v-if="showModal"
+        class="modal-overlay"
+        @click.self="closeModal"
+      >
+        <div class="modal-card">
+          <div class="modal-header">
+            <h2 class="modal-title">
+              {{ editingCompany ? 'Edit Company' : 'New Company' }}
+            </h2>
             <button
-              type="submit"
-              :disabled="submitting"
-              class="btn-primary"
-            >
-              {{ submitting ? 'Saving...' : editingCompany ? 'Save Changes' : 'Create Company' }}
-            </button>
-            <button
-              type="button"
-              class="btn-cancel px-2 py-2"
+              class="btn-cancel text-xl leading-none"
               @click="closeModal"
             >
-              Cancel
+              ×
             </button>
           </div>
-        </form>
+          <form
+            class="modal-body form"
+            @submit.prevent="submit"
+          >
+            <div class="field">
+              <label class="label">Company Name</label>
+              <input
+                v-model="form.name"
+                type="text"
+                required
+                class="field-control"
+              >
+            </div>
+            <div class="field">
+              <label class="label">ABN</label>
+              <input
+                v-model="form.abn"
+                type="text"
+                required
+                class="field-control"
+              >
+            </div>
+            <p
+              v-if="error"
+              class="error"
+            >
+              {{ error }}
+            </p>
+            <div class="actions">
+              <button
+                type="submit"
+                :disabled="submitting"
+                class="btn-primary"
+              >
+                {{ submitting ? 'Saving...' : editingCompany ? 'Save Changes' : 'Create Company' }}
+              </button>
+              <button
+                type="button"
+                class="btn-cancel px-2 py-2"
+                @click="closeModal"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </Teleport>
     <ConfirmDialog
       :visible="confirmVisible"
       :title="confirmTitle"

@@ -96,111 +96,113 @@
     </section>
 
     <!-- Modal -->
-    <div
-      v-if="showModal"
-      class="modal-overlay"
-      @click.self="closeModal"
-    >
-      <div class="modal-card">
-        <div class="modal-header">
-          <h2 class="modal-title">
-            {{ editingCar ? 'Edit Car' : 'New Car' }}
-          </h2>
-          <button
-            class="btn-cancel text-xl leading-none"
-            @click="closeModal"
-          >
-            ×
-          </button>
-        </div>
-
-        <form
-          class="modal-body form"
-          @submit.prevent="submit"
-        >
-          <div class="field">
-            <label class="label">Car Name</label>
-            <input
-              v-model="form.name"
-              type="text"
-              required
-              placeholder="e.g. Ute, Camry, HiAce"
-              class="field-control"
-            >
-          </div>
-
-          <div class="field">
-            <label class="label">Base Rate ({{ currencySymbol }})</label>
-            <input
-              v-model="form.base_rate"
-              type="number"
-              step="0.01"
-              required
-              placeholder="e.g. 100.00"
-              class="field-control"
-            >
-          </div>
-
-          <div class="field">
-            <label class="label">Extra KM Rate ({{ currencySymbol }} per km over 80)</label>
-            <input
-              v-model="form.extra_km_rate"
-              type="number"
-              step="0.01"
-              required
-              placeholder="e.g. 1.20"
-              class="field-control"
-            >
-          </div>
-
-          <div class="field">
-            <label class="label">Extra Hour Rate ({{ currencySymbol }} per hr over 8)</label>
-            <input
-              v-model="form.extra_hr_rate"
-              type="number"
-              step="0.01"
-              required
-              placeholder="e.g. 12.00"
-              class="field-control"
-            >
-          </div>
-          <div class="field">
-            <label class="label">Outstation Rate ({{ currencySymbol }} per km)</label>
-            <input
-              v-model="form.outstation_rate"
-              type="number"
-              step="0.01"
-              placeholder="e.g. 2.00"
-              class="field-control"
-            >
-          </div>
-
-          <p
-            v-if="error"
-            class="error"
-          >
-            {{ error }}
-          </p>
-
-          <div class="actions">
+    <Teleport to="body">
+      <div
+        v-if="showModal"
+        class="modal-overlay"
+        @click.self="closeModal"
+      >
+        <div class="modal-card">
+          <div class="modal-header">
+            <h2 class="modal-title">
+              {{ editingCar ? 'Edit Car' : 'New Car' }}
+            </h2>
             <button
-              type="submit"
-              :disabled="submitting"
-              class="btn-primary"
-            >
-              {{ submitting ? 'Saving...' : editingCar ? 'Save Changes' : 'Create Car' }}
-            </button>
-            <button
-              type="button"
-              class="btn-cancel px-2 py-2"
+              class="btn-cancel text-xl leading-none"
               @click="closeModal"
             >
-              Cancel
+              ×
             </button>
           </div>
-        </form>
+
+          <form
+            class="modal-body form"
+            @submit.prevent="submit"
+          >
+            <div class="field">
+              <label class="label">Car Name</label>
+              <input
+                v-model="form.name"
+                type="text"
+                required
+                placeholder="e.g. Ute, Camry, HiAce"
+                class="field-control"
+              >
+            </div>
+
+            <div class="field">
+              <label class="label">Base Rate ({{ currencySymbol }})</label>
+              <input
+                v-model="form.base_rate"
+                type="number"
+                step="0.01"
+                required
+                placeholder="e.g. 100.00"
+                class="field-control"
+              >
+            </div>
+
+            <div class="field">
+              <label class="label">Extra KM Rate ({{ currencySymbol }} per km over 80)</label>
+              <input
+                v-model="form.extra_km_rate"
+                type="number"
+                step="0.01"
+                required
+                placeholder="e.g. 1.20"
+                class="field-control"
+              >
+            </div>
+
+            <div class="field">
+              <label class="label">Extra Hour Rate ({{ currencySymbol }} per hr over 8)</label>
+              <input
+                v-model="form.extra_hr_rate"
+                type="number"
+                step="0.01"
+                required
+                placeholder="e.g. 12.00"
+                class="field-control"
+              >
+            </div>
+            <div class="field">
+              <label class="label">Outstation Rate ({{ currencySymbol }} per km)</label>
+              <input
+                v-model="form.outstation_rate"
+                type="number"
+                step="0.01"
+                placeholder="e.g. 2.00"
+                class="field-control"
+              >
+            </div>
+
+            <p
+              v-if="error"
+              class="error"
+            >
+              {{ error }}
+            </p>
+
+            <div class="actions">
+              <button
+                type="submit"
+                :disabled="submitting"
+                class="btn-primary"
+              >
+                {{ submitting ? 'Saving...' : editingCar ? 'Save Changes' : 'Create Car' }}
+              </button>
+              <button
+                type="button"
+                class="btn-cancel px-2 py-2"
+                @click="closeModal"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-    </div>
+    </Teleport>
     <ConfirmDialog
       :visible="confirmVisible"
       :title="confirmTitle"
