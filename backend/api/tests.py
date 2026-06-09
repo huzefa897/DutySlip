@@ -96,6 +96,24 @@ class RBACTests(APITestCase):
         )
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
+    def test_company_create_seeds_client_account(self):
+        self.set_auth(self.admin_user)
+        res = self.client.post(
+            reverse("company_list"),
+            {"name": "Acme Tours", "abn": "ACME-001"},
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        company = Company.objects.get(abn="ACME-001")
+        user = User.objects.get(email="acmetours@client.com")
+
+        self.assertTrue(user.check_password("client@123"))
+        self.assertFalse(user.is_staff)
+        self.assertFalse(user.is_superuser)
+        self.assertEqual(user.profile.role, "client")
+        self.assertTrue(user.profile.is_active)
+        self.assertTrue(user.profile.companies.filter(pk=company.pk).exists())
+
     # ── Test Client Access ──────────────────────────────────────────
     def test_client_scoped_to_company(self):
         self.set_auth(self.client_user)

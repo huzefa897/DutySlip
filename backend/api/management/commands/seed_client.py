@@ -2,14 +2,14 @@
 Seed a single client account for local development.
 
 Usage:
-    python manage.py seed_client --email saleemtourist@client --password Taher@7660
+    python manage.py seed_client --email saleemtourist@client --password admin@123
 
 This command is idempotent:
 - creates the user if missing
 - updates the password if provided
 - ensures the Django user is not staff/superuser
 - ensures the linked UserProfile exists with role='client'
-- ensures the client is assigned to a default demo company
+- assigns the client to existing companies, or creates a default demo company
 """
 
 from django.contrib.auth.models import User
@@ -29,7 +29,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--password",
-            default="Taher@7660",
+            default="admin@123",
             help="Password for the client account",
         )
         parser.add_argument(
@@ -52,6 +52,13 @@ class Command(BaseCommand):
             default="CLIENT-001",
             help="ABN/identifier for the demo company",
         )
+        parser.add_argument(
+            "--no-assign-existing-companies",
+            action="store_false",
+            dest="assign_existing_companies",
+            help="Only assign the default demo company instead of every existing company",
+        )
+        parser.set_defaults(assign_existing_companies=True)
 
     def handle(self, *args, **options):
         email = options["email"].strip().lower()
@@ -60,6 +67,7 @@ class Command(BaseCommand):
         last_name = options["last_name"].strip()
         company_name = options["company_name"].strip()
         company_abn = options["company_abn"].strip()
+        assign_existing_companies = options["assign_existing_companies"]
 
         if not email:
             raise CommandError("--email is required.")
@@ -136,15 +144,18 @@ class Command(BaseCommand):
         if profile_changed:
             profile.save(update_fields=["role", "is_active"])
 
-        company, company_created = Company.objects.get_or_create(
-            abn=company_abn,
-            defaults={"name": company_name},
-        )
-        if not company_created and company.name != company_name:
-            company.name = company_name
-            company.save(update_fields=["name"])
-
-        if not profile.companies.filter(pk=company.pk).exists():
+        if assign_existing_companies and Company.objects.exists():
+            assigned_companies = list(Company.objects.all())
+            profile.companies.add(*assigned_companies)
+        else:
+            company, company_created = Company.objects.get_or_create(
+                abn=company_abn,
+                defaults={"name": company_name},
+            )
+            if not company_created and company.name != company_name:
+                company.name = company_name
+                company.save(update_fields=["name"])
+            assigned_companies = [company]
             profile.companies.add(company)
 
         if profile_created:
@@ -153,5 +164,8 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("Updated profile to client."))
 
         self.stdout.write(
-            self.style.SUCCESS(f"✓ Seeded client account: {email} -> {company.name}")
+            self.style.SUCCESS(
+                f"✓ Seeded client account: {email} -> "
+                f"{', '.join(company.name for company in assigned_companies)}"
+            )
         )

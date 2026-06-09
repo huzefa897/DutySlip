@@ -15,6 +15,9 @@ import json
 import base64
 import requests as http_requests
 
+from django.contrib.auth.models import User
+from django.utils.text import slugify
+
 from .models import (
     Company,
     Car,
@@ -23,6 +26,7 @@ from .models import (
     BusinessSettings,
     CompanyCarRate,
     Party,
+    UserProfile,
 )
 from .serializers import (
     CompanySerializer,
@@ -74,6 +78,53 @@ def business_settings(request):
 
 
 # ── Companies ─────────────────────────────────────────────────
+def make_company_client_email(company_name):
+    local_part = slugify(company_name).replace("-", "")
+    if not local_part:
+        local_part = "company"
+    return f"{local_part}@client.com"
+
+
+def ensure_company_client_account(company):
+    email = make_company_client_email(company.name)
+    user = User.objects.filter(email__iexact=email).first()
+    if user is None:
+        user = User.objects.create(
+            username=email,
+            email=email,
+            first_name=company.name,
+            is_staff=False,
+            is_superuser=False,
+            is_active=True,
+        )
+    else:
+        user.username = email
+        user.email = email
+        user.first_name = company.name
+        user.is_staff = False
+        user.is_superuser = False
+        user.is_active = True
+
+    user.set_password("client@123")
+    user.save()
+
+    profile, _ = UserProfile.objects.get_or_create(
+        user=user,
+        defaults={"role": "client", "is_active": True},
+    )
+    changed = False
+    if profile.role != "client":
+        profile.role = "client"
+        changed = True
+    if not profile.is_active:
+        profile.is_active = True
+        changed = True
+    if changed:
+        profile.save(update_fields=["role", "is_active"])
+    profile.companies.add(company)
+    return user
+
+
 @api_view(["GET", "POST"])
 @admin_or_client_readonly
 def company_list(request):
@@ -86,7 +137,8 @@ def company_list(request):
 
     serializer = CompanySerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
+        company = serializer.save()
+        ensure_company_client_account(company)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

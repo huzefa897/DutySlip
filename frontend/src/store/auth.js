@@ -64,9 +64,14 @@ export function setActiveCompany(company) {
 export function setTokens(access, refresh) {
   accessToken.value  = access
   refreshToken.value = refresh
-  _payload.value     = parseJwtPayload(access)
+  const payload      = parseJwtPayload(access)
+  _payload.value     = payload
   localStorage.setItem(ACCESS_KEY,  access)
   if (refresh) localStorage.setItem(REFRESH_KEY, refresh)
+  if (payload?.role !== 'client') {
+    activeCompany.value = null
+    sessionStorage.removeItem('ds_active_company')
+  }
 }
 
 export function clearAuth() {

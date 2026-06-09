@@ -35,7 +35,6 @@
       </router-view>
     </main>
 
-    <CompanySelector v-if="isAuthenticated && isClient" />
     <BottomNav v-if="isAuthenticated" />
   </div>
 </template>
@@ -43,10 +42,9 @@
 <script setup>
 import { onMounted, watch } from 'vue'
 import BottomNav from './components/BottomNav.vue'
-import CompanySelector from './components/CompanySelector.vue'
 import { notification, clearNotification } from './store/notification'
 import { setCurrency } from './store/currency'
-import { isAuthenticated, isClient } from './store/auth'
+import { isAuthenticated } from './store/auth'
 import api from './api'
 
 async function fetchSettings() {

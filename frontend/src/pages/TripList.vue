@@ -697,7 +697,7 @@ async function downloadTripsExcel() {
       if (filters.value.car) params.car = filters.value.car
       if (filters.value.date_from) params.date_from = filters.value.date_from
       if (filters.value.date_to) params.date_to = filters.value.date_to
-      if (activeCompany.value) params.company = activeCompany.value.id
+      if (isClient.value && activeCompany.value) params.company = activeCompany.value.id
     }
 
     const response = await api.get('/trips/excel/', {
@@ -756,7 +756,9 @@ async function fetchTrips() {
     return
   }
 
-  const params = activeCompany.value ? { company: activeCompany.value.id } : {}
+  const params = isClient.value && activeCompany.value
+    ? { company: activeCompany.value.id }
+    : {}
 
   try {
     const [tripsRes, carsRes, companiesRes] = await Promise.all([

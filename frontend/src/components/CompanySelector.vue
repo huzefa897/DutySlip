@@ -66,14 +66,15 @@ async function fetchCompanies() {
     const res = await api.get('/companies/')
     companies.value = res.data
 
-    // Auto-select if only one or if activeCompany is no longer in the list
-    if (companies.value.length === 1) {
-      setActiveCompany(companies.value[0])
+    if (companies.value.length === 0) {
+      setActiveCompany(null)
     } else if (activeCompany.value) {
       const stillExists = companies.value.find(c => c.id === activeCompany.value.id)
       if (!stillExists) {
-        setActiveCompany(null)
+        setActiveCompany(companies.value[0])
       }
+    } else {
+      setActiveCompany(companies.value[0])
     }
   } catch (e) {
     console.error('Failed to fetch companies for selector', e)
@@ -95,20 +96,17 @@ onMounted(() => {
 
 <style scoped>
 .client-company-pill {
-  position: fixed;
-  left: max(16px, calc(50% - 470px));
-  bottom: 24px;
-  z-index: 51;
-  width: 68px;
-  height: 68px;
+  position: relative;
+  width: 52px;
+  height: 52px;
   border-radius: 999px;
   border: 2px solid rgba(96, 165, 250, 0.55);
   background:
     radial-gradient(circle at 35% 25%, rgba(139, 92, 246, 0.22), transparent 45%),
     rgba(31, 41, 65, 0.82);
   box-shadow:
-    0 0 28px rgba(96, 165, 250, 0.22),
-    inset 0 0 24px rgba(255, 255, 255, 0.04);
+    0 0 20px rgba(96, 165, 250, 0.16),
+    inset 0 0 18px rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(18px);
   display: flex;
   flex-direction: column;
@@ -125,16 +123,16 @@ onMounted(() => {
 .client-company-pill:hover {
   border-color: #22d3ee;
   box-shadow:
-    0 0 34px rgba(34, 211, 238, 0.25),
-    inset 0 0 24px rgba(255, 255, 255, 0.06);
+    0 0 22px rgba(34, 211, 238, 0.22),
+    inset 0 0 18px rgba(255, 255, 255, 0.06);
   transform: translateY(-1px);
 }
 
 .client-company-pill.is-open {
   border-color: #8b5cf6;
   box-shadow:
-    0 0 36px rgba(139, 92, 246, 0.28),
-    inset 0 0 24px rgba(255, 255, 255, 0.06);
+    0 0 24px rgba(139, 92, 246, 0.24),
+    inset 0 0 18px rgba(255, 255, 255, 0.06);
 }
 
 .client-company-pill.is-empty {
@@ -142,7 +140,7 @@ onMounted(() => {
 }
 
 .client-company-pill__initial {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 800;
   line-height: 1;
   background: linear-gradient(135deg, #60a5fa, #8b5cf6);
@@ -152,8 +150,8 @@ onMounted(() => {
 }
 
 .client-company-pill__chevron {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   color: #94a3b8;
   margin-top: -2px;
 }
@@ -179,21 +177,19 @@ onMounted(() => {
   border: 0;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 520px) {
   .client-company-pill {
-    left: 16px;
-    bottom: 102px;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
   }
 
   .client-company-pill__initial {
-    font-size: 21px;
+    font-size: 19px;
   }
 
   .client-company-pill__chevron {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
   }
 }
 </style>

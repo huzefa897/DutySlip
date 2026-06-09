@@ -2,6 +2,13 @@
   <nav class="floating-nav">
     <div class="floating-nav__inner">
       <div
+        v-if="isClient"
+        class="floating-nav__item floating-nav__item--company"
+      >
+        <CompanySelector />
+      </div>
+
+      <div
         v-for="item in visibleItems"
         :key="item.label"
         class="floating-nav__item"
@@ -54,7 +61,8 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { isAdmin, clearAuth } from '../store/auth'
+import { isAdmin, isClient, clearAuth } from '../store/auth'
+import CompanySelector from './CompanySelector.vue'
 
 const route = useRoute()
 const router = useRouter()

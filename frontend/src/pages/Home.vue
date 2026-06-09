@@ -250,7 +250,9 @@ const stats = computed(() => {
 onMounted(async () => {
   if (isClient.value && !activeCompany.value) return
 
-  const params = activeCompany.value ? { company: activeCompany.value.id } : {}
+  const params = isClient.value && activeCompany.value
+    ? { company: activeCompany.value.id }
+    : {}
 
   const [slipsRes, tripsRes, settingsRes] = await Promise.all([
     api.get('/invoices/', { params }),

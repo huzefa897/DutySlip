@@ -287,7 +287,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
 import { currencySymbol } from '../store/currency'
@@ -450,12 +450,18 @@ const {
 } = usePagination(filteredInvoices)
 
 async function fetchData() {
+  loading.value = true
+
   if (isClient.value && !activeCompany.value) {
+    invoices.value = []
+    companies.value = []
     loading.value = false
     return
   }
 
-  const params = activeCompany.value ? { company: activeCompany.value.id } : {}
+  const params = isClient.value && activeCompany.value
+    ? { company: activeCompany.value.id }
+    : {}
 
   try {
     const [invoicesRes, companiesRes] = await Promise.all([
@@ -470,4 +476,5 @@ async function fetchData() {
 }
 
 onMounted(fetchData)
+watch(activeCompany, fetchData)
 </script>

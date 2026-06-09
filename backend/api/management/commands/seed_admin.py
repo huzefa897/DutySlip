@@ -2,7 +2,7 @@
 Seed a single admin account for local development.
 
 Usage:
-    python manage.py seed_admin --email saleemtourist@admin --password Taher@7660
+    python manage.py seed_admin --email saleemtourist@admin --password admin@123
 
 This command is idempotent:
 - creates the user if missing
@@ -28,7 +28,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--password",
-            default="Taher@7660",
+            default="admin@123",
             help="Password for the admin account",
         )
         parser.add_argument(
