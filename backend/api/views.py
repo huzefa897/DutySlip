@@ -15,6 +15,9 @@ import json
 import base64
 import requests as http_requests
 
+from django.contrib.auth.models import User
+from django.utils.text import slugify
+
 from .models import (
     Company,
     Car,
@@ -23,6 +26,7 @@ from .models import (
     BusinessSettings,
     CompanyCarRate,
     Party,
+    UserProfile,
 )
 from .serializers import (
     CompanySerializer,
@@ -33,6 +37,7 @@ from .serializers import (
     CompanyCarRateSerializer,
 )
 from .services import compute_trip, compute_invoice_total
+from .permissions import admin_only, admin_or_client_readonly, get_scoped_company_ids
 from decimal import Decimal
 
 
@@ -47,6 +52,7 @@ class DecimalEncoder(json.JSONEncoder):
 
 # ── Business Settings ─────────────────────────────────────────
 @api_view(["GET", "PATCH"])
+@admin_or_client_readonly
 def business_settings(request):
     settings_obj = BusinessSettings.objects.first()
     if not settings_obj:
@@ -72,20 +78,73 @@ def business_settings(request):
 
 
 # ── Companies ─────────────────────────────────────────────────
+def make_company_client_email(company_name):
+    local_part = slugify(company_name).replace("-", "")
+    if not local_part:
+        local_part = "company"
+    return f"{local_part}@client.com"
+
+
+def ensure_company_client_account(company):
+    email = make_company_client_email(company.name)
+    user = User.objects.filter(email__iexact=email).first()
+    if user is None:
+        user = User.objects.create(
+            username=email,
+            email=email,
+            first_name=company.name,
+            is_staff=False,
+            is_superuser=False,
+            is_active=True,
+        )
+    else:
+        user.username = email
+        user.email = email
+        user.first_name = company.name
+        user.is_staff = False
+        user.is_superuser = False
+        user.is_active = True
+
+    user.set_password("client@123")
+    user.save()
+
+    profile, _ = UserProfile.objects.get_or_create(
+        user=user,
+        defaults={"role": "client", "is_active": True},
+    )
+    changed = False
+    if profile.role != "client":
+        profile.role = "client"
+        changed = True
+    if not profile.is_active:
+        profile.is_active = True
+        changed = True
+    if changed:
+        profile.save(update_fields=["role", "is_active"])
+    profile.companies.add(company)
+    return user
+
+
 @api_view(["GET", "POST"])
+@admin_or_client_readonly
 def company_list(request):
     if request.method == "GET":
+        company_ids = get_scoped_company_ids(request)
         companies = Company.objects.all()
+        if company_ids is not None:
+            companies = companies.filter(id__in=company_ids)
         return Response(CompanySerializer(companies, many=True).data)
 
     serializer = CompanySerializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
+        company = serializer.save()
+        ensure_company_client_account(company)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@admin_or_client_readonly
 def company_detail(request, pk):
     try:
         company = Company.objects.get(pk=pk)
@@ -93,6 +152,10 @@ def company_detail(request, pk):
         return Response(
             {"error": "Company not found"}, status=status.HTTP_404_NOT_FOUND
         )
+
+    company_ids = get_scoped_company_ids(request)
+    if company_ids is not None and company.id not in company_ids:
+        return Response({"error": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == "GET":
         return Response(CompanySerializer(company).data)
@@ -116,7 +179,11 @@ def company_detail(request, pk):
 
 
 @api_view(["GET", "POST"])
+@admin_or_client_readonly
 def company_parties(request, company_id):
+    company_ids = get_scoped_company_ids(request)
+    if company_ids is not None and company_id not in company_ids:
+        return Response({"error": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     company = get_object_or_404(Company, pk=company_id)
     if request.method == "GET":
         parties = Party.objects.filter(company=company)
@@ -131,7 +198,11 @@ def company_parties(request, company_id):
 
 
 @api_view(["GET", "POST"])
+@admin_or_client_readonly
 def company_invoice_parties(request, company_id):
+    company_ids = get_scoped_company_ids(request)
+    if company_ids is not None and company_id not in company_ids:
+        return Response({"error": "Not found."}, status=status.HTTP_404_NOT_FOUND)
     company = get_object_or_404(Company, pk=company_id)
     if request.method == "GET":
         parties = Party.objects.filter(company=company)
@@ -147,6 +218,7 @@ def company_invoice_parties(request, company_id):
 
 # ── Company Car Rates ─────────────────────────────────────────
 @api_view(["GET", "POST"])
+@admin_or_client_readonly
 def company_car_rates(request, company_id):
     try:
         company = Company.objects.get(pk=company_id)
@@ -186,6 +258,7 @@ def company_car_rates(request, company_id):
 
 
 @api_view(["DELETE"])
+@admin_only
 def delete_company_car_rate(request, company_id, car_id):
     try:
         rate = CompanyCarRate.objects.get(company_id=company_id, car_id=car_id)
@@ -197,6 +270,7 @@ def delete_company_car_rate(request, company_id, car_id):
 
 # ── Cars ──────────────────────────────────────────────────────
 @api_view(["GET", "POST"])
+@admin_or_client_readonly
 def car_list(request):
     if request.method == "GET":
         cars = Car.objects.all()
@@ -210,6 +284,7 @@ def car_list(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@admin_or_client_readonly
 def car_detail(request, pk):
     try:
         car = Car.objects.get(pk=pk)
@@ -239,9 +314,19 @@ def car_detail(request, pk):
 
 # ── DutySlip (Trip) ───────────────────────────────────────────
 @api_view(["GET", "POST"])
+@admin_or_client_readonly
 def trip_list(request):
     if request.method == "GET":
+        company_ids = get_scoped_company_ids(request)
         trips = DutySlip.objects.all().order_by("-date")
+
+        # Filter by specific company if provided
+        target_company = request.query_params.get("company")
+        if target_company:
+            trips = trips.filter(company_id=target_company)
+
+        if company_ids is not None:
+            trips = trips.filter(company_id__in=company_ids)
         return Response(DutySlipSerializer(trips, many=True).data)
 
     serializer = DutySlipSerializer(data=request.data)
@@ -256,11 +341,16 @@ def trip_list(request):
 
 
 @api_view(["GET", "PUT", "DELETE"])
+@admin_or_client_readonly
 def trip_detail(request, pk):
     try:
         trip = DutySlip.objects.get(pk=pk)
     except DutySlip.DoesNotExist:
         return Response({"error": "Trip not found"}, status=status.HTTP_404_NOT_FOUND)
+
+    company_ids = get_scoped_company_ids(request)
+    if company_ids is not None and trip.company_id not in company_ids:
+        return Response({"error": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == "GET":
         return Response(DutySlipSerializer(trip).data)
@@ -287,6 +377,7 @@ def trip_detail(request, pk):
 
 
 @api_view(["POST"])
+@admin_only
 def duplicate_trip(request, pk):
     try:
         trip = DutySlip.objects.get(pk=pk)
@@ -316,9 +407,19 @@ def duplicate_trip(request, pk):
 
 # ── Invoice ───────────────────────────────────────────────────
 @api_view(["GET", "POST"])
+@admin_or_client_readonly
 def invoice_list(request):
     if request.method == "GET":
+        company_ids = get_scoped_company_ids(request)
         invoices = Invoice.objects.all().order_by("-created_at")
+
+        # Filter by specific company if provided
+        target_company = request.query_params.get("company")
+        if target_company:
+            invoices = invoices.filter(company_id=target_company)
+
+        if company_ids is not None:
+            invoices = invoices.filter(company_id__in=company_ids)
         return Response(InvoiceSerializer(invoices, many=True).data)
 
     serializer = InvoiceSerializer(data=request.data)
@@ -332,6 +433,7 @@ def invoice_list(request):
 
 
 @api_view(["GET", "DELETE"])
+@admin_or_client_readonly
 def invoice_detail(request, pk):
     try:
         invoice = Invoice.objects.get(pk=pk)
@@ -339,6 +441,10 @@ def invoice_detail(request, pk):
         return Response(
             {"error": "Invoice not found"}, status=status.HTTP_404_NOT_FOUND
         )
+
+    company_ids = get_scoped_company_ids(request)
+    if company_ids is not None and invoice.company_id not in company_ids:
+        return Response({"error": "Not found."}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == "GET":
         return Response(InvoiceSerializer(invoice).data)
@@ -349,6 +455,7 @@ def invoice_detail(request, pk):
 
 
 @api_view(["POST"])
+@admin_only
 def assign_trips_to_invoice(request, pk):
     try:
         invoice = Invoice.objects.get(pk=pk)
@@ -373,6 +480,7 @@ def assign_trips_to_invoice(request, pk):
 
 
 @api_view(["POST"])
+@admin_only
 def remove_trip_from_invoice(request, pk, trip_id):
     try:
         invoice = Invoice.objects.get(pk=pk)
@@ -387,6 +495,7 @@ def remove_trip_from_invoice(request, pk, trip_id):
 
 
 @api_view(["PATCH"])
+@admin_only
 def update_invoice_status(request, pk):
     try:
         invoice = Invoice.objects.get(pk=pk)
@@ -403,6 +512,7 @@ def update_invoice_status(request, pk):
 
 
 @api_view(["PATCH"])
+@admin_only
 def update_invoice_payment_status(request, pk):
     try:
         invoice = Invoice.objects.get(pk=pk)
@@ -527,11 +637,16 @@ def _build_invoice_html(
 
 # ── Invoice PDF ───────────────────────────────────────────────
 @api_view(["GET"])
+@admin_or_client_readonly
 def download_invoice_pdf(request, pk):
     try:
         invoice = Invoice.objects.select_related("company").get(pk=pk)
     except Invoice.DoesNotExist:
         return Response({"error": "Not found"}, status=404)
+
+    company_ids = get_scoped_company_ids(request)
+    if company_ids is not None and invoice.company_id not in company_ids:
+        return Response({"error": "Not found."}, status=404)
 
     trips = (
         DutySlip.objects.filter(invoice=invoice).select_related("car").order_by("date")
@@ -1056,8 +1171,12 @@ def _build_trips_sheet(ws, trips, biz, currency, report_title, report_date):
 
 
 @api_view(["GET"])
+@admin_or_client_readonly
 def download_invoice_excel(request, pk):
     invoice = get_object_or_404(Invoice.objects.select_related("company"), pk=pk)
+    company_ids = get_scoped_company_ids(request)
+    if company_ids is not None and invoice.company_id not in company_ids:
+        return Response({"error": "Not found."}, status=404)
     trips = list(
         DutySlip.objects.filter(invoice=invoice).select_related("car").order_by("date")
     )
@@ -1088,14 +1207,18 @@ def download_invoice_excel(request, pk):
 
 
 @api_view(["POST"])
+@admin_or_client_readonly
 def bulk_download_invoice_pdf(request):
     ids = request.data.get("ids", [])
     if not ids:
         return Response({"error": "No invoice IDs provided."}, status=400)
 
+    company_ids = get_scoped_company_ids(request)
     invoices = (
         Invoice.objects.filter(id__in=ids).select_related("company").order_by("id")
     )
+    if company_ids is not None:
+        invoices = invoices.filter(company_id__in=company_ids)
     biz = BusinessSettings.objects.first()
     currency = "₹" if biz and biz.currency == "INR" else "$"
     year = datetime.date.today().year
@@ -1148,8 +1271,12 @@ def bulk_download_invoice_pdf(request):
 
 
 @api_view(["GET"])
+@admin_or_client_readonly
 def download_trips_excel(request):
+    company_ids = get_scoped_company_ids(request)
     qs = DutySlip.objects.select_related("car", "company", "invoice")
+    if company_ids is not None:
+        qs = qs.filter(company_id__in=company_ids)
     ids = request.query_params.get("ids", "")
     if ids:
         id_list = [int(value) for value in ids.split(",") if value.strip().isdigit()]
@@ -1200,14 +1327,18 @@ def download_trips_excel(request):
 
 
 @api_view(["POST"])
+@admin_or_client_readonly
 def bulk_export_excel(request):
     ids = request.data.get("ids", [])
     if not ids:
         return Response({"error": "No invoice IDs provided."}, status=400)
 
+    company_ids = get_scoped_company_ids(request)
     invoices = (
         Invoice.objects.filter(id__in=ids).select_related("company").order_by("id")
     )
+    if company_ids is not None:
+        invoices = invoices.filter(company_id__in=company_ids)
     biz = BusinessSettings.objects.first()
     currency = "₹" if biz and biz.currency == "INR" else "$"
     year = datetime.date.today().year
@@ -1286,6 +1417,7 @@ def push_to_github(biz, data):
 
 
 @api_view(["GET"])
+@admin_only
 def backup_database(request):
     data = get_backup_data()
     biz = BusinessSettings.objects.first()
@@ -1299,6 +1431,7 @@ def backup_database(request):
 
 
 @api_view(["POST"])
+@admin_only
 def restore_database(request):
     try:
         backup = json.loads(request.body)
@@ -1346,6 +1479,7 @@ def restore_database(request):
 
 
 @api_view(["POST"])
+@admin_only
 def push_backup_github(request):
     biz = BusinessSettings.objects.first()
     if not biz or not biz.github_token:
@@ -1363,6 +1497,7 @@ def push_backup_github(request):
 
 
 @api_view(["GET"])
+@admin_only
 def list_github_backups(request):
     biz = BusinessSettings.objects.first()
     if not biz or not biz.github_token:
@@ -1391,6 +1526,7 @@ def list_github_backups(request):
 
 
 @api_view(["POST"])
+@admin_only
 def restore_from_github(request):
     biz = BusinessSettings.objects.first()
     if not biz or not biz.github_token:

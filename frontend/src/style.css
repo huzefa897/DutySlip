@@ -182,7 +182,7 @@
     left: 50%;
     bottom: 24px;
     z-index: 50;
-    width: min(760px, calc(100% - 16px));
+    width: min(960px, calc(100% - 32px));
     transform: translateX(-50%);
   }
 
@@ -193,11 +193,20 @@
     gap: 0.65rem;
     padding: 0.55rem;
     min-height: 68px;
+    overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(16px);
     box-shadow: var(--shadow-floating);
+  }
+
+  .floating-nav__items {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
   }
 
   .floating-nav__item {
@@ -208,26 +217,50 @@
     justify-content: center;
   }
 
+  .floating-nav__item--logout {
+    flex: 0 0 auto;
+  }
+
+  .floating-nav__item--company {
+    flex: 0 0 56px;
+  }
+
   .floating-nav__link {
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.7rem 1rem;
+    padding: 0.7rem 1.2rem;
     border-radius: 999px;
     color: var(--text-muted);
     font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.01em;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+  }
+
+  .floating-nav__link--logout {
+    width: auto;
+    padding-inline: 1.15rem;
   }
 
   .floating-nav__link:hover {
     color: var(--text-primary);
-    background: rgba(255, 255, 255, 0.04);
+    background: transparent;
+    box-shadow: none;
   }
 
   .floating-nav__link.is-active {
+    color: var(--accent-blue);
+    background: rgba(96, 165, 250, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.15);
+  }
+
+  .floating-nav__link.is-active:hover {
     color: var(--accent-blue);
     background: rgba(96, 165, 250, 0.12);
     box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.15);
@@ -1529,6 +1562,10 @@
   .floating-nav__link {
     gap: 0.35rem;
     padding-inline: 0.65rem;
+  }
+
+  .floating-nav__link--logout {
+    padding-inline: 0.75rem;
   }
 
   .floating-nav__label {

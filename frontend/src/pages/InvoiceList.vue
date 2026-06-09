@@ -29,6 +29,7 @@
           </button>
         </template>
         <router-link
+          v-if="isAdmin"
           to="/invoices/create"
           class="btn-primary"
         >
@@ -37,7 +38,34 @@
       </div>
     </div>
 
-    <section class="section-card">
+    <div
+      v-if="isClient && !activeCompany"
+      class="empty-state-container py-20"
+    >
+      <div class="empty-state text-center max-w-sm mx-auto">
+        <div class="empty-state__icon w-16 h-16 mx-auto mb-6 opacity-20">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M4 21V7l8-4 8 4v14M9 21V11h6v10" />
+          </svg>
+        </div>
+        <h2 class="text-xl font-semibold mb-3">
+          Select a Company
+        </h2>
+        <p class="text-sm opacity-50 leading-relaxed">
+          Please select a company from the header to view its invoices.
+        </p>
+      </div>
+    </div>
+
+    <section
+      v-else
+      class="section-card"
+    >
       <div class="filters-grid">
         <input
           v-model="filters.party_name"
@@ -46,6 +74,7 @@
           class="input"
         >
         <select
+          v-if="isAdmin"
           v-model="filters.company"
           class="input"
         >
@@ -258,7 +287,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../api'
 import { currencySymbol } from '../store/currency'
@@ -270,6 +299,7 @@ import { useConfirm } from '../composables/useConfirm'
 import { notify } from '../store/notification'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import RowActionMenu from '../components/RowActionMenu.vue'
+import { isAdmin, isClient, activeCompany } from '../store/auth'
 
 const router = useRouter()
 
@@ -420,10 +450,23 @@ const {
 } = usePagination(filteredInvoices)
 
 async function fetchData() {
+  loading.value = true
+
+  if (isClient.value && !activeCompany.value) {
+    invoices.value = []
+    companies.value = []
+    loading.value = false
+    return
+  }
+
+  const params = isClient.value && activeCompany.value
+    ? { company: activeCompany.value.id }
+    : {}
+
   try {
     const [invoicesRes, companiesRes] = await Promise.all([
-      api.get('/invoices/'),
-      api.get('/companies/'),
+      api.get('/invoices/', { params }),
+      isAdmin.value ? api.get('/companies/') : Promise.resolve({ data: [] }),
     ])
     invoices.value  = invoicesRes.data
     companies.value = companiesRes.data
@@ -433,4 +476,5 @@ async function fetchData() {
 }
 
 onMounted(fetchData)
+watch(activeCompany, fetchData)
 </script>

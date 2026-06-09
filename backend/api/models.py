@@ -1,4 +1,9 @@
+import secrets
+from datetime import timedelta
+
+from django.contrib.auth.models import User
 from django.db import models
+from django.utils import timezone
 
 
 class Company(models.Model):
@@ -174,3 +179,54 @@ class BusinessSettings(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class UserProfile(models.Model):
+    ROLE_CHOICES = [("admin", "Admin"), ("client", "Client")]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="client")
+    companies = models.ManyToManyField(
+        Company, blank=True, related_name="client_profiles"
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.email} ({self.role})"
+
+
+class InvitationToken(models.Model):
+    PURPOSE_CHOICES = [("invite", "Invite"), ("password_reset", "Password Reset")]
+
+    email = models.EmailField()
+    token = models.CharField(max_length=64, unique=True)
+    role = models.CharField(max_length=10, default="client")
+    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES)
+    used = models.BooleanField(default=False)
+    expires_at = models.DateTimeField()
+    created_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="invitations_sent",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_valid(self):
+        return not self.used and timezone.now() < self.expires_at
+
+    @classmethod
+    def make(cls, email, purpose, role="client", created_by=None, hours=48):
+        return cls.objects.create(
+            email=email,
+            token=secrets.token_urlsafe(48),
+            purpose=purpose,
+            role=role,
+            expires_at=timezone.now() + timedelta(hours=hours),
+            created_by=created_by,
+        )
+
+    def __str__(self):
+        return f"{self.purpose} for {self.email}"

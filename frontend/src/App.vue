@@ -35,23 +35,28 @@
       </router-view>
     </main>
 
-    <BottomNav />
+    <BottomNav v-if="isAuthenticated" />
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, watch } from 'vue'
 import BottomNav from './components/BottomNav.vue'
 import { notification, clearNotification } from './store/notification'
 import { setCurrency } from './store/currency'
+import { isAuthenticated } from './store/auth'
 import api from './api'
 
-onMounted(async () => {
+async function fetchSettings() {
+  if (!isAuthenticated.value) return
   try {
     const res = await api.get('/settings/')
     setCurrency(res.data.currency || 'USD')
   } catch {
-    // settings not configured yet
+    // settings not configured yet or no access
   }
-})
+}
+
+onMounted(fetchSettings)
+watch(isAuthenticated, fetchSettings)
 </script>

@@ -28,6 +28,7 @@
           :style="menuStyle"
         >
           <button
+            v-if="isAdmin"
             type="button"
             class="row-menu__item"
             @click="emitAction('edit')"
@@ -43,6 +44,7 @@
             Print / PDF
           </button>
           <button
+            v-if="isAdmin"
             type="button"
             class="row-menu__item row-menu__item--danger"
             @click="emitAction('delete')"
@@ -57,6 +59,7 @@
 
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { isAdmin } from '../store/auth'
 
 defineProps({ showPrint: { type: Boolean, default: false } })
 const emit = defineEmits(['edit', 'delete', 'print'])
